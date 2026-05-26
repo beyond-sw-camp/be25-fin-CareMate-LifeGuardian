@@ -1,6 +1,7 @@
 # LifeGuardian 
 
-<img width="1000" alt="LifeGuardian _썸네일" src="..." />
+<!-- <img width="1000" alt="LifeGuardian _썸네일" src="..." /> -->
+
 
 ## 👥 팀원 소개
 
@@ -16,19 +17,19 @@
   <tbody>
     <tr>
       <td>
-        <img src="..." style="width:120px; height:140px; object-fit:contain;"><br>
+        <img src="image/윤준상.png" style="width:140px; height:140px; object-fit:contain;"><br>
         🔗 <a href="https://github.com/wnstkd704">wnstkd704</a>
       </td>
       <td>
-        <img src="..." style="width:120px; height:140px; object-fit:contain;"><br>
+        <img src="image/김다솜.png" style="width:140px; height:140px; object-fit:contain;"><br>
         🔗 <a href="https://github.com/myangD">myangD</a>
       </td>
       <td>
-        <img src="..." style="width:120px; height:140px; object-fit:contain;"><br>
+        <img src="image/박하얀.png" style="width:140px; height:140px; object-fit:contain;"><br>
         🔗 <a href="https://github.com/P-HAYAN">P-HAYAN</a>
       </td>
       <td>
-        <img src="..." style="width:120px; height:140px; object-fit:contain;"><br>
+        <img src="image/박재하.png" style="width:140px; height:140px; object-fit:contain;"><br>
         🔗 <a href="https://github.com/horolo1234">horolo1234</a>
       </td>
     </tr>
