@@ -152,7 +152,7 @@ LifeGuardian은 보험사가 보유한 0~20세 자녀 가망고객 데이터를 
 <details>
 <summary><b>📱 화면기능 설계서 링크</b></summary>
   
-- [📱 화면기능 설계서 (링크)](http...)
+- [📱 화면기능 설계서 (링크)](https://www.figma.com/design/YsS0a4pXrSQ8iid6vSG3Uh/LifeGuardian?node-id=83-3204&t=dI86XlgA43Ko8vdL-1)
 
 </details>
 <br>
@@ -162,7 +162,7 @@ LifeGuardian은 보험사가 보유한 0~20세 자녀 가망고객 데이터를 
 <details>
 <summary><b>📋 API 명세서 링크</b></summary>
   
-- [📋 API 명세서 (링크)](http...)
+- [📋 API 명세서 (링크)](https://app.notion.com/p/API-35d01e6e88718051b2dcc2ffb8329139)
 
 </details>
 <br>
