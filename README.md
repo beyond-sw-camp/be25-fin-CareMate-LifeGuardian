@@ -142,7 +142,7 @@ LifeGuardian은 보험사가 보유한 0~20세 자녀 가망고객 데이터를 
 <details>
 <summary><b>📌 ERD 구조도</b></summary>
   
-- [📌 ERD 구조도 (링크)](https://www.erdcloud.com/d/9ge65MpQA5ebrybrq)
+- [📌 ERD 구조도 (링크)](https://www.erdcloud.com/d/JRyerDijNh2LSzcys)
   
 </details>
 <br>
