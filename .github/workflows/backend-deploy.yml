@@ -1,27 +1,26 @@
-name: Backend (Maven) CICD to AWS EC2
+name: Backend (Maven + Docker ECR) CICD to AWS EC2
 
 on:
   push:
     branches:
       - main
     paths:
-      - 'backend/**' # ◀ backend 폴더 내부의 코드가 변경되었을 때만 이 파이프라인 작동
+      - 'backend/**' # backend 폴더 내부가 변경될 때만 배포가 실행됨
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     
-    # ◀ 모든 run 명령어가 기본적으로 backend 폴더 내부에서 실행되도록 지정
     defaults:
       run:
         working-directory: ./backend
 
     steps:
-      # 1. 소스 코드 체크아웃
+      # 1. 소스 코드 가져오기
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      # 2. Java 실행 환경 세팅 (Java 21 버전 기준)
+      # 2. Java 실행 환경 세팅 (Java 21 기준)
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -29,24 +28,36 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      # 3. Maven 빌드 진행 (이제 backend/ 폴더 안에서 pom.xml을 정상 발견함)
-      - name: Build with Maven
+      # 3. Maven 빌드 (.jar 생성, 테스트 생략)
+      - name: Build jar with Maven
         run: mvn clean package -DskipTests
 
-      # 4. SCP 기능을 이용하여 빌드된 JAR 파일을 EC2 서버로 전송
-      - name: Copy JAR to EC2 via SSH
-        uses: appleboy/scp-action@v0.1.7
+      # 4. AWS 자격 증명 세팅 (GitHub Secrets 기반)
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          port: 22
-          # ◀ 소스 경로에 backend/ 프로젝트 구조 반영
-          source: "backend/target/lifeguardian-0.0.1-SNAPSHOT.jar"
-          target: "/home/ubuntu/backend"
-          strip_components: 2 # backend/target/ 경로를 때어내고 파일만 복사
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-      # 5. EC2에 원격 접속하여 deploy.sh 실행
+      # 5. AWS ECR 서비스 로그인 (LifeGuardianBackendEcrPushPolicy 권한 사용)
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # 6. 도커 이미지 빌드 및 ECR 푸시
+      # 이미지 태그는 배포 추적이 용이하도록 고유한 GitHub 커밋 샤(SHA)값과 latest를 동시에 부여합니다.
+      - name: Build, tag, and push image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: lifeguardian # 정책에 선언된 ecr 레포지토리 이름
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      # 7. EC2 원격 접속 후 새 컨테이너 실행 스크립트 가동
       - name: Execute Remote SSH Commands
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -56,4 +67,5 @@ jobs:
           port: 22
           script: |
             cd /home/ubuntu/backend
+            chmod +x deploy.sh
             ./deploy.sh
