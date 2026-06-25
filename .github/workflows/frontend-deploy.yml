@@ -1,0 +1,55 @@
+name: Frontend (Vue) CICD to AWS S3 & CloudFront
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**' # ◀ frontend 폴더 내부가 변경될 때만 이 파이프라인 트리거
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./frontend # ◀ 모든 쉘 명령어를 frontend 폴더 안에서 실행
+
+    steps:
+      # 1. GitHub 저장소 소스 코드 체크아웃
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      # 2. Node.js 환경 세팅 (Vue 프로젝트 버전에 맞춰 선택, 보통 18 또는 20 권장)
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm' # npm 의존성 캐싱으로 빌드 속도 향상
+
+      # 3. 라이브러리 설치 및 Vue 정적 파일 컴파일 진행
+      # 이 단계를 거치면 frontend/dist/ 폴더 내부에 index.html과 js/css 자원들이 빌드됩니다.
+      - name: Install dependencies and Build Vue app
+        run: |
+          npm ci
+          npm run build
+
+      # 4. AWS 자격 증명 세팅 (깃허브 Secrets 기반)
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # 5. S3 버킷으로 빌드된 Vue 정적 파일 동기화
+      # --delete 옵션 덕분에 이전 빌드 파일들은 완전히 제거되고 최신 파일만 깔끔하게 주입됩니다.
+      - name: Deploy to Amazon S3
+        run: |
+          aws s3 sync dist/ s3://${{ secrets.AWS_S3_BUCKET_NAME }} --delete
+
+      # 6. CloudFront 캐시 무효화 (Invalidation)
+      # 브라우저가 예전 Vue 컴포넌트(js 파일)를 캐싱하고 있어서 화면이 안 바뀌는 현상을 방지합니다.
+      - name: CloudFront Invalidation
+        run: |
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
