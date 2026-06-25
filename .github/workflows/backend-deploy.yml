@@ -1,0 +1,59 @@
+name: Backend (Maven) CICD to AWS EC2
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**' # ◀ backend 폴더 내부의 코드가 변경되었을 때만 이 파이프라인 작동
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    # ◀ 모든 run 명령어가 기본적으로 backend 폴더 내부에서 실행되도록 지정
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      # 1. 소스 코드 체크아웃
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      # 2. Java 실행 환경 세팅 (Java 21 버전 기준)
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      # 3. Maven 빌드 진행 (이제 backend/ 폴더 안에서 pom.xml을 정상 발견함)
+      - name: Build with Maven
+        run: mvn clean package -DskipTests
+
+      # 4. SCP 기능을 이용하여 빌드된 JAR 파일을 EC2 서버로 전송
+      - name: Copy JAR to EC2 via SSH
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          # ◀ 소스 경로에 backend/ 프로젝트 구조 반영
+          source: "backend/target/lifeguardian-0.0.1-SNAPSHOT.jar"
+          target: "/home/ubuntu/backend"
+          strip_components: 2 # backend/target/ 경로를 때어내고 파일만 복사
+
+      # 5. EC2에 원격 접속하여 deploy.sh 실행
+      - name: Execute Remote SSH Commands
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script: |
+            cd /home/ubuntu/backend
+            ./deploy.sh
