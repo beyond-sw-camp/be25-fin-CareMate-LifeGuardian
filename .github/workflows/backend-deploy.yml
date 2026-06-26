@@ -65,11 +65,13 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
-      # 8. AWS SSM을 통해 Auto Scaling Group 내 모든 인스턴스에 배포 명령 전송 (인자값으로 버전명 전달)
+      # 8. AWS SSM을 통해 Auto Scaling Group 내 모든 인스턴스에 순차적으로 배포 명령 전송 (무중단 롤링)
       - name: Deploy on EC2 ASG via AWS SSM
         run: |
           COMMAND_ID=$(aws ssm send-command \
             --targets "Key=tag:aws:autoscaling:groupName,Values=${{ secrets.AWS_ASG_NAME }}" \
+            --max-concurrency "1" \
+            --max-errors "0" \
             --document-name "AWS-RunShellScript" \
             --parameters '{"commands":["cd /home/ubuntu/backend", "chmod +x deploy.sh", "./deploy.sh ${{ steps.versioning.outputs.build_version }}"]}' \
             --query "Command.CommandId" \
