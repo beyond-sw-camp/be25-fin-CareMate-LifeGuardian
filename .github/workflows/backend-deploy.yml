@@ -65,37 +65,35 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
-      # 8. AWS SSM을 통해 Auto Scaling Group 내 모든 인스턴스에 순차적으로 배포 명령 전송 (무중단 롤링)
-      - name: Deploy on EC2 ASG via AWS SSM
+      # 8. AWS ASG Instance Refresh를 통한 무중단 롤링 배포
+      - name: Deploy on EC2 ASG via Instance Refresh
         run: |
-          COMMAND_ID=$(aws ssm send-command \
-            --targets "Key=tag:aws:autoscaling:groupName,Values=${{ secrets.AWS_ASG_NAME }}" \
-            --max-concurrency "1" \
-            --max-errors "0" \
-            --document-name "AWS-RunShellScript" \
-            --parameters '{"commands":["cd /home/ubuntu/backend", "chmod +x deploy.sh", "./deploy.sh ${{ steps.versioning.outputs.build_version }}"]}' \
-            --query "Command.CommandId" \
+          echo "Starting Instance Refresh for ASG: ${{ secrets.AWS_ASG_NAME }}..."
+          REFRESH_ID=$(aws autoscaling start-instance-refresh \
+            --auto-scaling-group-name "${{ secrets.AWS_ASG_NAME }}" \
+            --preferences '{"MinHealthyPercentage": 50}' \
+            --query "InstanceRefreshId" \
             --output text)
           
-          echo "SSM Command Sent to ASG. Command ID: $COMMAND_ID. Version: ${{ steps.versioning.outputs.build_version }}"
+          echo "Instance Refresh Started. ID: $REFRESH_ID"
           
-          # 모든 대상 인스턴스에서 명령 실행 완료 시까지 대기 (폴링 루프)
-          echo "Waiting for SSM command to complete..."
+          # 인스턴스 새로고침 완료 대기 (폴링 루프)
+          echo "Waiting for Instance Refresh to complete..."
           while true; do
-            STATUS=$(aws ssm list-commands \
-              --command-id "$COMMAND_ID" \
-              --query "Commands[0].Status" \
+            STATUS=$(aws autoscaling describe-instance-refreshes \
+              --auto-scaling-group-name "${{ secrets.AWS_ASG_NAME }}" \
+              --query "InstanceRefreshes[?InstanceRefreshId=='$REFRESH_ID'].Status" \
               --output text)
             
             echo "Current Status: $STATUS"
             
-            if [ "$STATUS" = "Success" ]; then
-              echo "SSM Command completed successfully."
+            if [ "$STATUS" = "Successful" ]; then
+              echo "Instance Refresh completed successfully."
               break
-            elif [ "$STATUS" = "Failed" ] || [ "$STATUS" = "Cancelled" ] || [ "$STATUS" = "TimedOut" ]; then
-              echo "Error: SSM Command failed with status: $STATUS"
+            elif [ "$STATUS" = "Failed" ] || [ "$STATUS" = "Cancelled" ] || [ "$STATUS" = "RollbackInProgress" ] || [ "$STATUS" = "RollbackSuccessful" ]; then
+              echo "Error: Instance Refresh ended with status: $STATUS"
               exit 1
             fi
             
-            sleep 10
+            sleep 30
           done
