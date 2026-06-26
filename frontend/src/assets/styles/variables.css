@@ -1,0 +1,51 @@
+/*
+- variables.css
+- 색상, 폰트, radius 같은 디자인 변수 
+*/
+
+:root {
+  /* 대표 색상 팔레트: 자료의 #1a6dff를 기준으로 밝기 단계별로 정리. */
+  --color-primary: #1a6dff;
+  --color-primary-50: #eef5ff;
+  --color-primary-100: #ccdfff;
+  --color-primary-200: #99beff;
+  --color-primary-300: #669eff;
+  --color-primary-400: #337eff;
+  --color-primary-500: #1a6dff;
+  --color-primary-600: #005eff;
+  --color-primary-700: #004bcc;
+  --color-primary-800: #003899;
+  --color-primary-900: #002566;
+
+  /* 화면 배경, 카드, 경계선, 기본 텍스트 색상. */
+  --color-background: #f4f7fb;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f4f5f7;
+  --color-border: #e4e8ef;
+  --color-border-strong: #cfd6e2;
+  --color-text: #171a1f;
+  --color-text-muted: #6f7785;
+  --color-text-subtle: #9aa3af;
+
+  /* 상태 표현용 색상. badge, 알림, 상태 라벨에서 사용(임시). */
+  --color-success: #22c55e;
+  --color-warning: #facc15;
+  --color-danger: #ef4444;
+  --color-danger-soft: #ffe0e0;
+  --color-info: #4f63d9;
+
+  /* 전역 기본 폰트. main.css에서 Pretendard 웹폰트를 먼저 로드. */
+  --font-family-base:
+    Pretendard, Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* 레이아웃과 컴포넌트 형태에 반복 사용되는 크기 값. */
+  --sidebar-width: 248px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+
+  /* 카드와 모달의 입체감을 통일하기 위한 그림자 값. */
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 8%), 0 8px 24px rgb(15 23 42 / 6%);
+  --shadow-modal: 0 18px 60px rgb(15 23 42 / 24%);
+}
