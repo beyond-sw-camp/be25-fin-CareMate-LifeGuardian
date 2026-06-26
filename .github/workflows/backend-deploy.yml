@@ -81,9 +81,9 @@ jobs:
           # 모든 대상 인스턴스에서 명령 실행 완료 시까지 대기 (폴링 루프)
           echo "Waiting for SSM command to complete..."
           while true; do
-            STATUS=$(aws ssm get-command \
+            STATUS=$(aws ssm list-commands \
               --command-id "$COMMAND_ID" \
-              --query "Command.Status" \
+              --query "Commands[0].Status" \
               --output text)
             
             echo "Current Status: $STATUS"
