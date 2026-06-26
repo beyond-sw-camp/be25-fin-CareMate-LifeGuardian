@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. 소스 코드 체크아웃
+      # 1. 소스 코드 가져오기
       - name: Checkout source code
         uses: actions/checkout@v4
 
@@ -24,11 +24,13 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # 3. AWS SSM을 통해 Auto Scaling Group 내 모든 인스턴스에 배포 명령 전송 (Git Pull 및 재기동)
+      # 3. AWS SSM을 통해 Auto Scaling Group 내 인스턴스들에 순차 배포 명령 전송 (Git Pull 및 재기동)
       - name: Deploy AI on EC2 ASG via AWS SSM
         run: |
           COMMAND_ID=$(aws ssm send-command \
             --targets "Key=tag:aws:autoscaling:groupName,Values=${{ secrets.AWS_ASG_NAME }}" \
+            --max-concurrency "1" \
+            --max-errors "0" \
             --document-name "AWS-RunShellScript" \
             --parameters '{"commands":["cd /home/ubuntu/recommend_lambda", "git pull origin main", "chmod +x deploy.sh", "./deploy.sh"]}' \
             --query "Command.CommandId" \
