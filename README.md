@@ -50,9 +50,11 @@
 8. [테이블 정의서](#8-테이블-정의서)  
 9. [ERD](#9-ERD)
 10. [화면 및 기능 설계서](#10-화면-및-기능-설계서)
-11. [API 명세서](#11-API-명세서)  
-12. [테스트 보고서](#12-테스트-보고서)
-13. [회고](#13-회고)
+11. [API 명세서](#11-API-명세서)
+12. [백엔드 테스트 보고서](#12-백엔드-테스트-보고서)
+13. [프론트엔드 테스트 보고서](#13-프론트엔드-테스트-보고서)
+14. [통합 테스트 보고서](#14-통합-테스트-보고서)
+15. [회고](#15-회고)
 
 <br>
 
@@ -167,17 +169,37 @@ LifeGuardian은 보험사가 보유한 0~20세 자녀 가망고객 데이터를 
 </details>
 <br>
 
-## <a id="12-테스트-보고서"></a> 12. 테스트 보고서(스프레드 시트)
+## <a id="12-백엔드-테스트-보고서"></a> 12. 백엔드 테스트 보고서(스프레드 시트)
 
 <details>
  <summary><b>🧾 백엔드 테스트</b></summary>
 
-- [🧾 백엔드 테스트 결과서 (링크)](http...)
+- [🧾 백엔드 테스트 결과서 (링크)](https://docs.google.com/spreadsheets/d/1jCL1br1RoIoiYlqEJTS_a4W8B9hhZFSuSCLUUObTIzE/edit?gid=827415517#gid=827415517)
 
 </details>
 <br>
 
-## <a id="13-회고"></a> 13. 회고
+## <a id="13-프론트엔드-테스트-보고서"></a> 13. 프론트엔드 테스트 보고서(스프레드 시트)
+
+<details>
+ <summary><b>🧾 프론트엔드 테스트</b></summary>
+
+- [🧾 프론트엔드 테스트 결과서 (링크)](https://docs.google.com/spreadsheets/d/1jCL1br1RoIoiYlqEJTS_a4W8B9hhZFSuSCLUUObTIzE/edit?gid=1145191922#gid=1145191922)
+
+</details>
+<br>
+
+## <a id="14-통합-테스트-보고서"></a> 14. 통합 테스트 보고서(스프레드 시트)
+
+<details>
+ <summary><b>🧾 통합 테스트</b></summary>
+
+- [🧾 통합 테스트 결과서 (링크)](https://docs.google.com/spreadsheets/d/1jCL1br1RoIoiYlqEJTS_a4W8B9hhZFSuSCLUUObTIzE/edit?gid=1770458563#gid=1770458563)
+
+</details>
+<br>
+
+## <a id="15-회고"></a> 13. 회고
 
 |   이름   |     회고 내용     |
 |-----------|-----------------|
