@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'ai/**' # ◀ ai 폴더 내부의 코드가 변경되었을 때만 이 파이프라인 작동
+      - 'ai/**' # ai 폴더 내부의 코드가 변경되었을 때만 이 파이프라인 작동
 
 jobs:
   deploy-ai:
@@ -16,27 +16,26 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      # 2. AI 소스 코드들만 EC2의 recommend_lambda 경로로 전송
-      - name: Copy Python files to EC2
-        uses: appleboy/scp-action@v0.1.7
+      # 2. AWS 자격 증명 세팅 (GitHub Secrets 기반)
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          port: 22
-          source: "ai/*" # ◀ ai 폴더 하위의 모든 자원 대상
-          target: "/home/ubuntu/recommend_lambda"
-          strip_components: 1 # ai/ 경로를 때어내고 파일들을 전송
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-      # 3. EC2 원격 접속 후 파이썬 가상환경 활성화 및 가동 스크립트 실행
-      - name: Restart Python Application
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          port: 22
-          script: |
-            cd /home/ubuntu/recommend_lambda
-            chmod +x deploy.sh
-            ./deploy.sh
+      # 3. AWS SSM을 통해 Auto Scaling Group 내 모든 인스턴스에 배포 명령 전송 (Git Pull 및 재기동)
+      - name: Deploy AI on EC2 ASG via AWS SSM
+        run: |
+          COMMAND_ID=$(aws ssm send-command \
+            --targets "Key=tag:aws:autoscaling:groupName,Values=${{ secrets.AWS_ASG_NAME }}" \
+            --document-name "AWS-RunShellScript" \
+            --parameters '{"commands":["cd /home/ubuntu/recommend_lambda", "git pull origin main", "chmod +x deploy.sh", "./deploy.sh"]}' \
+            --query "Command.CommandId" \
+            --output text)
+          
+          echo "SSM Command Sent to ASG. Command ID: $COMMAND_ID"
+          
+          # 모든 대상 인스턴스에서 명령 실행 완료 시까지 대기
+          aws ssm wait command-executed \
+            --command-id "$COMMAND_ID"
