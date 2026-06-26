@@ -132,7 +132,7 @@ LifeGuardian은 보험사가 보유한 0~20세 자녀 가망고객 데이터를 
 <details>
 <summary><b>🗄️ 테이블 정의서</b></summary>
   
-- 🗄️[테이블 정의서 (링크)](https://docs.google.com/spreadsheets/d/1jCL1br1RoIoiYlqEJTS_a4W8B9hhZFSuSCLUUObTIzE/edit?gid=1700824556#gid=1700824556)
+- 🗄️[테이블 정의서 (링크)](https://docs.google.com/spreadsheets/d/1jCL1br1RoIoiYlqEJTS_a4W8B9hhZFSuSCLUUObTIzE/edit?gid=738235602#gid=738235602)
 
 </details>
 <br>
