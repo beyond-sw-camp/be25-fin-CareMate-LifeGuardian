@@ -98,7 +98,7 @@ LifeGuardian은 보험사가 보유한 0~20세 자녀 가망고객 데이터를 
 <details>
 <summary><b>🧱 시스템 아키텍처 펼쳐보기</b></summary>
 
-<img src="image/시스템 아키텍처.png" width="1000" alt="System Architecture image" /></br>
+<img src="image/시스템아키택처.png" width="1000" alt="System Architecture image" /></br>
 
 </details>
 <br>
