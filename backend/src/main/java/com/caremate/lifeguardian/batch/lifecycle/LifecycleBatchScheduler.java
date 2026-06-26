@@ -10,6 +10,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -42,6 +43,11 @@ public class LifecycleBatchScheduler {
     @Scheduled(
             cron = "${app.lifecycle.batch.cron:0 * * * * *}",
             zone = "${app.lifecycle.batch.zone:Asia/Seoul}"
+    )
+    @SchedulerLock(
+            name = "potentialCustomerGraduationJobLock",
+            lockAtLeastFor = "30s",
+            lockAtMostFor = "5m"
     )
     public void runPotentialCustomerGraduationJob() {
         LocalDateTime startedAt = LocalDateTime.now(SEOUL_ZONE);
