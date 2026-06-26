@@ -20,7 +20,16 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      # 2. Java 실행 환경 세팅 (Java 21 기준)
+      # 2. pom.xml에서 버전명 추출 후 GitHub run_number와 조합하여 고유 버전 생성
+      # 예: pom.xml의 0.0.1-SNAPSHOT ➔ 0.0.1-15 (15번째 빌드)
+      - name: Generate Semantic Build Version
+        id: versioning
+        run: |
+          RAW_VERSION=$(grep -oPm1 '(?<=<version>)[^<]+' pom.xml | sed 's/-SNAPSHOT//')
+          BUILD_VERSION="${RAW_VERSION}-${{ github.run_number }}"
+          echo "build_version=$BUILD_VERSION" >> $GITHUB_OUTPUT
+
+      # 3. Java 실행 환경 세팅 (Java 21 기준)
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -28,11 +37,11 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      # 3. Maven 빌드 (.jar 생성, 테스트 생략)
+      # 4. Maven 빌드 (.jar 생성, 테스트 생략)
       - name: Build jar with Maven
         run: mvn clean package -DskipTests
 
-      # 4. AWS 자격 증명 세팅 (GitHub Secrets 기반)
+      # 5. AWS 자격 증명 세팅 (GitHub Secrets 기반)
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -40,32 +49,36 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # 5. AWS ECR 서비스 로그인 (LifeGuardianBackendEcrPushPolicy 권한 사용)
+      # 6. AWS ECR 서비스 로그인 (LifeGuardianBackendEcrPushPolicy 권한 사용)
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      # 6. 도커 이미지 빌드 및 ECR 푸시
-      # 이미지 태그는 배포 추적이 용이하도록 고유한 GitHub 커밋 샤(SHA)값과 latest를 동시에 부여합니다.
+      # 7. 도커 이미지 빌드 및 ECR 푸시 (고유 빌드 버전 태그와 latest 태그 동시 적용)
       - name: Build, tag, and push image to Amazon ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: lifeguardian # 정책에 선언된 ecr 레포지토리 이름
-          IMAGE_TAG: ${{ github.sha }}
+          ECR_REPOSITORY: lifeguardian
+          IMAGE_TAG: ${{ steps.versioning.outputs.build_version }}
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
-      # 7. EC2 원격 접속 후 새 컨테이너 실행 스크립트 가동
-      - name: Execute Remote SSH Commands
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          port: 22
-          script: |
-            cd /home/ubuntu/backend
-            chmod +x deploy.sh
-            ./deploy.sh
+      # 8. AWS SSM을 통해 Auto Scaling Group 내 모든 인스턴스에 순차적으로 배포 명령 전송 (무중단 롤링)
+      - name: Deploy on EC2 ASG via AWS SSM
+        run: |
+          COMMAND_ID=$(aws ssm send-command \
+            --targets "Key=tag:aws:autoscaling:groupName,Values=${{ secrets.AWS_ASG_NAME }}" \
+            --max-concurrency "1" \
+            --max-errors "0" \
+            --document-name "AWS-RunShellScript" \
+            --parameters '{"commands":["cd /home/ubuntu/backend", "chmod +x deploy.sh", "./deploy.sh ${{ steps.versioning.outputs.build_version }}"]}' \
+            --query "Command.CommandId" \
+            --output text)
+          
+          echo "SSM Command Sent to ASG. Command ID: $COMMAND_ID. Version: ${{ steps.versioning.outputs.build_version }}"
+          
+          # 모든 대상 인스턴스에서 명령 실행 완료 시까지 대기
+          aws ssm wait command-executed \
+            --command-id "$COMMAND_ID"

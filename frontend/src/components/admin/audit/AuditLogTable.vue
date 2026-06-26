@@ -98,10 +98,10 @@ const handleNextPage = () => {
             </tr>
           </thead>
           <tbody>
-            <tr v-if="logs.length === 0">
+            <tr v-if="!logs || logs.length === 0">
               <td colspan="5" class="text-center empty-text">조회 기간 내 발생한 감사 로그가 없습니다.</td>
             </tr>
-            <tr v-for="log in logs" :key="log.auditId">
+            <tr v-for="log in logs || []" :key="log.auditId">
               <td class="text-slate-500 font-bold font-mono">{{ log.createdAt }}</td>
               <td>
                 <div class="employee-cell">
@@ -110,8 +110,8 @@ const handleNextPage = () => {
                 </div>
               </td>
               <td>
-                <span class="action-badge" :class="`action-${log.actionName.includes('LOGIN') ? 'login' : log.actionName.includes('PII') ? 'view' : 'download'}`">
-                  {{ log.actionName }}
+                <span class="action-badge" :class="`action-${(log.actionName || '').includes('LOGIN') ? 'login' : (log.actionName || '').includes('PII') ? 'view' : 'download'}`">
+                  {{ log.actionName || '-' }}
                 </span>
               </td>
               <td>
@@ -175,6 +175,7 @@ const handleNextPage = () => {
   font-weight: 900;
   color: var(--color-text);
   flex: 1;
+  min-width: 320px;
 }
 
 .audit-filters {
@@ -282,6 +283,7 @@ const handleNextPage = () => {
   padding: 40px 0;
   color: var(--color-text-subtle);
   font-weight: 700;
+  text-align: center;
 }
 
 .employee-cell, .customer-cell {
