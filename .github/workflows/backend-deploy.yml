@@ -61,8 +61,9 @@ jobs:
           ECR_REPOSITORY: lifeguardian
           IMAGE_TAG: ${{ steps.versioning.outputs.build_version }}
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
       # 8. AWS SSM을 통해 Auto Scaling Group 내 모든 인스턴스에 순차적으로 배포 명령 전송 (무중단 롤링)
       - name: Deploy on EC2 ASG via AWS SSM
