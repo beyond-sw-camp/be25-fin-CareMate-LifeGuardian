@@ -11,12 +11,22 @@ jobs:
   deploy-ai:
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: ./ai
+
     steps:
       # 1. 소스 코드 가져오기
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      # 2. AWS 자격 증명 세팅 (GitHub Secrets 기반)
+      # 2. 빌드 버전 생성
+      - name: Generate Build Version
+        id: versioning
+        run: |
+          echo "build_version=1.0.${{ github.run_number }}" >> $GITHUB_OUTPUT
+
+      # 3. AWS 자격 증명 세팅 (GitHub Secrets 기반)
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -24,37 +34,51 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # 3. AWS SSM을 통해 Auto Scaling Group 내 인스턴스들에 순차 배포 명령 전송 (Git Pull 및 재기동)
-      - name: Deploy AI on EC2 ASG via AWS SSM
+      # 4. AWS ECR 서비스 로그인
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # 5. 도커 이미지 빌드 및 ECR 푸시 (고유 빌드 버전 태그와 ai-latest 태그 동시 적용)
+      - name: Build, tag, and push image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: lifeguardian
+          IMAGE_TAG: ai-${{ steps.versioning.outputs.build_version }}
         run: |
-          COMMAND_ID=$(aws ssm send-command \
-            --targets "Key=tag:aws:autoscaling:groupName,Values=${{ secrets.AWS_ASG_NAME }}" \
-            --max-concurrency "1" \
-            --max-errors "0" \
-            --document-name "AWS-RunShellScript" \
-            --parameters '{"commands":["cd /home/ubuntu/recommend_lambda", "git pull origin main", "chmod +x deploy.sh", "./deploy.sh"]}' \
-            --query "Command.CommandId" \
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:ai-latest .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:ai-latest
+
+      # 6. AWS ASG Instance Refresh를 통한 무중단 롤링 배포
+      - name: Deploy AI on EC2 ASG via Instance Refresh
+        run: |
+          echo "Starting Instance Refresh for ASG: ${{ secrets.AWS_ASG_NAME }}..."
+          REFRESH_ID=$(aws autoscaling start-instance-refresh \
+            --auto-scaling-group-name "${{ secrets.AWS_ASG_NAME }}" \
+            --preferences '{"MinHealthyPercentage": 50}' \
+            --query "InstanceRefreshId" \
             --output text)
           
-          echo "SSM Command Sent to ASG. Command ID: $COMMAND_ID"
+          echo "Instance Refresh Started. ID: $REFRESH_ID"
           
-          # 모든 대상 인스턴스에서 명령 실행 완료 시까지 대기 (폴링 루프)
-          echo "Waiting for SSM command to complete..."
+          # 인스턴스 새로고침 완료 대기 (폴링 루프)
+          echo "Waiting for Instance Refresh to complete..."
           while true; do
-            STATUS=$(aws ssm list-commands \
-              --command-id "$COMMAND_ID" \
-              --query "Commands[0].Status" \
+            STATUS=$(aws autoscaling describe-instance-refreshes \
+              --auto-scaling-group-name "${{ secrets.AWS_ASG_NAME }}" \
+              --query "InstanceRefreshes[?InstanceRefreshId=='$REFRESH_ID'].Status" \
               --output text)
             
             echo "Current Status: $STATUS"
             
-            if [ "$STATUS" = "Success" ]; then
-              echo "SSM Command completed successfully."
+            if [ "$STATUS" = "Successful" ]; then
+              echo "Instance Refresh completed successfully."
               break
-            elif [ "$STATUS" = "Failed" ] || [ "$STATUS" = "Cancelled" ] || [ "$STATUS" = "TimedOut" ]; then
-              echo "Error: SSM Command failed with status: $STATUS"
+            elif [ "$STATUS" = "Failed" ] || [ "$STATUS" = "Cancelled" ] || [ "$STATUS" = "RollbackInProgress" ] || [ "$STATUS" = "RollbackSuccessful" ]; then
+              echo "Error: Instance Refresh ended with status: $STATUS"
               exit 1
             fi
             
-            sleep 10
+            sleep 30
           done
