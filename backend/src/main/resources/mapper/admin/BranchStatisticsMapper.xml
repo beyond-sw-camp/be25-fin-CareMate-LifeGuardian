@@ -62,6 +62,58 @@
         GROUP BY su.id, su.employee_id, su.name
         ORDER BY `rank` ASC
     </select>
+
+    <!-- 특정 지점 내 전체 영업사원 실적 상세 및 랭킹 조회 -->
+    <select id="selectSalesUsersPerformanceDetails" resultType="com.caremate.lifeguardian.admin.domain.SalesUserPerformanceDetail">
+        WITH MonthlyPerformance AS (
+            SELECT
+                su.id AS user_id,
+                COUNT(c.id) AS this_month_count,
+                ROW_NUMBER() OVER (
+                    ORDER BY COUNT(c.id) DESC, su.name ASC
+                ) AS `rank`
+            FROM sales_user su
+            LEFT JOIN contract c ON su.id = c.sales_user_id
+                AND DATE_FORMAT(c.updated_at, '%Y-%m') = #{yearMonth}
+                AND c.contract_status_code = '06'
+                AND c.contract_result_status_code = '02'
+            WHERE su.branch_id = #{branchId}
+              AND su.status_code = '01'
+            GROUP BY su.id, su.name
+        ),
+        AnnualPerformance AS (
+            SELECT
+                su.id AS user_id,
+                COUNT(c.id) AS annual_count
+            FROM sales_user su
+            LEFT JOIN contract c ON su.id = c.sales_user_id
+                AND YEAR(c.updated_at) = #{year}
+                AND c.contract_status_code = '06'
+                AND c.contract_result_status_code = '02'
+            WHERE su.branch_id = #{branchId}
+              AND su.status_code = '01'
+            GROUP BY su.id
+        )
+        SELECT
+            mp.rank AS `rank`,
+            su.employee_id AS employeeId,
+            su.name AS employeeName,
+            COALESCE(cc.code_name, '일반 영업사원') AS positionName,
+            mp.this_month_count AS thisMonthCount,
+            COALESCE(ap.annual_count, 0) AS annualCount,
+            COALESCE(smt.target_contract_count, 0) AS monthlyTargetCount,
+            CAST(mp.this_month_count - COALESCE(smt.target_contract_count, 0) AS SIGNED) AS targetDifference
+        FROM sales_user su
+        JOIN MonthlyPerformance mp ON su.id = mp.user_id
+        LEFT JOIN AnnualPerformance ap ON su.id = ap.user_id
+        LEFT JOIN sales_monthly_target smt ON su.id = smt.sales_user_id
+            AND smt.target_year_month = REPLACE(#{yearMonth}, '-', '')
+        LEFT JOIN common_code cc ON cc.group_code = 'USER_RANK'
+            AND cc.code_value = su.rank_code
+        WHERE su.branch_id = #{branchId}
+          AND su.status_code = '01'
+        ORDER BY mp.rank ASC
+    </select>
     <!--직급 코드에 해당하는 직급명 조회-->
     <select id="selectPositionName" resultType="string">
         SELECT code_name

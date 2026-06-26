@@ -29,6 +29,9 @@ import com.caremate.lifeguardian.member.mapper.SalesUserMapper;
 import com.caremate.lifeguardian.admin.domain.DashboardSalesUser;
 import com.caremate.lifeguardian.admin.dto.response.DashboardSalesUserInfo;
 import com.caremate.lifeguardian.admin.dto.response.DashboardSalesUsersResponse;
+import com.caremate.lifeguardian.admin.domain.SalesUserPerformanceDetail;
+import com.caremate.lifeguardian.admin.dto.response.BranchPerformanceDetailsResponse;
+import com.caremate.lifeguardian.admin.dto.response.SalesUserPerformanceDetailResponse;
 import com.caremate.lifeguardian.common.security.SecurityUtil;
 
 @Service
@@ -441,6 +444,56 @@ public class BranchStatisticsServiceImpl implements BranchStatisticsService {
 
         // 4. delete 실행 (고정되어 있지 않은 경우에도 멱등적으로 성공 반환)
         branchStatisticsMapper.deletePin(managerUserId, targetUserId);
+    }
+
+    @Override
+    public BranchPerformanceDetailsResponse getSalesPerformanceDetails(Long branchId) {
+        // 1. 지점 존재 유무 검증
+        if (!branchMapper.existsById(branchId)) {
+            throw new BaseException(404, "요청하신 지점 정보를 찾을 수 없습니다.");
+        }
+
+        // 지점장 지점 권한 검증
+        validateManagerBranch(branchId);
+
+        // 2. 현재 날짜 정보 계산
+        LocalDate today = LocalDate.now();
+        String currentYearMonth = YearMonth.from(today).toString(); // "YYYY-MM"
+        int currentYear = today.getYear();
+
+        // 3. 지점 내 활성 사원들의 전체 실적 목록 조회
+        List<SalesUserPerformanceDetail> domainList =
+                branchStatisticsMapper.selectSalesUsersPerformanceDetails(branchId, currentYearMonth, currentYear);
+
+        // 4. groupCode 할당 및 DTO 변환
+        int totalSize = domainList.size();
+        List<SalesUserPerformanceDetailResponse> responseList = new ArrayList<>();
+        for (int i = 0; i < totalSize; i++) {
+            SalesUserPerformanceDetail domain = domainList.get(i);
+            String groupCode = "MIDDLE";
+            if (i < 3) {
+                groupCode = "TOP";
+            } else if (i >= totalSize - 3) {
+                groupCode = "BOTTOM";
+            }
+
+            responseList.add(SalesUserPerformanceDetailResponse.builder()
+                    .rank(domain.getRank())
+                    .groupCode(groupCode)
+                    .employeeId(domain.getEmployeeId())
+                    .employeeName(domain.getEmployeeName())
+                    .positionName(domain.getPositionName())
+                    .thisMonthCount(domain.getThisMonthCount())
+                    .annualCount(domain.getAnnualCount())
+                    .monthlyTargetCount(domain.getMonthlyTargetCount())
+                    .targetDifference(domain.getTargetDifference())
+                    .build());
+        }
+
+        return BranchPerformanceDetailsResponse.builder()
+                .targetYearMonth(currentYearMonth)
+                .performances(responseList)
+                .build();
     }
 
     private void validateManagerBranch(Long branchId) {
