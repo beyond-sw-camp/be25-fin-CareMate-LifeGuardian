@@ -678,7 +678,7 @@ const handlePhoneInput = (event: Event) => {
 /* Split-View 레이아웃 */
 .hr-view {
   display: grid;
-  grid-template-columns: 380px 1fr;
+  grid-template-columns: 440px 1fr;
   gap: 20px;
   align-items: stretch;
 }
@@ -735,7 +735,7 @@ const handlePhoneInput = (event: Event) => {
 
 .table-container {
   flex: 1;
-  overflow-y: auto;
+  overflow: hidden;
   border-radius: var(--radius-sm);
 }
 
