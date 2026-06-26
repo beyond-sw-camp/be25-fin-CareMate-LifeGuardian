@@ -39,7 +39,7 @@ public class AuditLogController {
         log.info("감사 로그 조회 API 요청 수신 - startDate: {}, endDate: {}, actionTypeCode: {}, page: {}, size: {}",
                 startDate, endDate, actionTypeCode, page, size);
 
-        // 컨트롤러 레벨 날짜 형식 정규식 수동 유효성 검증
+        // 컨트롤러 레벨 날짜 형식 정규식 수동 유효성 검증 테스트
         List<ErrorResponse> errors = new ArrayList<>();
         if (startDate != null && !startDate.isEmpty() && !startDate.matches("^\\d{4}-\\d{2}-\\d{2}$")) {
             errors.add(ErrorResponse.builder()
