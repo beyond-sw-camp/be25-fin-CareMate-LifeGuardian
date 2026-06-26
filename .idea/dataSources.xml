@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
+    <data-source source="LOCAL" name="lifeguardian@lifeguardian.cbwkk4kkwtj5.ap-northeast-2.rds.amazonaws.com" uuid="f1af9d27-9cc7-43f5-9ae8-1db4b20a94aa">
+      <driver-ref>mariadb</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>org.mariadb.jdbc.Driver</jdbc-driver>
+      <jdbc-url>jdbc:mariadb://lifeguardian.cbwkk4kkwtj5.ap-northeast-2.rds.amazonaws.com:3306/lifeguardian</jdbc-url>
+      <jdbc-additional-properties>
+        <property name="com.intellij.clouds.kubernetes.db.host.port" />
+        <property name="com.intellij.clouds.kubernetes.db.enabled" value="false" />
+        <property name="com.intellij.clouds.kubernetes.db.container.port" />
+      </jdbc-additional-properties>
+      <working-dir>$ProjectFileDir$</working-dir>
+      <driver-properties>
+        <property name="sslMode" value="true" />
+      </driver-properties>
+    </data-source>
+  </component>
+</project>
