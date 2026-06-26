@@ -38,6 +38,23 @@ jobs:
           
           echo "SSM Command Sent to ASG. Command ID: $COMMAND_ID"
           
-          # 모든 대상 인스턴스에서 명령 실행 완료 시까지 대기
-          aws ssm wait command-executed \
-            --command-id "$COMMAND_ID"
+          # 모든 대상 인스턴스에서 명령 실행 완료 시까지 대기 (폴링 루프)
+          echo "Waiting for SSM command to complete..."
+          while true; do
+            STATUS=$(aws ssm get-command \
+              --command-id "$COMMAND_ID" \
+              --query "Command.Status" \
+              --output text)
+            
+            echo "Current Status: $STATUS"
+            
+            if [ "$STATUS" = "Success" ]; then
+              echo "SSM Command completed successfully."
+              break
+            elif [ "$STATUS" = "Failed" ] || [ "$STATUS" = "Cancelled" ] || [ "$STATUS" = "TimedOut" ]; then
+              echo "Error: SSM Command failed with status: $STATUS"
+              exit 1
+            fi
+            
+            sleep 10
+          done
