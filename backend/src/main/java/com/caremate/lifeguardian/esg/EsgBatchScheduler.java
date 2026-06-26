@@ -10,6 +10,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -51,6 +52,11 @@ public class EsgBatchScheduler {
     @Scheduled(
             cron = "${app.esg.batch.cron:0 30 5 * * *}",
             zone = "${app.esg.batch.zone:Asia/Seoul}"
+    )
+    @SchedulerLock(
+            name = "esgDataAccumulationJobLock",
+            lockAtLeastFor = "1m",
+            lockAtMostFor = "10m"
     )
     public void runEsgDataAccumulationJob() {
         LocalDateTime startedAt = LocalDateTime.now(SEOUL_ZONE);
