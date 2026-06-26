@@ -4,6 +4,7 @@ import com.caremate.lifeguardian.admin.dto.response.BranchAnnualContractsRespons
 import com.caremate.lifeguardian.admin.dto.response.BranchMonthlyContractsResponse;
 import com.caremate.lifeguardian.admin.dto.response.BranchSalesRankingResponse;
 import com.caremate.lifeguardian.admin.dto.response.SalesUserPersonalPerformanceResponse;
+import com.caremate.lifeguardian.admin.dto.response.BranchPerformanceDetailsResponse;
 import com.caremate.lifeguardian.admin.service.BranchStatisticsService;
 import com.caremate.lifeguardian.common.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -79,6 +80,18 @@ public class BranchStatisticsController {
         log.info("영업사원 개인 판매 실적 상세 조회 API 처리 성공 - branchId: {}, targetUserId: {}", branchId, targetUserId);
 
         return ResponseEntity.ok(ApiResponse.success(200, "영업사원 개인 상세 실적 조회가 완료되었습니다.", response));
+    }
+
+    @Operation(summary = "지점 전체 영업사원 판매 성과 상세 조회", description = "지점 소속 전체 영업사원의 이번 달 실적, 연간 누적 실적 및 랭킹 세부 정보를 조회합니다.")
+    @GetMapping("/{branchId}/statistics/sales-performance/details")
+    public ResponseEntity<ApiResponse<BranchPerformanceDetailsResponse>> getSalesPerformanceDetails(
+            @PathVariable("branchId") Long branchId) {
+
+        log.info("지점 전체 영업사원 판매 성과 상세 조회 API 요청 수신 - branchId: {}", branchId);
+        BranchPerformanceDetailsResponse response = branchStatisticsService.getSalesPerformanceDetails(branchId);
+        log.info("지점 전체 영업사원 판매 성과 상세 조회 API 처리 성공 - branchId: {}", branchId);
+
+        return ResponseEntity.ok(ApiResponse.success(200, "전체 영업사원 성과 상세 조회가 완료되었습니다.", response));
     }
 
     @Operation(summary = "대시보드 영업사원 목록 조회", description = "로그인한 관리자가 지정한 지점의 영업사원 목록을 핀 고정 및 당월 실적 기준으로 정렬하여 조회합니다.")

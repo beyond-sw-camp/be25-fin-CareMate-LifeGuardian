@@ -177,6 +177,7 @@ const handleNextPage = () => {
   padding: 40px 0;
   color: var(--color-text-subtle);
   font-weight: 700;
+  text-align: center;
 }
 
 .pii-status-badge {

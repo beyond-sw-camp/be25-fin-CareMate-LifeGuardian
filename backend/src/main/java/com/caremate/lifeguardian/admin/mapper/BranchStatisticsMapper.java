@@ -2,6 +2,7 @@ package com.caremate.lifeguardian.admin.mapper;
 
 import com.caremate.lifeguardian.admin.domain.DashboardSalesUser;
 import com.caremate.lifeguardian.admin.domain.SalesUserMonthlyTrendDto;
+import com.caremate.lifeguardian.admin.domain.SalesUserPerformanceDetail;
 import com.caremate.lifeguardian.admin.domain.SalesUserPerformance;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -9,6 +10,13 @@ import java.util.List;
 
 @Mapper
 public interface BranchStatisticsMapper {
+
+    // 특정 지점 내 전체 영업사원 실적 상세 및 랭킹 조회
+    List<SalesUserPerformanceDetail> selectSalesUsersPerformanceDetails(
+            @Param("branchId") Long branchId,
+            @Param("yearMonth") String yearMonth,
+            @Param("year") int year
+    );
 
     // 특정 지점의 연간 계약 수 카운트
     int countContractsByBranchAndYear(@Param("branchId") Long branchId, @Param("year") int year);
