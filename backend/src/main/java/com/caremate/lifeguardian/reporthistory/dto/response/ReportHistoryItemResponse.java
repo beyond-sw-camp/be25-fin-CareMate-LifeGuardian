@@ -3,12 +3,14 @@ package com.caremate.lifeguardian.reporthistory.dto.response;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.apache.ibatis.type.Alias;
 
 import java.time.LocalDateTime;
 
 @Getter
 @Builder
+@NoArgsConstructor
 @AllArgsConstructor
 @Alias("ReportHistoryItem")
 public class ReportHistoryItemResponse {

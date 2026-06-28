@@ -4,23 +4,6 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.caremate.lifeguardian.reporthistory.mapper.ReportHistoryMapper">
 
-    <resultMap id="reportHistoryItemMap" type="ReportHistoryItem">
-        <constructor>
-            <arg column="id" javaType="java.lang.Long"/>
-            <arg column="sendType" javaType="java.lang.String"/>
-            <arg column="sendTypeName" javaType="java.lang.String"/>
-            <arg column="customerId" javaType="java.lang.Long"/>
-            <arg column="customerName" javaType="java.lang.String"/>
-            <arg column="customerStageCode" javaType="java.lang.String"/>
-            <arg column="customerStageName" javaType="java.lang.String"/>
-            <arg column="sendItemCode" javaType="java.lang.String"/>
-            <arg column="sendItemName" javaType="java.lang.String"/>
-            <arg column="sendStatusCode" javaType="java.lang.String"/>
-            <arg column="sendStatusName" javaType="java.lang.String"/>
-            <arg column="sentAt" javaType="java.time.LocalDateTime"/>
-        </constructor>
-    </resultMap>
-
     <sql id="reportHistoryBase">
         SELECT *
         FROM (
@@ -170,7 +153,7 @@
         ) counted
     </select>
 
-    <select id="findReportHistory" resultMap="reportHistoryItemMap">
+    <select id="findReportHistory" resultType="ReportHistoryItem">
         <include refid="reportHistoryBase"/>
         ORDER BY history.sentAt DESC, history.id DESC
         LIMIT #{request.size}
