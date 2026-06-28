@@ -1,23 +1,23 @@
 package com.caremate.lifeguardian.reporthistory.dto.request;
 
+import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 
 @Getter
-@Setter
+@Builder
 public class ReportHistorySearchRequest {
 
-    private String sendType = "all";
+    private String sendType;
 
-    private String sendItemType = "all";
+    private String sendItemType;
 
-    private String sendStatus = "all";
+    private String sendStatus;
 
     private String keyword;
 
-    private int page = 1;
+    private int page;
 
-    private int size = 10;
+    private int size;
 
     public int getOffset() {
         return (page - 1) * size;

@@ -27,19 +27,19 @@ public class ReportHistoryServiceImpl implements ReportHistoryService {
     @Override
     @Transactional(readOnly = true)
     public ReportHistoryPageResponse getReportHistory(Long currentUserId, ReportHistorySearchRequest request) {
-        validateRequest(currentUserId, request);
+        ReportHistorySearchRequest normalizedRequest = validateAndNormalizeRequest(currentUserId, request);
 
         try {
-            long totalCount = reportHistoryMapper.countReportHistory(currentUserId, request);
-            int totalPages = (int) Math.ceil((double) totalCount / request.getSize());
+            long totalCount = reportHistoryMapper.countReportHistory(currentUserId, normalizedRequest);
+            int totalPages = (int) Math.ceil((double) totalCount / normalizedRequest.getSize());
 
             List<ReportHistoryItemResponse> items = totalCount == 0
                     ? Collections.emptyList()
-                    : reportHistoryMapper.findReportHistory(currentUserId, request);
+                    : reportHistoryMapper.findReportHistory(currentUserId, normalizedRequest);
 
             return ReportHistoryPageResponse.builder()
-                    .page(request.getPage())
-                    .size(request.getSize())
+                    .page(normalizedRequest.getPage())
+                    .size(normalizedRequest.getSize())
                     .totalCount(totalCount)
                     .totalPages(totalPages)
                     .items(items)
@@ -49,7 +49,7 @@ public class ReportHistoryServiceImpl implements ReportHistoryService {
         }
     }
 
-    private void validateRequest(Long currentUserId, ReportHistorySearchRequest request) {
+    private ReportHistorySearchRequest validateAndNormalizeRequest(Long currentUserId, ReportHistorySearchRequest request) {
         if (currentUserId == null || currentUserId < 1) {
             throw new BaseException(400, "영업사원 ID는 1 이상이어야 합니다.");
         }
@@ -58,39 +58,25 @@ public class ReportHistoryServiceImpl implements ReportHistoryService {
             throw new BaseException(400, "검색 조건은 필수입니다.");
         }
 
-        if (request.getSendType() == null || request.getSendType().isBlank()) {
-            request.setSendType("all");
-        }
+        String sendType = normalizeOrDefault(request.getSendType(), "all");
 
-        request.setSendType(request.getSendType().trim().toLowerCase());
-
-        if (!SEND_TYPES.contains(request.getSendType())) {
+        if (!SEND_TYPES.contains(sendType)) {
             throw new BaseException(400, "발송 유형은 all, report, webform 중 하나여야 합니다.");
         }
 
-        if (request.getSendItemType() == null || request.getSendItemType().isBlank()) {
-            request.setSendItemType("all");
-        }
+        String sendItemType = normalizeOrDefault(request.getSendItemType(), "all");
 
-        request.setSendItemType(request.getSendItemType().trim().toLowerCase());
-
-        if (!SEND_ITEM_TYPES.contains(request.getSendItemType())) {
+        if (!SEND_ITEM_TYPES.contains(sendItemType)) {
             throw new BaseException(400, "발송 항목은 all, report_lifecycle, report_disease, webform 중 하나여야 합니다.");
         }
 
-        if (request.getSendStatus() == null || request.getSendStatus().isBlank()) {
-            request.setSendStatus("all");
-        }
+        String sendStatus = normalizeOrDefault(request.getSendStatus(), "all");
 
-        request.setSendStatus(request.getSendStatus().trim().toLowerCase());
-
-        if (!SEND_STATUSES.contains(request.getSendStatus())) {
+        if (!SEND_STATUSES.contains(sendStatus)) {
             throw new BaseException(400, "발송 상태는 all, pending, success, failed, collected 중 하나여야 합니다.");
         }
 
-        if (request.getKeyword() != null) {
-            request.setKeyword(request.getKeyword().trim());
-        }
+        String keyword = request.getKeyword() == null ? null : request.getKeyword().trim();
 
         if (request.getPage() < 1) {
             throw new BaseException(400, "페이지 번호는 1 이상이어야 합니다.");
@@ -103,5 +89,22 @@ public class ReportHistoryServiceImpl implements ReportHistoryService {
         if (request.getSize() > 100) {
             throw new BaseException(400, "페이지 크기는 100 이하여야 합니다.");
         }
+
+        return ReportHistorySearchRequest.builder()
+                .sendType(sendType)
+                .sendItemType(sendItemType)
+                .sendStatus(sendStatus)
+                .keyword(keyword)
+                .page(request.getPage())
+                .size(request.getSize())
+                .build();
+    }
+
+    private String normalizeOrDefault(String value, String defaultValue) {
+        if (value == null || value.isBlank()) {
+            return defaultValue;
+        }
+
+        return value.trim().toLowerCase();
     }
 }
