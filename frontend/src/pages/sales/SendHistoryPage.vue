@@ -1,25 +1,31 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import axios from 'axios'
+import { onMounted, ref } from 'vue'
+import {
+  getReportHistory,
+  type ReportHistoryItem,
+  type ReportHistorySendItemType,
+  type ReportHistorySendStatus,
+  type ReportHistorySendType,
+} from '@/api/reportHistory'
 import AppHeader from '../../components/common/Header.vue'
 import AppSidebar from '../../components/common/Sidebar.vue'
+import SalesPagination from '../../components/sales/SalesPagination.vue'
 
-type SendType = 'report' | 'webform'
-type SendStatus = 'success' | 'failed' | 'pending'
+type StatusTone = 'success' | 'failed' | 'pending'
 
-interface SendHistoryItem {
-  id: number
-  type: SendType
-  customerName: string
-  customerStageName: string
-  targetName: string
-  status: SendStatus
-  statusName: string
-  sentAt: string
-  senderName: string
-}
-
-const activeType = ref<'all' | SendType>('all')
+const activeType = ref<ReportHistorySendType>('all')
+const activeItemType = ref<ReportHistorySendItemType>('all')
+const activeStatus = ref<ReportHistorySendStatus>('all')
 const keyword = ref('')
+const historyItems = ref<ReportHistoryItem[]>([])
+const currentPage = ref(1)
+const totalPages = ref(0)
+const totalCount = ref(0)
+const isLoading = ref(false)
+const errorMessage = ref('')
+
+const HISTORY_PAGE_SIZE = 10
 
 const typeTabs = [
   { label: '전체', value: 'all' },
@@ -27,67 +33,82 @@ const typeTabs = [
   { label: '웹폼', value: 'webform' },
 ] as const
 
-const historyItems: SendHistoryItem[] = [
-  {
-    id: 1,
-    type: 'report',
-    customerName: '강마루',
-    customerStageName: '통합 고객',
-    targetName: '생활주기 성장 리포트',
-    status: 'success',
-    statusName: '발송성공',
-    sentAt: '2026-06-19 14:30',
-    senderName: '김설계',
-  },
-  {
-    id: 2,
-    type: 'webform',
-    customerName: '이진우',
-    customerStageName: '잠재 고객',
-    targetName: '상담 웹폼',
-    status: 'pending',
-    statusName: '발송대기',
-    sentAt: '2026-06-19 13:12',
-    senderName: '김설계',
-  },
-  {
-    id: 3,
-    type: 'report',
-    customerName: '강민호',
-    customerStageName: '통합 고객',
-    targetName: '생활주기 성장 리포트',
-    status: 'failed',
-    statusName: '발송실패',
-    sentAt: '2026-06-18 18:05',
-    senderName: '김설계',
-  },
-  {
-    id: 4,
-    type: 'webform',
-    customerName: '박서윤',
-    customerStageName: '잠재 고객',
-    targetName: '상담 웹폼',
-    status: 'success',
-    statusName: '발송성공',
-    sentAt: '2026-06-18 10:45',
-    senderName: '김설계',
-  },
-]
+const itemTypeOptions = [
+  { label: '전체 항목', value: 'all' },
+  { label: '생애주기 리포트', value: 'report_lifecycle' },
+  { label: '질병 통계 리포트', value: 'report_disease' },
+  { label: '상담 웹폼', value: 'webform' },
+] as const
 
-const filteredItems = computed(() => {
-  const trimmedKeyword = keyword.value.trim()
+const statusOptions = [
+  { label: '전체 상태', value: 'all' },
+  { label: '발송대기', value: 'pending' },
+  { label: '발송성공', value: 'success' },
+  { label: '발송실패', value: 'failed' },
+  { label: '회수완료', value: 'collected' },
+] as const
 
-  return historyItems.filter((item) => {
-    if (activeType.value !== 'all' && item.type !== activeType.value) return false
-    if (!trimmedKeyword) return true
+const getErrorMessage = (error: unknown) => {
+  if (axios.isAxiosError(error)) {
+    return error.response?.data?.message ?? '발송 내역을 불러오지 못했습니다.'
+  }
 
-    return [item.customerName, item.customerStageName, item.targetName, item.statusName].some((value) =>
-      value.includes(trimmedKeyword),
-    )
-  })
+  return '발송 내역을 불러오지 못했습니다.'
+}
+
+const loadHistory = async (page = currentPage.value) => {
+  isLoading.value = true
+  errorMessage.value = ''
+
+  try {
+    const result = await getReportHistory({
+      sendType: activeType.value,
+      sendItemType: activeItemType.value,
+      sendStatus: activeStatus.value,
+      keyword: keyword.value.trim() || undefined,
+      page,
+      size: HISTORY_PAGE_SIZE,
+    })
+
+    historyItems.value = result.items
+    currentPage.value = result.page
+    totalPages.value = result.totalPages
+    totalCount.value = result.totalCount
+  } catch (error) {
+    historyItems.value = []
+    currentPage.value = 1
+    totalPages.value = 0
+    totalCount.value = 0
+    errorMessage.value = getErrorMessage(error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const handleTypeChange = (sendType: ReportHistorySendType) => {
+  activeType.value = sendType
+  void loadHistory(1)
+}
+
+const handleSearch = () => {
+  void loadHistory(1)
+}
+
+const formatSentAt = (value?: string) => {
+  if (!value) return '-'
+
+  return value.replace('T', ' ').slice(0, 16)
+}
+
+const resolveStatusTone = (item: ReportHistoryItem): StatusTone => {
+  if (item.sendStatusCode === '02' || item.sendStatusCode === '04') return 'success'
+  if (item.sendStatusCode === '03') return 'failed'
+  return 'pending'
+}
+
+onMounted(() => {
+  void loadHistory(1)
 })
-
-const typeLabel = (type: SendType) => (type === 'report' ? '리포트' : '웹폼')
 </script>
 
 <template>
@@ -105,24 +126,52 @@ const typeLabel = (type: SendType) => (type === 'report' ? '리포트' : '웹폼
             class="send-history-tabs__button"
             :class="{ 'is-active': activeType === tab.value }"
             type="button"
-            @click="activeType = tab.value"
+            @click="handleTypeChange(tab.value)"
           >
             {{ tab.label }}
           </button>
         </div>
 
-        <label class="send-history-search">
-          <span>검색</span>
-          <input v-model="keyword" placeholder="고객명, 상태, 발송 항목" />
-        </label>
+        <div class="send-history-filters">
+          <label>
+            <span>항목</span>
+            <select v-model="activeItemType" @change="handleSearch">
+              <option v-for="option in itemTypeOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </label>
+
+          <label>
+            <span>상태</span>
+            <select v-model="activeStatus" @change="handleSearch">
+              <option v-for="option in statusOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </label>
+
+          <label class="send-history-search">
+            <span>검색</span>
+            <input
+              v-model="keyword"
+              placeholder="고객명, 상태, 발송 항목"
+              @keyup.enter="handleSearch"
+            />
+            <button type="button" @click="handleSearch">조회</button>
+          </label>
+        </div>
       </section>
 
       <section class="card send-history-list">
         <div class="send-history-list__header">
-          <h2>내역 <span>총 {{ filteredItems.length }}건</span></h2>
+          <h2>내역 <span>총 {{ totalCount }}건</span></h2>
         </div>
 
-        <div class="send-history-table">
+        <p v-if="errorMessage" class="send-history-message send-history-message--error">{{ errorMessage }}</p>
+        <p v-else-if="isLoading" class="send-history-message">불러오는 중...</p>
+
+        <div v-else class="send-history-table">
           <table>
             <thead>
               <tr>
@@ -130,35 +179,39 @@ const typeLabel = (type: SendType) => (type === 'report' ? '리포트' : '웹폼
                 <th>고객명</th>
                 <th>고객 구분</th>
                 <th>발송 항목</th>
-                <th>상태</th>
+                <th>발송 여부</th>
                 <th>발송 일시</th>
-                <th>담당자</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="item in filteredItems" :key="item.id">
+              <tr v-for="item in historyItems" :key="`${item.sendType}-${item.id}`">
                 <td>
-                  <span class="type-badge" :class="`type-badge--${item.type}`">
-                    {{ typeLabel(item.type) }}
+                  <span class="type-badge" :class="`type-badge--${item.sendType}`">
+                    {{ item.sendTypeName }}
                   </span>
                 </td>
                 <td class="customer-name">{{ item.customerName }}</td>
                 <td>{{ item.customerStageName }}</td>
-                <td>{{ item.targetName }}</td>
+                <td>{{ item.sendItemName }}</td>
                 <td>
-                  <span class="status-badge" :class="`status-badge--${item.status}`">
-                    {{ item.statusName }}
+                  <span class="status-badge" :class="`status-badge--${resolveStatusTone(item)}`">
+                    {{ item.sendStatusName }}
                   </span>
                 </td>
-                <td>{{ item.sentAt }}</td>
-                <td>{{ item.senderName }}</td>
+                <td>{{ formatSentAt(item.sentAt) }}</td>
               </tr>
-              <tr v-if="filteredItems.length === 0">
-                <td class="send-history-table__empty" colspan="7">조회된 발송 내역이 없습니다.</td>
+              <tr v-if="historyItems.length === 0">
+                <td class="send-history-table__empty" colspan="6">조회된 발송 내역이 없습니다.</td>
               </tr>
             </tbody>
           </table>
         </div>
+
+        <SalesPagination
+          :current-page="currentPage"
+          :total-pages="totalPages"
+          @change="loadHistory"
+        />
       </section>
     </main>
   </div>
@@ -184,6 +237,7 @@ const typeLabel = (type: SendType) => (type === 'report' ? '리포트' : '웹폼
 .send-history-tabs {
   display: inline-flex;
   align-items: center;
+  flex: 0 0 auto;
   border: 1px solid #dfe5ee;
   border-radius: 6px;
   background: #f7f9fc;
@@ -208,9 +262,18 @@ const typeLabel = (type: SendType) => (type === 'report' ? '리포트' : '웹폼
   box-shadow: 0 1px 3px rgb(15 23 42 / 10%);
 }
 
+.send-history-filters {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.send-history-filters label,
 .send-history-search {
   display: grid;
-  grid-template-columns: max-content minmax(220px, 300px);
+  grid-template-columns: max-content minmax(132px, 170px);
   align-items: center;
   gap: 8px;
   color: #394252;
@@ -218,15 +281,34 @@ const typeLabel = (type: SendType) => (type === 'report' ? '리포트' : '웹폼
   font-weight: 800;
 }
 
+.send-history-search {
+  grid-template-columns: max-content minmax(220px, 300px) max-content;
+}
+
+.send-history-filters select,
 .send-history-search input {
   height: 30px;
   border: 1px solid #d9e0ea;
   border-radius: 5px;
+  background: #ffffff;
   padding: 0 10px;
+  color: #273244;
   font-size: 12px;
   outline: none;
 }
 
+.send-history-search button {
+  height: 30px;
+  border: 0;
+  border-radius: 5px;
+  background: var(--color-primary);
+  color: #ffffff;
+  padding: 0 12px;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.send-history-filters select:focus,
 .send-history-search input:focus {
   border-color: #8db5ff;
   box-shadow: 0 0 0 3px rgb(26 109 255 / 10%);
@@ -256,6 +338,20 @@ const typeLabel = (type: SendType) => (type === 'report' ? '리포트' : '웹폼
   font-weight: 700;
 }
 
+.send-history-message {
+  display: flex;
+  min-height: 112px;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.send-history-message--error {
+  color: #d85a65;
+}
+
 .send-history-table {
   overflow-x: auto;
   overflow-y: visible;
@@ -267,7 +363,7 @@ const typeLabel = (type: SendType) => (type === 'report' ? '리포트' : '웹폼
   width: 100%;
   min-width: 760px;
   table-layout: fixed;
-  borderj-collapse: collapse;
+  border-collapse: collapse;
 }
 
 .send-history-table th,
@@ -339,13 +435,23 @@ const typeLabel = (type: SendType) => (type === 'report' ? '리포트' : '웹폼
   color: var(--color-text-muted);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1120px) {
   .send-history-toolbar {
     align-items: stretch;
     flex-direction: column;
   }
 
+  .send-history-filters {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 760px) {
+  .send-history-filters,
+  .send-history-filters label,
   .send-history-search {
+    display: grid;
     grid-template-columns: 1fr;
   }
 }
