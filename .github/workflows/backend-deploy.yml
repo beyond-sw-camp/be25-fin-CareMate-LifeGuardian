@@ -101,47 +101,57 @@ jobs:
       # 9. Discord 배포 성공 알림
       - name: Notify Discord - Success
         if: success()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          BUILD_VERSION: ${{ steps.versioning.outputs.build_version }}
+          ACTOR: ${{ github.actor }}
+          REF_NAME: ${{ github.ref_name }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          RUN_NUMBER: ${{ github.run_number }}
         run: |
-          curl -H "Content-Type: application/json" \
-               -X POST \
-               -d '{
-                 "username": "LifeGuardian CI/CD",
-                 "avatar_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
-                 "embeds": [{
-                   "title": "✅ 백엔드 배포 성공",
-                   "color": 3066993,
-                   "fields": [
-                     { "name": "🏷️ 버전", "value": "${{ steps.versioning.outputs.build_version }}", "inline": true },
-                     { "name": "👤 배포자", "value": "${{ github.actor }}", "inline": true },
-                     { "name": "🌿 브랜치", "value": "${{ github.ref_name }}", "inline": true },
-                     { "name": "📝 커밋 메시지", "value": "${{ github.event.head_commit.message }}", "inline": false }
-                   ],
-                   "footer": { "text": "Build #${{ github.run_number }}" },
-                   "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"
-                 }]
-               }' \
-               ${{ secrets.DISCORD_WEBHOOK_URL }}
+          curl -H "Content-Type: application/json" -X POST \
+            -d "$(jq -cn \
+              --arg title '✅ 백엔드 배포 성공' \
+              --arg version "$BUILD_VERSION" \
+              --arg actor "$ACTOR" \
+              --arg branch "$REF_NAME" \
+              --arg message "$COMMIT_MSG" \
+              --arg run "$RUN_NUMBER" \
+              '{username:"LifeGuardian CI/CD",embeds:[{title:$title,color:3066993,fields:[
+                {name:"🏷️ 버전",value:$version,inline:true},
+                {name:"👤 배포자",value:$actor,inline:true},
+                {name:"🌿 브랜치",value:$branch,inline:true},
+                {name:"📝 커밋 메시지",value:$message,inline:false}
+              ],footer:{text:("Build #"+$run)}}]}'
+            )" \
+            "$DISCORD_WEBHOOK"
 
       # 10. Discord 배포 실패 알림
       - name: Notify Discord - Failure
         if: failure()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          ACTOR: ${{ github.actor }}
+          REF_NAME: ${{ github.ref_name }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          RUN_NUMBER: ${{ github.run_number }}
+          RUN_ID: ${{ github.run_id }}
+          REPO: ${{ github.repository }}
         run: |
-          curl -H "Content-Type: application/json" \
-               -X POST \
-               -d '{
-                 "username": "LifeGuardian CI/CD",
-                 "avatar_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
-                 "embeds": [{
-                   "title": "❌ 백엔드 배포 실패",
-                   "color": 15158332,
-                   "fields": [
-                     { "name": "👤 배포자", "value": "${{ github.actor }}", "inline": true },
-                     { "name": "🌿 브랜치", "value": "${{ github.ref_name }}", "inline": true },
-                     { "name": "📝 커밋 메시지", "value": "${{ github.event.head_commit.message }}", "inline": false },
-                     { "name": "🔗 워크플로우 확인", "value": "[Actions 보기](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})", "inline": false }
-                   ],
-                   "footer": { "text": "Build #${{ github.run_number }}" },
-                   "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"
-                 }]
-               }' \
-               ${{ secrets.DISCORD_WEBHOOK_URL }}
+          curl -H "Content-Type: application/json" -X POST \
+            -d "$(jq -cn \
+              --arg title '❌ 백엔드 배포 실패' \
+              --arg actor "$ACTOR" \
+              --arg branch "$REF_NAME" \
+              --arg message "$COMMIT_MSG" \
+              --arg run "$RUN_NUMBER" \
+              --arg url "https://github.com/${REPO}/actions/runs/${RUN_ID}" \
+              '{username:"LifeGuardian CI/CD",embeds:[{title:$title,color:15158332,fields:[
+                {name:"👤 배포자",value:$actor,inline:true},
+                {name:"🌿 브랜치",value:$branch,inline:true},
+                {name:"📝 커밋 메시지",value:$message,inline:false},
+                {name:"🔗 워크플로우 확인",value:("[Actions 보기]("+$url+")"),inline:false}
+              ],footer:{text:("Build #"+$run)}}]}'
+            )" \
+            "$DISCORD_WEBHOOK"
+
