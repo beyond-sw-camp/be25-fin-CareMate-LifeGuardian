@@ -8,7 +8,7 @@ public class LifeguardianApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(LifeguardianApplication.class, args);
-		// test test test
+		// test
 	}
 
 }

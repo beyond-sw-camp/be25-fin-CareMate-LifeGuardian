@@ -1,6 +1,6 @@
 import api from '@/api/instance'
 import type { ApiResponse } from '@/api/instance'
-
+// test
 export interface BranchAnnualContracts {
   currentYearCount: number
   previousYearCount: number
