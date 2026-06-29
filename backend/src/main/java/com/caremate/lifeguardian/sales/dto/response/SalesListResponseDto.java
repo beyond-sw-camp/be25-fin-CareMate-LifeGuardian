@@ -82,5 +82,7 @@ public class SalesListResponseDto {
     private Boolean canSendReport; // 리포트 버튼
 
     // 정렬
+    private String reportUnavailableReason;
+
     private Integer sortRank;
 }
