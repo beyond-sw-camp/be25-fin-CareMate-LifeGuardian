@@ -562,8 +562,17 @@
 
         CASE
             WHEN cp.report_id IS NULL THEN FALSE
+            WHEN cp.report_url IS NULL OR TRIM(cp.report_url) = '' THEN FALSE
+            WHEN cp.send_status_code NOT IN ('01', '02', '03') THEN FALSE
             ELSE TRUE
         END AS canSendReport,
+
+        CASE
+            WHEN cp.report_id IS NULL THEN '리포트 없음'
+            WHEN cp.report_url IS NULL OR TRIM(cp.report_url) = '' THEN '리포트 URL 없음'
+            WHEN cp.send_status_code NOT IN ('01', '02', '03') THEN '발송 불가'
+            ELSE NULL
+        END AS reportUnavailableReason,
 
         cp.sort_rank AS sortRank
 
