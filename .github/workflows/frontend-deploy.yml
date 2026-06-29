@@ -65,31 +65,26 @@ jobs:
           COMMIT_MSG: ${{ github.event.head_commit.message }}
           RUN_NUMBER: ${{ github.run_number }}
         run: |
-          python3 << 'EOF'
-          import os, json, urllib.request
+          python3 -c '
+          import os, json
           payload = {
             "username": "LifeGuardian CI/CD",
             "embeds": [{
               "title": "✅ 프론트엔드 배포 성공",
               "color": 3066993,
               "fields": [
-                {"name": "👤 배포자",       "value": os.environ["ACTOR"],    "inline": True},
-                {"name": "🌿 브랜치",       "value": os.environ["REF_NAME"], "inline": True},
-                {"name": "📝 커밋 메시지", "value": os.environ["COMMIT_MSG"], "inline": False},
+                {"name": "👤 배포자",       "value": os.environ.get("ACTOR", ""),    "inline": True},
+                {"name": "🌿 브랜치",       "value": os.environ.get("REF_NAME", ""), "inline": True},
+                {"name": "📝 커밋 메시지", "value": os.environ.get("COMMIT_MSG", ""), "inline": False},
               ],
-              "footer": {"text": f"Build #{os.environ['RUN_NUMBER']}"}
+              "footer": {"text": f"Build #{os.environ.get(\"RUN_NUMBER\", \"\")}"}
             }]
           }
-          req = urllib.request.Request(
-            os.environ["DISCORD_WEBHOOK"],
-            data=json.dumps(payload).encode("utf-8"),
-            headers={
-              "Content-Type": "application/json",
-              "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            }
-          )
-          urllib.request.urlopen(req)
-          EOF
+          with open("payload.json", "w", encoding="utf-8") as f:
+              json.dump(payload, f)
+          '
+          curl -H "Content-Type: application/json" -X POST -d @payload.json "$DISCORD_WEBHOOK"
+
 
       # 8. Discord 배포 실패 알림
       - name: Notify Discord - Failure
@@ -102,29 +97,23 @@ jobs:
           RUN_NUMBER: ${{ github.run_number }}
           RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          python3 << 'EOF'
-          import os, json, urllib.request
+          python3 -c '
+          import os, json
           payload = {
             "username": "LifeGuardian CI/CD",
             "embeds": [{
               "title": "❌ 프론트엔드 배포 실패",
               "color": 15158332,
               "fields": [
-                {"name": "👤 배포자",           "value": os.environ["ACTOR"],    "inline": True},
-                {"name": "🌿 브랜치",           "value": os.environ["REF_NAME"], "inline": True},
-                {"name": "📝 커밋 메시지",     "value": os.environ["COMMIT_MSG"], "inline": False},
-                {"name": "🔗 워크플로우 확인", "value": f"[Actions 보기]({os.environ['RUN_URL']})", "inline": False},
+                {"name": "👤 배포자",           "value": os.environ.get("ACTOR", ""),    "inline": True},
+                {"name": "🌿 브랜치",           "value": os.environ.get("REF_NAME", ""), "inline": True},
+                {"name": "📝 커밋 메시지",     "value": os.environ.get("COMMIT_MSG", ""), "inline": False},
+                {"name": "🔗 워크플로우 확인", "value": f"[Actions 보기]({os.environ.get(\"RUN_URL\", \"\")})", "inline": False},
               ],
-              "footer": {"text": f"Build #{os.environ['RUN_NUMBER']}"}
+              "footer": {"text": f"Build #{os.environ.get(\"RUN_NUMBER\", \"\")}"}
             }]
           }
-          req = urllib.request.Request(
-            os.environ["DISCORD_WEBHOOK"],
-            data=json.dumps(payload).encode("utf-8"),
-            headers={
-              "Content-Type": "application/json",
-              "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            }
-          )
-          urllib.request.urlopen(req)
-          EOF
+          with open("payload.json", "w", encoding="utf-8") as f:
+              json.dump(payload, f)
+          '
+          curl -H "Content-Type: application/json" -X POST -d @payload.json "$DISCORD_WEBHOOK"
