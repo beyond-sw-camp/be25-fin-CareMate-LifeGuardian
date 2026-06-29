@@ -109,22 +109,29 @@ jobs:
           COMMIT_MSG: ${{ github.event.head_commit.message }}
           RUN_NUMBER: ${{ github.run_number }}
         run: |
-          curl -H "Content-Type: application/json" -X POST \
-            -d "$(jq -cn \
-              --arg title '✅ 백엔드 배포 성공' \
-              --arg version "$BUILD_VERSION" \
-              --arg actor "$ACTOR" \
-              --arg branch "$REF_NAME" \
-              --arg message "$COMMIT_MSG" \
-              --arg run "$RUN_NUMBER" \
-              '{username:"LifeGuardian CI/CD",embeds:[{title:$title,color:3066993,fields:[
-                {name:"🏷️ 버전",value:$version,inline:true},
-                {name:"👤 배포자",value:$actor,inline:true},
-                {name:"🌿 브랜치",value:$branch,inline:true},
-                {name:"📝 커밋 메시지",value:$message,inline:false}
-              ],footer:{text:("Build #"+$run)}}]}'
-            )" \
-            "$DISCORD_WEBHOOK"
+          python3 << 'EOF'
+          import os, json, urllib.request
+          payload = {
+            "username": "LifeGuardian CI/CD",
+            "embeds": [{
+              "title": "✅ 백엔드 배포 성공",
+              "color": 3066993,
+              "fields": [
+                {"name": "🏷️ 버전",       "value": os.environ["BUILD_VERSION"], "inline": True},
+                {"name": "👤 배포자",       "value": os.environ["ACTOR"],         "inline": True},
+                {"name": "🌿 브랜치",       "value": os.environ["REF_NAME"],      "inline": True},
+                {"name": "📝 커밋 메시지", "value": os.environ["COMMIT_MSG"],    "inline": False},
+              ],
+              "footer": {"text": f"Build #{os.environ['RUN_NUMBER']}"}
+            }]
+          }
+          req = urllib.request.Request(
+            os.environ["DISCORD_WEBHOOK"],
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"}
+          )
+          urllib.request.urlopen(req)
+          EOF
 
       # 10. Discord 배포 실패 알림
       - name: Notify Discord - Failure
@@ -135,23 +142,28 @@ jobs:
           REF_NAME: ${{ github.ref_name }}
           COMMIT_MSG: ${{ github.event.head_commit.message }}
           RUN_NUMBER: ${{ github.run_number }}
-          RUN_ID: ${{ github.run_id }}
-          REPO: ${{ github.repository }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          curl -H "Content-Type: application/json" -X POST \
-            -d "$(jq -cn \
-              --arg title '❌ 백엔드 배포 실패' \
-              --arg actor "$ACTOR" \
-              --arg branch "$REF_NAME" \
-              --arg message "$COMMIT_MSG" \
-              --arg run "$RUN_NUMBER" \
-              --arg url "https://github.com/${REPO}/actions/runs/${RUN_ID}" \
-              '{username:"LifeGuardian CI/CD",embeds:[{title:$title,color:15158332,fields:[
-                {name:"👤 배포자",value:$actor,inline:true},
-                {name:"🌿 브랜치",value:$branch,inline:true},
-                {name:"📝 커밋 메시지",value:$message,inline:false},
-                {name:"🔗 워크플로우 확인",value:("[Actions 보기]("+$url+")"),inline:false}
-              ],footer:{text:("Build #"+$run)}}]}'
-            )" \
-            "$DISCORD_WEBHOOK"
-
+          python3 << 'EOF'
+          import os, json, urllib.request
+          payload = {
+            "username": "LifeGuardian CI/CD",
+            "embeds": [{
+              "title": "❌ 백엔드 배포 실패",
+              "color": 15158332,
+              "fields": [
+                {"name": "👤 배포자",           "value": os.environ["ACTOR"],    "inline": True},
+                {"name": "🌿 브랜치",           "value": os.environ["REF_NAME"], "inline": True},
+                {"name": "📝 커밋 메시지",     "value": os.environ["COMMIT_MSG"], "inline": False},
+                {"name": "🔗 워크플로우 확인", "value": f"[Actions 보기]({os.environ['RUN_URL']})", "inline": False},
+              ],
+              "footer": {"text": f"Build #{os.environ['RUN_NUMBER']}"}
+            }]
+          }
+          req = urllib.request.Request(
+            os.environ["DISCORD_WEBHOOK"],
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"}
+          )
+          urllib.request.urlopen(req)
+          EOF
