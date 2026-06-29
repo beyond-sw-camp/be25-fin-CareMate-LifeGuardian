@@ -10,6 +10,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -47,6 +48,11 @@ public class ReportBatchScheduler {
     @Scheduled(
             cron = "${app.report.batch.cron:0 0 3 * * *}",
             zone = "${app.report.batch.zone:Asia/Seoul}"
+    )
+    @SchedulerLock(
+            name = "customerReportCreationJobLock",
+            lockAtLeastFor = "1m",
+            lockAtMostFor = "10m"
     )
     public void runCustomerReportCreationJob() {
         LocalDateTime startedAt = LocalDateTime.now(SEOUL_ZONE);

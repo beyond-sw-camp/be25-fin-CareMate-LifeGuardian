@@ -32,7 +32,7 @@ jobs:
       # 이 단계를 거치면 frontend/dist/ 폴더 내부에 index.html과 js/css 자원들이 빌드됩니다.
       - name: Install dependencies and Build Vue app
         run: |
-          npm ci
+          npm install
           npm run build
 
       # 4. AWS 자격 증명 세팅 (깃허브 Secrets 기반)
