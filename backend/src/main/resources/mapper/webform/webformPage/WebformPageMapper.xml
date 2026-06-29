@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.caremate.lifeguardian.webformPage.mapper.WebformPageMapper">
+
+    <!-- 웹폼 답변 저장 -->
+    <insert id="insertWebformResponse" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.caremate.lifeguardian.recommendation.domain.WebformResponse">
+        INSERT INTO webform_response (
+            customer_id,
+            conversion_status_code,
+            height,
+            weight,
+            selected_priority_category,
+            history_json,
+            activity_json,
+            past_surgery_or_hospitalization,
+            desired_budget_code,
+            received_at
+        ) VALUES (
+            #{customerId},
+            #{conversionStatusCode},
+            #{height},
+            #{weight},
+            #{selectedPriorityCategory},
+            #{historyJson},
+            #{activityJson},
+            #{pastSurgeryOrHospitalization},
+            #{desiredBudgetCode},
+            NOW()
+        )
+    </insert>
+
+    <!-- 전역 잠재고객 존재 여부 확인 -->
+    <select id="existsPotentialCustomerById" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1
+            FROM potential_customer
+            WHERE id = #{customerId}
+        )
+    </select>
+
+    <!-- 전역 통합고객 존재 여부 확인 -->
+    <select id="existsIntegratedCustomerById" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1
+            FROM integrated_customer
+            WHERE integrated_customer_id = #{customerId}
+        )
+    </select>
+
+    <!-- 전역 잠재고객 이름 조회 -->
+    <select id="findPotentialCustomerNameById" resultType="string">
+        SELECT name
+        FROM potential_customer
+        WHERE id = #{customerId}
+    </select>
+
+    <!-- 전역 통합고객 이름 조회 -->
+    <select id="findIntegratedCustomerNameById" resultType="string">
+        SELECT name
+        FROM integrated_customer
+        WHERE integrated_customer_id = #{customerId}
+    </select>
+</mapper>
