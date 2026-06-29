@@ -6,7 +6,7 @@ import psycopg2
 from openai import OpenAI
 from dotenv import load_dotenv
 
-# 로컬 환경 변수 로드 (.env 파일이 있으면 읽어옴) test test test
+# 로컬 환경 변수 로드 (.env 파일이 있으면 읽어옴) test
 load_dotenv()
 
 app = FastAPI(title="AI Recommendation Lambda Mock Server")
