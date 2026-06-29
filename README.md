@@ -54,7 +54,8 @@
 12. [백엔드 테스트 보고서](#12-백엔드-테스트-보고서)
 13. [프론트엔드 테스트 보고서](#13-프론트엔드-테스트-보고서)
 14. [통합 테스트 보고서](#14-통합-테스트-보고서)
-15. [회고](#15-회고)
+15. [CI/CD 테스트 보고서](#15-CI/CD-테스트-보고서)
+16. [회고](#15-회고)
 
 <br>
 
@@ -195,6 +196,16 @@ LifeGuardian은 보험사가 보유한 0~20세 자녀 가망고객 데이터를 
  <summary><b>🧾 통합 테스트</b></summary>
 
 - [🧾 통합 테스트 결과서 (링크)](https://docs.google.com/spreadsheets/d/1jCL1br1RoIoiYlqEJTS_a4W8B9hhZFSuSCLUUObTIzE/edit?gid=1770458563#gid=1770458563)
+
+</details>
+<br>
+
+## <a id="15-CI/CD-테스트-보고서"></a> 15. CI/CD 테스트 보고서
+
+<details>
+ <summary><b>🧾 CI/CD 테스트 보고서</b></summary>
+
+- [🧾 CI/CD 테스트 보고서 (링크)](.github/cicd-test-report.md)
 
 </details>
 <br>
