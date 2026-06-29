@@ -63,4 +63,14 @@
         FROM integrated_customer
         WHERE integrated_customer_id = #{customerId}
     </select>
+
+    <!-- UUID 토큰으로 웹폼 발송 이력 상세 조회 -->
+    <select id="findIssuanceByToken" resultType="com.caremate.lifeguardian.webformPage.dto.WebformIssuanceDto">
+        SELECT
+            customer_id AS customerId,
+            conversion_status_code AS conversionStatusCode,
+            webform_status_code AS webformStatusCode
+        FROM webform_issuance
+        WHERE uuid_token = #{token}
+    </select>
 </mapper>

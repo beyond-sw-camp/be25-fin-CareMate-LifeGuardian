@@ -3,7 +3,9 @@ package com.caremate.lifeguardian.webformPage.service;
 import com.caremate.lifeguardian.recommendation.domain.WebformResponse;
 import com.caremate.lifeguardian.webform.mapper.WebformMapper;
 import com.caremate.lifeguardian.webformPage.mapper.WebformPageMapper;
+import com.caremate.lifeguardian.webformPage.dto.WebformIssuanceDto;
 import com.caremate.lifeguardian.webformPage.dto.request.WebformResponseSubmitRequest;
+import com.caremate.lifeguardian.webformPage.dto.response.WebformTokenVerifyResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -79,5 +81,33 @@ public class WebformPageServiceImpl implements WebformPageService {
             return webformPageMapper.findIntegratedCustomerNameById(customerId);
         }
         return null;
+    }
+
+    @Override
+    public WebformTokenVerifyResponse verifyTokenAndGetCustomerInfo(String token) {
+        if (token == null || token.trim().isEmpty()) {
+            throw new IllegalArgumentException("토큰이 유효하지 않습니다.");
+        }
+
+        WebformIssuanceDto issuance = webformPageMapper.findIssuanceByToken(token);
+        if (issuance == null) {
+            throw new IllegalArgumentException("유효하지 않은 웹폼 접속 토큰입니다.");
+        }
+
+        // 이미 회수 또는 만료된 상태인지 검증 (04: 회수완료)
+        if ("04".equals(issuance.getWebformStatusCode())) {
+            throw new IllegalStateException("이미 답변 제출이 완료되었거나 회수된 링크입니다.");
+        }
+
+        String name = getCustomerName(issuance.getCustomerId(), issuance.getConversionStatusCode());
+        if (name == null) {
+            throw new IllegalArgumentException("존재하지 않는 고객 정보입니다.");
+        }
+
+        return WebformTokenVerifyResponse.builder()
+                .customerId(issuance.getCustomerId())
+                .conversionStatusCode(issuance.getConversionStatusCode())
+                .customerName(name)
+                .build();
     }
 }

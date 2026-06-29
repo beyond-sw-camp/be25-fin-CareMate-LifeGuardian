@@ -1,6 +1,7 @@
 package com.caremate.lifeguardian.webformPage.mapper;
 
 import com.caremate.lifeguardian.recommendation.domain.WebformResponse;
+import com.caremate.lifeguardian.webformPage.dto.WebformIssuanceDto;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -33,4 +34,9 @@ public interface WebformPageMapper {
      * 전역 통합고객 이름 조회
      */
     String findIntegratedCustomerNameById(@Param("customerId") Long customerId);
+
+    /**
+     * UUID 토큰으로 웹폼 발송 이력 상세 조회
+     */
+    WebformIssuanceDto findIssuanceByToken(@Param("token") String token);
 }

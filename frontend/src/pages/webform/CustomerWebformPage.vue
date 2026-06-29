@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { submitWebformResponse, verifyCustomer, type WebformResponseSubmitRequest } from '@/api/webform'
+import { submitWebformResponse, verifyCustomer, verifyWebformToken, type WebformResponseSubmitRequest } from '@/api/webform'
 
 const route = useRoute()
 
@@ -29,6 +29,32 @@ const verifiedCustomerName = ref('')
 const isVerified = ref(false)
 const isVerifying = ref(false)
 const verifyError = ref('')
+
+// 발송 링크 토큰 상태 제어
+const isTokenLoading = ref(false)
+const tokenError = ref('')
+const isTokenVerified = ref(false) // 토큰을 통한 정상 인증 여부
+
+onMounted(async () => {
+  if (uuidToken.value) {
+    isTokenLoading.value = true
+    tokenError.value = ''
+    try {
+      const info = await verifyWebformToken(uuidToken.value)
+      customerId.value = info.customerId
+      conversionStatusCode.value = info.conversionStatusCode
+      verifiedCustomerName.value = info.customerName
+      isVerified.value = true
+      isTokenVerified.value = true
+    } catch (err: any) {
+      tokenError.value = err.message || '만료되었거나 유효하지 않은 발송 링크입니다.'
+      // 토큰 검증 실패 시 빈 값 처리하여 수동 입력을 유도
+      uuidToken.value = ''
+    } finally {
+      isTokenLoading.value = false
+    }
+  }
+})
 
 const handleVerifyCustomer = async () => {
   if (!customerId.value) return
@@ -192,13 +218,23 @@ const closeErrorModal = () => {
       <form class="webform-body" @submit.prevent="handleSubmit">
         
         <!-- 테스트용 고객 ID 직접 입력 섹션 -->
-        <section class="form-section card-glass animate-fade-in-up delay-1">
+        <section v-if="isTokenLoading" class="form-section card-glass animate-fade-in-up delay-1" style="padding: 40px; text-align: center;">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+            <div class="mini-loader" style="width: 40px; height: 40px; border-width: 3px;"></div>
+            <p style="color: rgba(255,255,255,0.7); font-size: 1.1rem;">보낸 링크를 통해 고객 정보를 안전하게 확인하는 중입니다...</p>
+          </div>
+        </section>
+
+        <section v-else class="form-section card-glass animate-fade-in-up delay-1">
           <h2 class="section-title">
-            <span class="section-num">01</span> 테스트 환경 설정
+            <span class="section-num">01</span> {{ isTokenVerified ? '인증 완료된 고객 정보' : '테스트 환경 설정' }}
           </h2>
+          <p v-if="tokenError" class="verify-status error" style="margin-bottom: 20px;">
+            ❌ {{ tokenError }} 수동으로 고객 ID를 입력해주십시오.
+          </p>
           <div class="form-group row-fields">
             <div class="input-wrapper half-width">
-              <label for="customerId">고객 ID (숫자 직접 입력)</label>
+              <label for="customerId">고객 ID</label>
               <div class="input-with-button">
                 <input 
                   id="customerId" 
@@ -206,9 +242,13 @@ const closeErrorModal = () => {
                   type="number" 
                   placeholder="예: 101" 
                   required
+                  :readonly="isTokenVerified"
+                  :disabled="isTokenVerified"
                   class="input-text flex-1"
+                  :class="{ disabled: isTokenVerified }"
                 />
                 <button 
+                  v-if="!isTokenVerified"
                   type="button" 
                   class="verify-button" 
                   :disabled="!customerId || isVerifying"
@@ -227,21 +267,23 @@ const closeErrorModal = () => {
             </div>
             <div class="input-wrapper half-width">
               <label>고객 구분</label>
-              <div class="radio-group">
-                <label class="radio-label" :class="{ active: conversionStatusCode === '01' }">
+              <div class="radio-group" :class="{ readonly: isTokenVerified }">
+                <label class="radio-label" :class="{ active: conversionStatusCode === '01', disabled: isTokenVerified && conversionStatusCode !== '01' }">
                   <input 
                     v-model="conversionStatusCode" 
                     type="radio" 
                     value="01" 
+                    :disabled="isTokenVerified"
                     class="input-radio"
                   />
                   <span>잠재고객</span>
                 </label>
-                <label class="radio-label" :class="{ active: conversionStatusCode === '02' }">
+                <label class="radio-label" :class="{ active: conversionStatusCode === '02', disabled: isTokenVerified && conversionStatusCode !== '02' }">
                   <input 
                     v-model="conversionStatusCode" 
                     type="radio" 
                     value="02" 
+                    :disabled="isTokenVerified"
                     class="input-radio"
                   />
                   <span>통합고객</span>
@@ -249,7 +291,7 @@ const closeErrorModal = () => {
               </div>
             </div>
           </div>
-          <div class="form-group" v-if="uuidToken">
+          <div class="form-group" v-if="uuidToken && !isTokenVerified">
             <label for="uuidToken">수신된 UUID 토큰</label>
             <input 
               id="uuidToken" 
@@ -661,6 +703,13 @@ label {
   border-color: var(--primary);
   background: rgba(78, 99, 230, 0.04);
   color: var(--primary);
+}
+
+.radio-label.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f1f5f9;
+  border-color: #cbd5e1;
 }
 
 /* 수술/입원 여부 토글 버튼 */

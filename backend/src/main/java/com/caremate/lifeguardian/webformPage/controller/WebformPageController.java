@@ -2,6 +2,7 @@ package com.caremate.lifeguardian.webformPage.controller;
 
 import com.caremate.lifeguardian.common.ApiResponse;
 import com.caremate.lifeguardian.webformPage.dto.request.WebformResponseSubmitRequest;
+import com.caremate.lifeguardian.webformPage.dto.response.WebformTokenVerifyResponse;
 import com.caremate.lifeguardian.webformPage.service.WebformPageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -10,7 +11,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -46,5 +46,20 @@ public class WebformPageController {
             return ApiResponse.success(404, "존재하지 않는 고객 ID입니다.", null);
         }
         return ApiResponse.success(200, "고객 검증 성공", name);
+    }
+
+    @Operation(summary = "발송 토큰 검증 및 고객 정보 자동 매핑", description = "영업사원이 발송한 링크 내 UUID 토큰을 검증하고, 연결된 고객 ID, 유형, 이름을 반환합니다.")
+    @GetMapping("/token/verify")
+    public ApiResponse<WebformTokenVerifyResponse> verifyToken(
+            @RequestParam String token
+    ) {
+        try {
+            WebformTokenVerifyResponse info = webformPageService.verifyTokenAndGetCustomerInfo(token);
+            return ApiResponse.success(200, "토큰 검증 성공", info);
+        } catch (IllegalArgumentException e) {
+            return ApiResponse.success(400, e.getMessage(), null);
+        } catch (IllegalStateException e) {
+            return ApiResponse.success(410, e.getMessage(), null); // Gone/Expired link status
+        }
     }
 }

@@ -26,3 +26,20 @@ export const verifyCustomer = async (customerId: number, conversionStatusCode: s
   }
   return response.data.data
 }
+
+export interface WebformTokenVerifyResponse {
+  customerId: number
+  conversionStatusCode: string
+  customerName: string
+}
+
+export const verifyWebformToken = async (token: string): Promise<WebformTokenVerifyResponse> => {
+  const response = await api.get<ApiResponse<WebformTokenVerifyResponse>>('/v1/webforms/token/verify', {
+    params: { token }
+  })
+  if (response.data.code !== 200) {
+    throw new Error(response.data.message)
+  }
+  return response.data.data
+}
+
