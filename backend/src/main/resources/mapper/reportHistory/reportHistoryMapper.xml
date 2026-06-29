@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.caremate.lifeguardian.reporthistory.mapper.ReportHistoryMapper">
+
+    <sql id="reportHistoryBase">
+        SELECT *
+        FROM (
+            SELECT
+                cr.id AS id,
+                'report' AS sendType,
+                '리포트' AS sendTypeName,
+                cr.customer_id AS customerId,
+                CASE
+                    WHEN cr.conversion_status_code = '01' THEN pc.name
+                    WHEN cr.conversion_status_code = '02' THEN ic.name
+                END AS customerName,
+                cr.conversion_status_code AS customerStageCode,
+                CASE cr.conversion_status_code
+                    WHEN '01' THEN '잠재 고객'
+                    WHEN '02' THEN '통합 고객'
+                    ELSE '-'
+                END AS customerStageName,
+                cr.report_type_code AS sendItemCode,
+                CASE cr.report_type_code
+                    WHEN '01' THEN '생애주기 성장 리포트'
+                    WHEN '02' THEN '질병 통계 리포트'
+                    ELSE COALESCE(report_type_code.code_name, '리포트')
+                END AS sendItemName,
+                cr.send_status_code AS sendStatusCode,
+                COALESCE(
+                    send_code.code_name,
+                    CASE cr.send_status_code
+                        WHEN '01' THEN '발송대기'
+                        WHEN '02' THEN '발송성공'
+                        WHEN '03' THEN '발송실패'
+                        ELSE '-'
+                    END
+                ) AS sendStatusName,
+                COALESCE(cr.sent_at, cr.created_at) AS sentAt
+            FROM customer_report cr
+            LEFT JOIN potential_customer pc
+                ON cr.conversion_status_code = '01'
+                AND pc.id = cr.customer_id
+            LEFT JOIN integrated_customer ic
+                ON cr.conversion_status_code = '02'
+                AND ic.integrated_customer_id = cr.customer_id
+            LEFT JOIN common_code send_code
+                ON send_code.group_code = 'SEND_STATUS'
+                AND send_code.code_value = cr.send_status_code
+            LEFT JOIN common_code report_type_code
+                ON report_type_code.group_code = 'REPORT_TYPE'
+                AND report_type_code.code_value = cr.report_type_code
+            WHERE (
+                cr.conversion_status_code = '01'
+                AND pc.sales_user_id = #{currentUserId}
+            )
+            OR (
+                cr.conversion_status_code = '02'
+                AND ic.sales_user_id = #{currentUserId}
+            )
+
+            UNION ALL
+
+            SELECT
+                wi.id AS id,
+                'webform' AS sendType,
+                '웹폼' AS sendTypeName,
+                wi.customer_id AS customerId,
+                CASE
+                    WHEN wi.conversion_status_code = '01' THEN pc.name
+                    WHEN wi.conversion_status_code = '02' THEN ic.name
+                END AS customerName,
+                wi.conversion_status_code AS customerStageCode,
+                CASE wi.conversion_status_code
+                    WHEN '01' THEN '잠재 고객'
+                    WHEN '02' THEN '통합 고객'
+                    ELSE '-'
+                END AS customerStageName,
+                NULL AS sendItemCode,
+                '상담 웹폼' AS sendItemName,
+                wi.webform_status_code AS sendStatusCode,
+                COALESCE(
+                    webform_code.code_name,
+                    CASE wi.webform_status_code
+                        WHEN '01' THEN '발송대기'
+                        WHEN '02' THEN '발송성공'
+                        WHEN '03' THEN '발송실패'
+                        WHEN '04' THEN '회수완료'
+                        ELSE '-'
+                    END
+                ) AS sendStatusName,
+                wi.issued_at AS sentAt
+            FROM webform_issuance wi
+            LEFT JOIN potential_customer pc
+                ON wi.conversion_status_code = '01'
+                AND pc.id = wi.customer_id
+            LEFT JOIN integrated_customer ic
+                ON wi.conversion_status_code = '02'
+                AND ic.integrated_customer_id = wi.customer_id
+            LEFT JOIN common_code webform_code
+                ON webform_code.group_code = 'WEBFORM_STATUS'
+                AND webform_code.code_value = wi.webform_status_code
+            WHERE wi.sales_user_id = #{currentUserId}
+        ) history
+        WHERE 1 = 1
+        <if test="request.sendType != null and request.sendType != '' and request.sendType != 'all'">
+            AND history.sendType = #{request.sendType}
+        </if>
+        <choose>
+            <when test="request.sendItemType == 'report_lifecycle'">
+                AND history.sendType = 'report'
+                AND history.sendItemCode = '01'
+            </when>
+            <when test="request.sendItemType == 'report_disease'">
+                AND history.sendType = 'report'
+                AND history.sendItemCode = '02'
+            </when>
+            <when test="request.sendItemType == 'webform'">
+                AND history.sendType = 'webform'
+            </when>
+        </choose>
+        <choose>
+            <when test="request.sendStatus == 'pending'">
+                AND history.sendStatusCode = '01'
+            </when>
+            <when test="request.sendStatus == 'success'">
+                AND history.sendStatusCode = '02'
+            </when>
+            <when test="request.sendStatus == 'failed'">
+                AND history.sendStatusCode = '03'
+            </when>
+            <when test="request.sendStatus == 'collected'">
+                AND history.sendType = 'webform'
+                AND history.sendStatusCode = '04'
+            </when>
+        </choose>
+        <if test="request.keyword != null and request.keyword != ''">
+            AND (
+                LOWER(history.customerName) LIKE CONCAT('%', LOWER(#{request.keyword}), '%')
+                OR LOWER(history.customerStageName) LIKE CONCAT('%', LOWER(#{request.keyword}), '%')
+                OR LOWER(history.sendItemName) LIKE CONCAT('%', LOWER(#{request.keyword}), '%')
+                OR LOWER(history.sendStatusName) LIKE CONCAT('%', LOWER(#{request.keyword}), '%')
+            )
+        </if>
+    </sql>
+
+    <select id="countReportHistory" resultType="long">
+        SELECT COUNT(*)
+        FROM (
+            <include refid="reportHistoryBase"/>
+        ) counted
+    </select>
+
+    <select id="findReportHistory" resultType="ReportHistoryItem">
+        <include refid="reportHistoryBase"/>
+        ORDER BY history.sentAt DESC, history.id DESC
+        LIMIT #{request.size}
+        OFFSET #{request.offset}
+    </select>
+</mapper>
