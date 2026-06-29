@@ -663,9 +663,16 @@ const handlePhoneInput = (event: Event) => {
           <button class="button button-secondary" type="button" @click="showRetireConfirmModal = false" :disabled="isRetiring">
             취소
           </button>
-          <button class="button button-danger" type="button" @click="confirmRetire" :disabled="isRetiring">
+          <button
+            class="button button-danger"
+            type="button"
+            @click="confirmRetire"
+            :disabled="isRetiring"
+          >
             {{ isRetiring ? '처리 중...' : '최종 퇴사 처리' }}
           </button>
+
+
         </div>
       </div>
     </div>
@@ -705,10 +712,32 @@ const handlePhoneInput = (event: Event) => {
 </template>
 
 <style scoped>
+.button-danger {
+  background-color: #e53e3e;
+  color: #ffffff;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.button-danger:hover:not(:disabled) {
+  background-color: #c53030;
+}
+
+.button-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .app-main {
   flex: 1;
   min-width: 0;
   padding: 24px 28px;
+
   background-color: #f8fafc;
   display: flex;
   flex-direction: column;
