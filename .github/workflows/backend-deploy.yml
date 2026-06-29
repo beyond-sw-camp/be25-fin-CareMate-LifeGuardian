@@ -97,3 +97,51 @@ jobs:
             
             sleep 30
           done
+
+      # 9. Discord 배포 성공 알림
+      - name: Notify Discord - Success
+        if: success()
+        run: |
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d '{
+                 "username": "LifeGuardian CI/CD",
+                 "avatar_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+                 "embeds": [{
+                   "title": "✅ 백엔드 배포 성공",
+                   "color": 3066993,
+                   "fields": [
+                     { "name": "🏷️ 버전", "value": "${{ steps.versioning.outputs.build_version }}", "inline": true },
+                     { "name": "👤 배포자", "value": "${{ github.actor }}", "inline": true },
+                     { "name": "🌿 브랜치", "value": "${{ github.ref_name }}", "inline": true },
+                     { "name": "📝 커밋 메시지", "value": "${{ github.event.head_commit.message }}", "inline": false }
+                   ],
+                   "footer": { "text": "Build #${{ github.run_number }}" },
+                   "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"
+                 }]
+               }' \
+               ${{ secrets.DISCORD_WEBHOOK_URL }}
+
+      # 10. Discord 배포 실패 알림
+      - name: Notify Discord - Failure
+        if: failure()
+        run: |
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d '{
+                 "username": "LifeGuardian CI/CD",
+                 "avatar_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+                 "embeds": [{
+                   "title": "❌ 백엔드 배포 실패",
+                   "color": 15158332,
+                   "fields": [
+                     { "name": "👤 배포자", "value": "${{ github.actor }}", "inline": true },
+                     { "name": "🌿 브랜치", "value": "${{ github.ref_name }}", "inline": true },
+                     { "name": "📝 커밋 메시지", "value": "${{ github.event.head_commit.message }}", "inline": false },
+                     { "name": "🔗 워크플로우 확인", "value": "[Actions 보기](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})", "inline": false }
+                   ],
+                   "footer": { "text": "Build #${{ github.run_number }}" },
+                   "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"
+                 }]
+               }' \
+               ${{ secrets.DISCORD_WEBHOOK_URL }}
