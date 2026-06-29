@@ -640,15 +640,15 @@ CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
 이 섹션에는 파이프라인 작동 증명을 위한 스크린샷 이미지를 첨부합니다.
 
 ### 6.1. GitHub Actions 워크플로우 성공 화면
-* **첨부할 위치:** `![GitHub Actions 성공 화면](images/github-actions-success.png)`
+* **첨부할 위치:** `![GitHub Actions 성공 화면](image/github-actions-success.png)`
 * **캡처할 내용:** GitHub Actions 탭에서 `Backend`, `Frontend`, `AI` 워크플로우들이 녹색 체크표시(`Success`)와 함께 전체 실행 성공한 목록 화면.
 
 ### 6.2. Discord 배포 성공/실패 알림 수신 화면
-* **첨부할 위치:** `![디스코드 알림 수신 화면](images/discord-webhook-success.png)`
+* **첨부할 위치:** `![디스코드 알림 수신 화면](image/discord-webhook-success.png)`
 * **캡처할 내용:** 디스코드 채널에 실시간 수신된 **"✅ 백엔드 배포 성공"**, **"✅ 프론트엔드 배포 성공"**, **"✅ AI 서버 배포 성공"** 등의 메시지 카드 캡처본.
 
 ### 6.3. AWS EC2 Auto Scaling / SSM 실행 화면
-* **첨부할 위치:** `![AWS SSM 및 ASG 배포 화면](images/aws-deploy-history.png)`
+* **첨부할 위치:** `![AWS SSM 및 ASG 배포 화면](image/aws-deploy-history.png)`
 * **캡처할 내용:** AWS Systems Manager(SSM) 콘솔의 Run Command 성공 내역이나 EC2 Auto Scaling Group의 인스턴스 새로고침(Instance Refresh) 성공 내역 화면.
 
 ---
