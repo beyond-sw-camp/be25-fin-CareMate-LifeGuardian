@@ -6,13 +6,16 @@ import AppHeader from '../../components/common/Header.vue'
 import AppSidebar from '../../components/common/Sidebar.vue'
 import ChildRegisterModal from '../../components/potential/ChildRegisterModal.vue'
 import ParentSelectModal from '../../components/potential/ParentSelectModal.vue'
+import PotentialDetailModal from '../../components/potential/PotentialDetailModal.vue'
 import PotentialTable from '../../components/potential/PotentialTable.vue'
 import SalesPagination from '../../components/sales/SalesPagination.vue'
 import {
   deletePotentialCustomer,
+  getPotentialCustomerDetail,
   getPotentialCustomers,
   type ParentCustomerSearchResponse,
   type PotentialCustomerCreateResponse,
+  type PotentialCustomerDetailResponse,
   type PotentialCustomerListItem,
 } from '@/api/potential'
 
@@ -22,11 +25,16 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 const noticeMessage = ref('')
 const noticeMessageType = ref<'success' | 'error'>('success')
+const noticeTimerId = ref<number | null>(null)
 const isDeleting = ref(false)
 
 const isParentSelectModalOpen = ref(false)
 const isChildRegisterModalOpen = ref(false)
 const selectedParent = ref<ParentCustomerSearchResponse | null>(null)
+
+const isDetailModalOpen = ref(false)
+const selectedPotentialCustomer = ref<PotentialCustomerDetailResponse | null>(null)
+const isDetailLoading = ref(false)
 
 const POTENTIAL_PAGE_SIZE = 13
 const currentPage = ref(1)
@@ -75,6 +83,15 @@ const getErrorMessage = (
 const showNoticeMessage = (message: string, type: 'success' | 'error') => {
   noticeMessage.value = message
   noticeMessageType.value = type
+
+  if (noticeTimerId.value !== null) {
+    window.clearTimeout(noticeTimerId.value)
+  }
+
+  noticeTimerId.value = window.setTimeout(() => {
+    noticeMessage.value = ''
+    noticeTimerId.value = null
+  }, 5000)
 }
 
 const loadPotentialCustomers = async () => {
@@ -121,6 +138,45 @@ const handleDeleteSelectedCustomers = async () => {
   } finally {
     isDeleting.value = false
   }
+}
+
+const handleOpenDetailModal = async (customer: PotentialCustomerListItem) => {
+  isDetailLoading.value = true
+  noticeMessage.value = ''
+
+  try {
+    selectedPotentialCustomer.value = await getPotentialCustomerDetail(
+      customer.potentialCustomerId,
+    )
+
+    isDetailModalOpen.value = true
+  } catch (error) {
+    showNoticeMessage(
+      getErrorMessage(error, '잠재고객 상세 정보를 불러오지 못했습니다.'),
+      'error',
+    )
+  } finally {
+    isDetailLoading.value = false
+  }
+}
+
+const handleCloseDetailModal = () => {
+  isDetailModalOpen.value = false
+  selectedPotentialCustomer.value = null
+}
+
+const handlePotentialCustomerUpdated = async (
+  customer: PotentialCustomerDetailResponse,
+) => {
+  isDetailModalOpen.value = false
+  selectedPotentialCustomer.value = null
+
+  showNoticeMessage(
+    `${customer.name} 잠재고객 정보가 수정되었습니다.`,
+    'success',
+  )
+
+  await loadPotentialCustomers()
 }
 
 const handleOpenRegisterModal = () => {
@@ -187,6 +243,10 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateScale)
+
+  if (noticeTimerId.value !== null) {
+    window.clearTimeout(noticeTimerId.value)
+  }
 })
 </script>
 
@@ -262,6 +322,7 @@ onBeforeUnmount(() => {
           <PotentialTable
             v-model:selected-customer-ids="selectedCustomerIds"
             :customers="displayedPotentialCustomers"
+            @select-customer="handleOpenDetailModal"
           />
         </div>
         <div class="potential-list__footer">
@@ -286,6 +347,13 @@ onBeforeUnmount(() => {
       @close="handleCloseChildRegisterModal"
       @back="handleBackToParentSelectModal"
       @registered="handleChildRegistered"
+    />
+
+    <PotentialDetailModal
+      v-if="isDetailModalOpen && selectedPotentialCustomer"
+      :customer="selectedPotentialCustomer"
+      @close="handleCloseDetailModal"
+      @updated="handlePotentialCustomerUpdated"
     />
   </div>
 </template>

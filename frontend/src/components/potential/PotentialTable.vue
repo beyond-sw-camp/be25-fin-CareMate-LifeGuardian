@@ -10,6 +10,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:selectedCustomerIds': [customerIds: number[]]
+  selectCustomer: [customer: PotentialCustomerListItem]
 }>()
 
 const selectAllCheckbox = ref<HTMLInputElement | null>(null)
@@ -123,8 +124,14 @@ const genderLabel = (gender: string) => {
               @change="toggleCustomer(customer)"
             />
           </td>
-          <td class="potential-table__customer-name">
-            {{ customer.customerName }}
+          <td>
+            <button
+              class="potential-table__customer-name"
+              type="button"
+              @click="emit('selectCustomer', customer)"
+            >
+              {{ customer.customerName }}
+            </button>
           </td>
           <td>{{ genderLabel(customer.gender) }}</td>
           <td>{{ customer.age }}</td>
@@ -198,7 +205,18 @@ const genderLabel = (gender: string) => {
 }
 
 .potential-table__customer-name {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
   font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.potential-table__customer-name:hover {
+  color: var(--color-primary);
 }
 
 .potential-table__empty {
