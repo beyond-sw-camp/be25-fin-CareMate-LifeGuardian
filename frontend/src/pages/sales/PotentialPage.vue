@@ -303,12 +303,14 @@ onBeforeUnmount(() => {
 .potential-search {
   display: flex;
   align-items: center;
+  min-width: 0;
 }
 
 .potential-search__field {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 }
 
 .potential-search__field span {
@@ -320,6 +322,7 @@ onBeforeUnmount(() => {
 
 .potential-search__input {
   width: 200px;
+  max-width: 100%;
   height: 28px;
   border: 1px solid #d7dde7;
   border-radius: 6px;
@@ -358,6 +361,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .potential-section-title {
@@ -379,6 +383,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 6px;
   margin-left: auto;
+  flex-shrink: 0;
 }
 
 .potential-button {
@@ -446,15 +451,12 @@ onBeforeUnmount(() => {
 
 .potential-list__table-area {
   flex: 1;
+  overflow: auto;
 }
 
 .potential-list__footer {
-  position: relative;
   display: flex;
-  align-items: center;
   justify-content: center;
-  min-height: 32px;
-  margin-top: auto;
   padding-top: 8px;
 }
 
@@ -468,4 +470,23 @@ onBeforeUnmount(() => {
   background: color-mix(in srgb, var(--color-primary) 8%, white);
 }
 
+@media (max-width: 760px) {
+  .potential-list__toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .potential-search__field {
+    width: 100%;
+  }
+
+  .potential-search__input {
+    width: 100%;
+  }
+
+  .potential-list__selected-actions {
+    justify-content: flex-end;
+    margin-left: 0;
+  }
+}
 </style>
