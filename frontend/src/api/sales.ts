@@ -22,6 +22,7 @@ export interface SalesCustomer {
   gender: string
   age: number
   birthDate: string
+  parentId?: number | null
 
   // 보험 나이 변경 정보입니다. 서버 D-Day 값이 없으면 화면에서 날짜로 계산합니다.
   insuranceAgeShiftDate?: string
@@ -52,8 +53,8 @@ export interface SalesCustomer {
   webformStatusName?: string
 
   // 리포트 생성/발송 상태입니다. 리포트가 없거나 발송 전이면 관련 값이 비어 있을 수 있습니다.
+  isActive?: boolean | null
   reportId?: number
-  reportUrl?: string
   hasReport: boolean
   reportStatusCode?: string
   reportStatusName: string
@@ -97,6 +98,26 @@ const asString = (value: unknown) => {
   return undefined
 }
 
+const asNumber = (value: unknown) => {
+  if (typeof value === 'number') return value
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value)
+    return Number.isNaN(parsed) ? undefined : parsed
+  }
+  return undefined
+}
+
+const asBoolean = (value: unknown) => {
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'number') return value !== 0
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase()
+    if (normalized === 'true') return true
+    if (normalized === 'false') return false
+  }
+  return undefined
+}
+
 const asStageCode = (value: unknown): SalesCustomerStageCode | undefined => {
   const code = asString(value)
   return code === '01' || code === '02' ? code : undefined
@@ -117,6 +138,7 @@ const normalizeSalesCustomer = (customer: RawSalesCustomer): SalesCustomer => {
     asString(customer.contractStatusName) ??
     asString(customer.contractStatus) ??
     ''
+  const isActive = asBoolean(customer.isActive ?? customer.is_active)
 
   return {
     ...(customer as SalesCustomer),
@@ -126,6 +148,10 @@ const normalizeSalesCustomer = (customer: RawSalesCustomer): SalesCustomer => {
     customerStageName: stageName,
     contractStatusCode,
     contractStatusName,
+    parentId: asNumber(customer.parentId) ?? null,
+    isActive: isActive ?? null,
+    reportStatusName: isActive === false ? '졸업' : (customer.reportStatusName ?? ''),
+    canSendReport: isActive === false ? false : Boolean(customer.canSendReport),
     webformStatusCode: asString(customer.webformStatusCode) ?? asString(customer.webFormStatusCode),
     webformStatusName: asString(customer.webformStatusName) ?? asString(customer.webFormStatusName),
   }
