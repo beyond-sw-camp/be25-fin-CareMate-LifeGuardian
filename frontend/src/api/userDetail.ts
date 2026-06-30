@@ -9,7 +9,7 @@ export interface UserDetail {
   customerId: number
   conversionStatusCode: string
   conversionStatusName: string
-  reportUrl?: string
+  reportId?: number
   childName: string
   childGender: string
   childAge: number
@@ -63,6 +63,10 @@ export interface InsuranceRecommendation {
   recommendationScore?: number
   generatedAt?: string
   coverages: RecommendationCoverage[]
+}
+
+export interface ReportPreviewUrlResponse {
+  previewUrl: string
 }
 
 type AnyRecord = Record<string, unknown>
@@ -335,6 +339,14 @@ export async function getUserDetail(customerId: number, conversionStatusCode: st
   })
 
   return response.data.data
+}
+
+export async function getReportPreviewUrl(reportId: number) {
+  const response = await api.get<ApiResponse<ReportPreviewUrlResponse>>(
+    `/v1/reports/${reportId}/preview-url`,
+  )
+
+  return response.data.data.previewUrl
 }
 
 export async function getConsultationScript(customerId: number) {

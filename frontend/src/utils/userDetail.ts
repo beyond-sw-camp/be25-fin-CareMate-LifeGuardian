@@ -21,8 +21,6 @@ export const resolveDetailConversionStatusCode = (
   routeConversionStatusCode: string,
 ) => user?.conversionStatusCode ?? routeConversionStatusCode
 
-export const resolveReportUrl = (user: UserDetail | null) => user?.reportUrl ?? ''
-
 const formatLifeStage = (name?: string) => {
   if (!name) return '-'
   return name.replace(/(\d+)\s*-\s*(\d+)/, '$1~$2')

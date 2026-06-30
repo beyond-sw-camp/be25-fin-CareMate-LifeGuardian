@@ -10,6 +10,7 @@ import {
   getConsultationScript,
   getAiRagRecommendation,
   getRuleEngineRecommendation,
+  getReportPreviewUrl,
   getUserDetail,
   type ConsultationScript,
   type InsuranceRecommendation,
@@ -19,7 +20,6 @@ import {
   buildChildInfo,
   buildGuardianInfo,
   resolveDetailConversionStatusCode,
-  resolveReportUrl,
 } from '@/utils/userDetail'
 
 const route = useRoute()
@@ -57,7 +57,7 @@ const resolvedConversionStatusCode = computed(() =>
   resolveDetailConversionStatusCode(user.value, conversionStatusCode.value),
 )
 const isPotentialCustomer = computed(() => resolvedConversionStatusCode.value === '01')
-const reportUrl = computed(() => resolveReportUrl(user.value))
+const reportId = computed(() => user.value?.reportId)
 const childInfo = computed(() => buildChildInfo(user.value, isPotentialCustomer.value))
 const guardianInfo = computed(() => buildGuardianInfo(user.value))
 
@@ -65,9 +65,19 @@ const goBackToOrigin = () => {
   void router.push(backRoutePath.value)
 }
 
-const openReport = () => {
-  if (!reportUrl.value) return
-  window.open(reportUrl.value, '_blank', 'noopener,noreferrer')
+const openReport = async () => {
+  if (!reportId.value || isReportPreviewLoading.value) return
+
+  isReportPreviewLoading.value = true
+
+  try {
+    const previewUrl = await getReportPreviewUrl(reportId.value)
+    window.open(previewUrl, '_blank', 'noopener,noreferrer')
+  } catch (error) {
+    window.alert(getErrorMessage(error, '리포트 미리보기 URL을 불러오지 못했습니다.'))
+  } finally {
+    isReportPreviewLoading.value = false
+  }
 }
 
 const handleDetailPanelChange = (panel: 'script' | 'recommendation') => {

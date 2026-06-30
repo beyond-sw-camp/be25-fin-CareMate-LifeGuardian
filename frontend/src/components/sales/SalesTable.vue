@@ -10,9 +10,7 @@ import SalesWebformSendButton from '@/components/sales/SalesWebformSendButton.vu
 
 const props = defineProps<{
   customers: SalesCustomer[]
-  sendingCustomerIds?: number[]
   selectedReportIds?: number[]
-  sendReport?: (customer: SalesCustomer) => void
 }>()
 
 const emit = defineEmits<{
@@ -21,9 +19,6 @@ const emit = defineEmits<{
 
 const SENDABLE_REPORT_STATUS_CODES = new Set(['01', '02', '03'])
 const selectAllCheckbox = ref<HTMLInputElement | null>(null)
-
-// 부모 페이지에서 내려준 진행 중 ID 목록으로 행 단위 로딩 상태를 판단합니다.
-const isSending = (customerId: number) => props.sendingCustomerIds?.includes(customerId) ?? false
 
 // 리포트 ID가 있고 발송 버튼 노출 조건을 만족하는 고객만 체크박스 선택 대상입니다.
 const isSelectableReport = (customer: SalesCustomer) =>
@@ -36,21 +31,20 @@ const selectableReportIds = computed(() =>
 
 // 백엔드 상태 코드와 canSendReport 플래그를 함께 보고 발송/재발송 버튼 노출 여부를 결정합니다.
 const canShowSendButton = (customer: SalesCustomer) =>
+  customer.isActive !== false &&
   customer.hasReport &&
   Boolean(customer.reportStatusCode) &&
   SENDABLE_REPORT_STATUS_CODES.has(customer.reportStatusCode!) &&
   (customer.canSendReport || customer.reportStatusCode === '02')
-const sendButtonLabel = (customer: SalesCustomer) => {
-  if (isSending(customer.customerId)) return '발송 중'
-  return customer.reportStatusCode === '02' ? '재발송' : '발송'
-}
 
 const webformStatusName = (customer: SalesCustomer) =>
   customer.webformStatusName ?? '-'
 
-const handleReportClick = (customer: SalesCustomer) => {
-  props.sendReport?.(customer)
-}
+const reportStatusName = (customer: SalesCustomer) =>
+  customer.isActive === false ? '졸업' : customer.reportStatusName
+
+const canOpenCustomerDetail = (customer: SalesCustomer) =>
+  typeof customer.parentId === 'number' && customer.parentId > 0
 
 const isAllSelected = computed(
   () =>
@@ -201,7 +195,6 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
           <th>웹폼 발송상태</th>
           <th>리포트 발송상태</th>
           <th>웹폼 발송</th>
-          <th>리포트 발송</th>
         </tr>
       </thead>
       <tbody>
@@ -221,13 +214,19 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
           </td>
           <td>
             <RouterLink
+              v-if="canOpenCustomerDetail(customer)"
               class="customer-name"
-              :class="{ 'customer-name--age-shift': ageShiftGuide(customer) }"
+              :class="{
+                'customer-name--link': true,
+                'customer-name--age-shift': ageShiftGuide(customer),
+              }"
               :tabindex="ageShiftGuide(customer) ? 0 : undefined"
               :to="{
                 name: 'user-detail',
                 params: { customerId: customer.customerId },
-                query: { conversionStatusCode: resolveSalesCustomerStageCode(customer) },
+                query: {
+                  conversionStatusCode: resolveSalesCustomerStageCode(customer),
+                },
               }"
             >
               {{ customer.customerName }}
@@ -239,6 +238,9 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
                 {{ ageShiftGuide(customer) }}
               </span>
             </RouterLink>
+            <span v-else class="customer-name customer-name--disabled">
+              {{ customer.customerName }}
+            </span>
           </td>
           <td>{{ genderLabel(customer.gender) }}</td>
           <td>{{ customer.age }}</td>
@@ -262,31 +264,20 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
           <td>{{ customer.insuredName }}</td>
           <td>{{ customer.webformReceivedAt }}</td>
           <td class="report-status">{{ webformStatusName(customer) }}</td>
-          <td class="report-status">{{ customer.reportStatusName }}</td>
+          <td
+            class="report-status"
+            :class="{ 'report-status--graduated': customer.isActive === false }"
+          >
+            {{ reportStatusName(customer) }}
+          </td>
           <td>
             <div class="sales-table__actions">
               <SalesWebformSendButton :customer="customer" />
             </div>
           </td>
-          <td>
-            <div class="sales-table__actions">
-              <button
-                class="report-button"
-                :class="{
-                  'report-button--resend': customer.reportStatusCode === '02',
-                  'report-button--disabled': !canShowSendButton(customer),
-                }"
-                type="button"
-                :disabled="!canShowSendButton(customer) || isSending(customer.customerId)"
-                @click="handleReportClick(customer)"
-              >
-                {{ canShowSendButton(customer) ? sendButtonLabel(customer) : '발송' }}
-              </button>
-            </div>
-          </td>
         </tr>
         <tr v-if="customers.length === 0">
-          <td class="sales-table__empty" colspan="15">조회된 영업현황이 없습니다.</td>
+          <td class="sales-table__empty" colspan="14">조회된 영업현황이 없습니다.</td>
         </tr>
       </tbody>
     </table>
@@ -353,16 +344,16 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
   accent-color: var(--color-primary);
 }
 
-.sales-table tbody tr.sales-table__row--age-shift-warning .customer-name {
+.sales-table tbody tr.sales-table__row--age-shift-warning .customer-name--link.customer-name--age-shift {
   text-decoration-color: rgb(251 146 60 / 42%);
 }
 
-.sales-table tbody tr.sales-table__row--age-shift-near .customer-name {
+.sales-table tbody tr.sales-table__row--age-shift-near .customer-name--link.customer-name--age-shift {
   text-decoration-color: rgb(250 204 21 / 48%);
 }
 
-.sales-table tbody tr.sales-table__row--age-shift-warning .customer-name,
-.sales-table tbody tr.sales-table__row--age-shift-near .customer-name {
+.sales-table tbody tr.sales-table__row--age-shift-warning .customer-name--link.customer-name--age-shift,
+.sales-table tbody tr.sales-table__row--age-shift-near .customer-name--link.customer-name--age-shift {
   text-decoration-line: underline;
   text-decoration-skip-ink: none;
   text-decoration-thickness: 0.62em;
@@ -376,8 +367,18 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
   font-weight: 700;
 }
 
-.customer-name:hover {
+.customer-name--link {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.customer-name--link:hover {
   color: var(--color-primary);
+}
+
+.customer-name--disabled {
+  color: #98a2b3;
 }
 
 .customer-name--age-shift {
@@ -502,11 +503,6 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
   gap: 5px;
 }
 
-.report-button--disabled {
-  background: #c5cad3;
-  color: #ffffff;
-}
-
 .report-button--webform {
   min-width: 54px;
 }
@@ -529,5 +525,10 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
 
 .report-status {
   font-weight: 400;
+}
+
+.report-status--graduated {
+  color: #8a6412;
+  font-weight: 800;
 }
 </style>
