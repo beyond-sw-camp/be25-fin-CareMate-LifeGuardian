@@ -6,32 +6,27 @@ import {
   resolveSalesCustomerStageName,
   type SalesCustomer,
 } from '@/api/sales'
+import SalesReportSendButton from '@/components/sales/SalesReportSendButton.vue'
 import SalesWebformSendButton from '@/components/sales/SalesWebformSendButton.vue'
 
 const props = defineProps<{
   customers: SalesCustomer[]
-  selectedReportIds?: number[]
+  selectedReportCustomerIds?: number[]
 }>()
 
 const emit = defineEmits<{
-  'update:selectedReportIds': [reportIds: number[]]
+  'update:selectedReportCustomerIds': [customerIds: number[]]
 }>()
 
 const SENDABLE_REPORT_STATUS_CODES = new Set(['01', '02', '03'])
 const selectAllCheckbox = ref<HTMLInputElement | null>(null)
 
 // 리포트 ID가 있고 발송 버튼 노출 조건을 만족하는 고객만 체크박스 선택 대상입니다.
-const isSelectableReport = (customer: SalesCustomer) =>
-  typeof customer.reportId === 'number' && customer.reportId > 0 && canShowSendButton(customer)
-const selectableReportIds = computed(() =>
-  props.customers
-    .filter(isSelectableReport)
-    .map((customer) => customer.reportId!),
-)
+const selectableCustomerIds = computed(() => props.customers.map((customer) => customer.customerId))
 
 // 백엔드 상태 코드와 canSendReport 플래그를 함께 보고 발송/재발송 버튼 노출 여부를 결정합니다.
 const canShowSendButton = (customer: SalesCustomer) =>
-  customer.isActive !== false &&
+  !customer.graduated &&
   customer.hasReport &&
   Boolean(customer.reportStatusCode) &&
   SENDABLE_REPORT_STATUS_CODES.has(customer.reportStatusCode!) &&
@@ -40,53 +35,51 @@ const canShowSendButton = (customer: SalesCustomer) =>
 const webformStatusName = (customer: SalesCustomer) =>
   customer.webformStatusName ?? '-'
 
-const reportStatusName = (customer: SalesCustomer) =>
-  customer.isActive === false ? '졸업' : customer.reportStatusName
+const reportStatusName = (customer: SalesCustomer) => {
+  if (customer.graduated) return '졸업'
+  if (!customer.reportUrl) return '미생성'
+  return customer.reportStatusName
+}
 
 const canOpenCustomerDetail = (customer: SalesCustomer) =>
   typeof customer.parentId === 'number' && customer.parentId > 0
 
 const isAllSelected = computed(
   () =>
-    selectableReportIds.value.length > 0 &&
-    selectableReportIds.value.every((reportId) => props.selectedReportIds?.includes(reportId)),
+    selectableCustomerIds.value.length > 0 &&
+    selectableCustomerIds.value.every((customerId) =>
+      props.selectedReportCustomerIds?.includes(customerId),
+    ),
 )
 const isPartiallySelected = computed(
-  () => Boolean(props.selectedReportIds?.length) && !isAllSelected.value,
+  () => Boolean(props.selectedReportCustomerIds?.length) && !isAllSelected.value,
 )
 
 // 헤더 체크박스는 현재 화면에서 선택 가능한 리포트만 대상으로 전체 선택을 토글합니다.
 const toggleAllCustomers = () => {
-  emit('update:selectedReportIds', isAllSelected.value ? [] : selectableReportIds.value)
+  emit('update:selectedReportCustomerIds', isAllSelected.value ? [] : selectableCustomerIds.value)
 }
 
 // 개별 행 체크박스 선택 상태를 부모의 selectedReportIds v-model로 되돌립니다.
 const toggleReport = (customer: SalesCustomer) => {
-  if (!isSelectableReport(customer)) return
+  const selectedIds = props.selectedReportCustomerIds ?? []
+  const nextIds = selectedIds.includes(customer.customerId)
+    ? selectedIds.filter((selectedCustomerId) => selectedCustomerId !== customer.customerId)
+    : [...selectedIds, customer.customerId]
 
-  const reportId = customer.reportId!
-  const selectedIds = props.selectedReportIds ?? []
-  const nextIds = selectedIds.includes(reportId)
-    ? selectedIds.filter((selectedReportId) => selectedReportId !== reportId)
-    : [...selectedIds, reportId]
-
-  emit('update:selectedReportIds', nextIds)
+  emit('update:selectedReportCustomerIds', nextIds)
 }
 
 // 페이지/검색 조건 변경으로 화면에서 사라진 리포트는 선택 목록에서도 제거합니다.
 watch(
   () => props.customers,
   (customers) => {
-    const visibleReportIds = new Set(
-      customers
-        .filter(isSelectableReport)
-        .map((customer) => customer.reportId!),
-    )
-    const selectedIds = props.selectedReportIds ?? []
-    const nextIds = selectedIds.filter((reportId) => visibleReportIds.has(reportId))
+    const visibleCustomerIds = new Set(customers.map((customer) => customer.customerId))
+    const selectedIds = props.selectedReportCustomerIds ?? []
+    const nextIds = selectedIds.filter((customerId) => visibleCustomerIds.has(customerId))
 
     if (nextIds.length !== selectedIds.length) {
-      emit('update:selectedReportIds', nextIds)
+      emit('update:selectedReportCustomerIds', nextIds)
     }
   },
 )
@@ -177,8 +170,8 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
               ref="selectAllCheckbox"
               type="checkbox"
               :checked="isAllSelected"
-              :disabled="selectableReportIds.length === 0"
-              aria-label="현재 목록의 발송 가능한 리포트 전체 선택"
+              :disabled="selectableCustomerIds.length === 0"
+              aria-label="현재 목록의 고객 전체 선택"
               @change="toggleAllCustomers"
             />
           </th>
@@ -195,6 +188,7 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
           <th>웹폼 발송상태</th>
           <th>리포트 발송상태</th>
           <th>웹폼 발송</th>
+          <th>리포트 발송</th>
         </tr>
       </thead>
       <tbody>
@@ -206,9 +200,8 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
           <td>
             <input
               type="checkbox"
-              :checked="Boolean(customer.reportId && selectedReportIds?.includes(customer.reportId))"
-              :disabled="!isSelectableReport(customer)"
-              :aria-label="`${customer.customerName} 리포트 선택`"
+              :checked="Boolean(selectedReportCustomerIds?.includes(customer.customerId))"
+              :aria-label="`${customer.customerName} 선택`"
               @change="toggleReport(customer)"
             />
           </td>
@@ -238,8 +231,20 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
                 {{ ageShiftGuide(customer) }}
               </span>
             </RouterLink>
-            <span v-else class="customer-name customer-name--disabled">
+            <span
+              v-else
+              class="customer-name customer-name--disabled"
+              :class="{ 'customer-name--age-shift': ageShiftGuide(customer) }"
+              :tabindex="ageShiftGuide(customer) ? 0 : undefined"
+            >
               {{ customer.customerName }}
+              <span
+                v-if="ageShiftGuide(customer)"
+                class="customer-name__tooltip"
+                role="tooltip"
+              >
+                {{ ageShiftGuide(customer) }}
+              </span>
             </span>
           </td>
           <td>{{ genderLabel(customer.gender) }}</td>
@@ -266,7 +271,7 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
           <td class="report-status">{{ webformStatusName(customer) }}</td>
           <td
             class="report-status"
-            :class="{ 'report-status--graduated': customer.isActive === false }"
+            :class="{ 'report-status--graduated': customer.graduated }"
           >
             {{ reportStatusName(customer) }}
           </td>
@@ -275,9 +280,14 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
               <SalesWebformSendButton :customer="customer" />
             </div>
           </td>
+          <td>
+            <div class="sales-table__actions">
+              <SalesReportSendButton :customer="customer" />
+            </div>
+          </td>
         </tr>
         <tr v-if="customers.length === 0">
-          <td class="sales-table__empty" colspan="14">조회된 영업현황이 없습니다.</td>
+          <td class="sales-table__empty" colspan="15">조회된 영업현황이 없습니다.</td>
         </tr>
       </tbody>
     </table>
@@ -301,16 +311,16 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
 
 .sales-table th,
 .sales-table td {
-  height: 36px;
+  height: 32px;
   border-bottom: 1px solid #edf1f6;
-  padding: 0 9px;
+  padding: 0 8px;
   text-align: center;
   font-size: 11px;
   white-space: nowrap;
 }
 
 .sales-table th {
-  height: 32px;
+  height: 30px;
   background: #f6f8fb;
   color: #4c586b;
   font-weight: 800;
@@ -344,16 +354,16 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
   accent-color: var(--color-primary);
 }
 
-.sales-table tbody tr.sales-table__row--age-shift-warning .customer-name--link.customer-name--age-shift {
+.sales-table tbody tr.sales-table__row--age-shift-warning .customer-name--age-shift {
   text-decoration-color: rgb(251 146 60 / 42%);
 }
 
-.sales-table tbody tr.sales-table__row--age-shift-near .customer-name--link.customer-name--age-shift {
+.sales-table tbody tr.sales-table__row--age-shift-near .customer-name--age-shift {
   text-decoration-color: rgb(250 204 21 / 48%);
 }
 
-.sales-table tbody tr.sales-table__row--age-shift-warning .customer-name--link.customer-name--age-shift,
-.sales-table tbody tr.sales-table__row--age-shift-near .customer-name--link.customer-name--age-shift {
+.sales-table tbody tr.sales-table__row--age-shift-warning .customer-name--age-shift,
+.sales-table tbody tr.sales-table__row--age-shift-near .customer-name--age-shift {
   text-decoration-line: underline;
   text-decoration-skip-ink: none;
   text-decoration-thickness: 0.62em;
@@ -368,9 +378,7 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
 }
 
 .customer-name--link {
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 3px;
+  text-decoration: none;
 }
 
 .customer-name--link:hover {
