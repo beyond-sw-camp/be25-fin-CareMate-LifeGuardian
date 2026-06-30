@@ -53,9 +53,8 @@
 11. [API 명세서](#11-API-명세서)
 12. [백엔드 테스트 보고서](#12-백엔드-테스트-보고서)
 13. [프론트엔드 테스트 보고서](#13-프론트엔드-테스트-보고서)
-14. [통합 테스트 보고서](#14-통합-테스트-보고서)
-15. [CI/CD 테스트 보고서](#15-CI/CD-테스트-보고서)
-16. [회고](#15-회고)
+14. [CI/CD 테스트 보고서](#14-CI/CD-테스트-보고서)
+15. [회고](#15-회고)
 
 <br>
 
@@ -261,17 +260,7 @@ LifeGuardianCICD/
 </details>
 <br>
 
-## <a id="14-통합-테스트-보고서"></a> 14. 통합 테스트 보고서(스프레드 시트)
-
-<details>
- <summary><b>🧾 통합 테스트</b></summary>
-
-- [🧾 통합 테스트 결과서 (링크)](https://docs.google.com/spreadsheets/d/1jCL1br1RoIoiYlqEJTS_a4W8B9hhZFSuSCLUUObTIzE/edit?gid=1770458563#gid=1770458563)
-
-</details>
-<br>
-
-## <a id="15-CI/CD-테스트-보고서"></a> 15. CI/CD 테스트 보고서
+## <a id="14-CI/CD-테스트-보고서"></a> 14. CI/CD 테스트 보고서
 
 <details>
  <summary><b>🧾 CI/CD 테스트 보고서</b></summary>
@@ -281,7 +270,7 @@ LifeGuardianCICD/
 </details>
 <br>
 
-## <a id="15-회고"></a> 13. 회고
+## <a id="15-회고"></a> 15. 회고
 
 |   이름   |     회고 내용     |
 |-----------|-----------------|
