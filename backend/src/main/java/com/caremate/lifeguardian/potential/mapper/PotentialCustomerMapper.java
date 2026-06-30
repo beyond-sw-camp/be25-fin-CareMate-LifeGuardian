@@ -2,8 +2,10 @@ package com.caremate.lifeguardian.potential.mapper;
 
 import com.caremate.lifeguardian.potential.domain.PotentialCustomer;
 import com.caremate.lifeguardian.potential.dto.request.ParentCustomerSearchRequest;
+import com.caremate.lifeguardian.potential.dto.request.PotentialCustomerUpdateRequest;
 import com.caremate.lifeguardian.potential.dto.response.ParentCustomerSearchResponse;
 import com.caremate.lifeguardian.potential.dto.response.PotentialCustomerCreateResponse;
+import com.caremate.lifeguardian.potential.dto.response.PotentialCustomerDetailResponse;
 import com.caremate.lifeguardian.potential.dto.response.PotentialCustomerListResponse;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -16,6 +18,22 @@ public interface PotentialCustomerMapper {
 
     // 잠재고객 목록 조회
     List<PotentialCustomerListResponse> findPotentialCustomersBySalesUserId(
+            @Param("salesUserId") Long salesUserId
+    );
+
+    // 잠재고객 상세 조회
+    PotentialCustomerDetailResponse findPotentialCustomerDetail(
+            @Param("potentialCustomerId") Long potentialCustomerId
+    );
+
+    // 잠재고객 수정
+    int updatePotentialCustomer(
+            @Param("potentialCustomerId") Long potentialCustomerId,
+            @Param("request") PotentialCustomerUpdateRequest request
+    );
+
+    // 부모 통합고객 목록 조회
+    List<ParentCustomerSearchResponse> findParentCustomersBySalesUserId(
             @Param("salesUserId") Long salesUserId
     );
 

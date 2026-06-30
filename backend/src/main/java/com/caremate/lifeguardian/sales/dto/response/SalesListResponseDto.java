@@ -15,6 +15,8 @@ public class SalesListResponseDto {
     // 고객 정보
     private Long customerId;
 
+    private Long parentId;
+
     private String customerName;
 
     private String gender;
@@ -33,6 +35,8 @@ public class SalesListResponseDto {
     private String customerStageCode;
 
     private String customerStageName;
+
+    private Boolean graduated;
 
     // 3Step
     private String threeStepCode;

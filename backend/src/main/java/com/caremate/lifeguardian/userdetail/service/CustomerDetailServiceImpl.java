@@ -46,10 +46,14 @@ public class CustomerDetailServiceImpl implements CustomerDetailService {
             throw new BaseException(403, "해당 고객에 접근할 권한이 없습니다.");
         }
 
-        row.setReportUrl(customerDetailMapper.selectLatestReportUrl(
+        CustomerBasicInfoRow latestReport = customerDetailMapper.selectLatestReport(
                 customerId,
                 conversionStatusCode
-        ));
+        );
+        if (latestReport != null) {
+            row.setReportId(latestReport.getReportId());
+            row.setReportUrl(latestReport.getReportUrl());
+        }
 
         List<CustomerBasicInfoBadge> badges = new ArrayList<>();
         for (CustomerBadgeRow badge : customerDetailMapper.selectCustomerBadges(
@@ -71,6 +75,7 @@ public class CustomerDetailServiceImpl implements CustomerDetailService {
                 .customerId(row.getCustomerId())
                 .conversionStatusCode(row.getConversionStatusCode())
                 .conversionStatusName(row.getConversionStatusName())
+                .reportId(row.getReportId())
                 .reportUrl(row.getReportUrl())
                 .childName(row.getChildName())
                 .childGender(toDisplayGender(row.getChildGender()))

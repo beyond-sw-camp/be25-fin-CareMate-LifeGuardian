@@ -41,13 +41,24 @@
             parent.address AS parentAddress,
             pc.gender AS childGender,
             pc.relationship_code AS relationCode,
-            relation_code.code_name AS relationName
+            pc.consult_status_code AS consultStatusCode,
+            consult_code.code_name AS consultStatusName,
+            relation_code.code_name AS relationName,
+            sales_user.id AS salesUserId,
+            sales_user.name AS salesUserName,
+            sales_user.phone AS salesUserPhone,
+            sales_user.email AS salesUserEmail
         FROM potential_customer pc
         INNER JOIN integrated_customer parent
             ON parent.integrated_customer_id = pc.parent_customer_id
+        LEFT JOIN sales_user
+            ON sales_user.id = pc.sales_user_id
         LEFT JOIN common_code relation_code
             ON relation_code.group_code = 'RELATIONSHIP'
            AND relation_code.code_value = pc.relationship_code
+        LEFT JOIN common_code consult_code
+            ON consult_code.group_code = 'CONSULT_STATUS'
+           AND consult_code.code_value = pc.consult_status_code
         WHERE #{conversionStatusCode} = '01'
           AND pc.id = #{customerId}
           AND pc.is_active = FALSE
@@ -67,13 +78,20 @@
             parent.address AS parentAddress,
             child.gender AS childGender,
             NULL AS relationCode,
-            '보호자' AS relationName
+            NULL AS consultStatusCode,
+            NULL AS consultStatusName,
+            '보호자' AS relationName,
+            sales_user.id AS salesUserId,
+            sales_user.name AS salesUserName,
+            sales_user.phone AS salesUserPhone,
+            sales_user.email AS salesUserEmail
         FROM integrated_customer child
         LEFT JOIN integrated_customer parent
             ON parent.integrated_customer_id = child.parent_id
+        LEFT JOIN sales_user
+            ON sales_user.id = child.sales_user_id
         WHERE #{conversionStatusCode} = '02'
           AND child.integrated_customer_id = #{customerId}
-          AND child.birth_date > DATE_SUB(CURDATE(), INTERVAL 21 YEAR)
     </select>
 
     <!-- 리포트 | 웹폼 상세정보 -->
@@ -147,6 +165,128 @@
             cds.rank_by_age_gender,
             cds.patient_count DESC
         LIMIT #{limit}
+    </select>
+
+    <select id="selectTopDiseaseRisks"
+            resultType="com.caremate.lifeguardian.report.dto.internal.data.DiseaseRiskItemDto">
+        SELECT
+            cds.disease_code AS diseaseCode,
+            cds.disease_name AS diseaseName,
+            cds.treatment_type AS treatmentType,
+            cds.patient_count AS patientCount,
+            cds.rank_by_age_gender AS `rank`,
+            category.category_code AS categoryCode,
+            category.category_name AS categoryName,
+            coverage.coverage_name AS coverageName
+        FROM cdc_disease_statistic cds
+        LEFT JOIN insurance_coverage coverage
+            ON coverage.id = cds.target_coverage_id
+        LEFT JOIN insurance_category category
+            ON category.category_code = coverage.category_code
+        WHERE cds.data_year = (
+            SELECT MAX(latest.data_year)
+            FROM cdc_disease_statistic latest
+            WHERE TRIM(latest.age_group_code) = #{ageGroupCode}
+              AND latest.gender = #{gender}
+          )
+          AND TRIM(cds.age_group_code) = #{ageGroupCode}
+          AND cds.gender = #{gender}
+        ORDER BY cds.patient_count DESC, cds.rank_by_age_gender
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectDiseaseRiskSummaries"
+            resultType="com.caremate.lifeguardian.report.dto.internal.data.DiseaseRiskSummaryDto">
+        SELECT
+            cds.data_year AS dataYear,
+            cds.treatment_type AS treatmentType,
+            COUNT(*) AS diseaseCount,
+            SUM(cds.patient_count) AS totalPatientCount,
+            MAX(cds.patient_count) AS maxPatientCount
+        FROM cdc_disease_statistic cds
+        WHERE cds.data_year = (
+            SELECT MAX(latest.data_year)
+            FROM cdc_disease_statistic latest
+            WHERE TRIM(latest.age_group_code) = #{ageGroupCode}
+              AND latest.gender = #{gender}
+          )
+          AND TRIM(cds.age_group_code) = #{ageGroupCode}
+          AND cds.gender = #{gender}
+        GROUP BY cds.data_year, cds.treatment_type
+        ORDER BY SUM(cds.patient_count) DESC
+    </select>
+
+    <select id="selectContractSummaries"
+            resultType="com.caremate.lifeguardian.report.dto.internal.data.ReportContractSummaryDto">
+        SELECT
+            c.id AS contractId,
+            c.policy_number AS policyNumber,
+            contractor.name AS contractorName,
+            COALESCE(potential_insured.name, integrated_insured.name, '-') AS insuredName,
+            COALESCE(product.product_name, '-') AS productName,
+            COALESCE(category.category_name, '-') AS categoryName,
+            COALESCE(contract_status.code_name, '-') AS contractStatusName,
+            COALESCE(result_status.code_name, '-') AS contractResultStatusName,
+            c.created_at AS contractDate
+        FROM contract c
+        LEFT JOIN integrated_customer contractor
+            ON contractor.integrated_customer_id = c.integrated_customer_id
+        LEFT JOIN potential_customer potential_insured
+            ON c.conversion_status_code = '01'
+           AND potential_insured.id = c.insured_id
+        LEFT JOIN integrated_customer integrated_insured
+            ON c.conversion_status_code = '02'
+           AND integrated_insured.integrated_customer_id = c.insured_id
+        LEFT JOIN insurance_product product
+            ON product.id = c.insurance_product_id
+        LEFT JOIN insurance_category category
+            ON category.category_code = product.category_code
+        LEFT JOIN common_code contract_status
+            ON contract_status.group_code = 'CONTRACT_STATUS'
+           AND contract_status.code_value = c.contract_status_code
+        LEFT JOIN common_code result_status
+            ON result_status.group_code = 'CONTRACT_RESULT_STATUS'
+           AND result_status.code_value = c.contract_result_status_code
+        WHERE c.integrated_customer_id = #{customerId}
+        ORDER BY c.created_at DESC, c.id DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="countReportTargetBySalesUser" resultType="int">
+        SELECT COUNT(*)
+        FROM (
+            SELECT pc.id AS customer_id
+            FROM potential_customer pc
+            WHERE #{conversionStatusCode} = '01'
+              AND pc.id = #{customerId}
+              AND pc.sales_user_id = #{salesUserId}
+
+            UNION ALL
+
+            SELECT ic.integrated_customer_id AS customer_id
+            FROM integrated_customer ic
+            WHERE #{conversionStatusCode} = '02'
+              AND ic.integrated_customer_id = #{customerId}
+              AND ic.sales_user_id = #{salesUserId}
+        ) report_target
+    </select>
+
+    <select id="selectReportLocationForPreview" resultType="string">
+        SELECT cr.report_url
+        FROM customer_report cr
+        LEFT JOIN potential_customer pc
+            ON cr.conversion_status_code = '01'
+           AND pc.id = cr.customer_id
+        LEFT JOIN integrated_customer ic
+            ON cr.conversion_status_code = '02'
+           AND ic.integrated_customer_id = cr.customer_id
+        WHERE cr.id = #{reportId}
+          AND (
+              (cr.conversion_status_code = '01' AND pc.sales_user_id = #{currentUserId})
+              OR
+              (cr.conversion_status_code = '02' AND ic.sales_user_id = #{currentUserId})
+          )
+        LIMIT 1
     </select>
 
 </mapper>
