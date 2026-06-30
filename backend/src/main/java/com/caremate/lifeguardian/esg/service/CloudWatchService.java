@@ -11,6 +11,11 @@ import software.amazon.awssdk.services.cloudwatch.model.GetMetricStatisticsReque
 import software.amazon.awssdk.services.cloudwatch.model.GetMetricStatisticsResponse;
 import software.amazon.awssdk.services.cloudwatch.model.Statistic;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -65,10 +70,88 @@ public class CloudWatchService {
     }
 
     /**
+     * AWS IMDS(Instance Metadata Service)를 호출하여 현재 EC2 인스턴스의 ID를 동적으로 조회한다.
+     */
+    private String resolveInstanceId(String configuredValue) {
+        if (configuredValue != null && !configuredValue.trim().isEmpty()) {
+            return configuredValue.trim();
+        }
+
+        log.info("CloudWatch dimensionValue is empty. Attempting to retrieve current EC2 Instance ID via IMDS...");
+        
+        try {
+            HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(1))
+                    .build();
+
+            // 1. IMDSv2 Token 요청
+            HttpRequest tokenRequest = HttpRequest.newBuilder()
+                    .uri(URI.create("http://169.254.169.254/latest/api/token"))
+                    .header("X-aws-ec2-metadata-token-ttl-seconds", "21600")
+                    .PUT(HttpRequest.BodyPublishers.noBody())
+                    .timeout(Duration.ofSeconds(1))
+                    .build();
+
+            HttpResponse<String> tokenResponse = client.send(tokenRequest, HttpResponse.BodyHandlers.ofString());
+            if (tokenResponse.statusCode() == 200) {
+                String token = tokenResponse.body().trim();
+                
+                // 2. Token을 사용한 Instance ID 조회
+                HttpRequest idRequest = HttpRequest.newBuilder()
+                        .uri(URI.create("http://169.254.169.254/latest/meta-data/instance-id"))
+                        .header("X-aws-ec2-metadata-token", token)
+                        .GET()
+                        .timeout(Duration.ofSeconds(1))
+                        .build();
+
+                HttpResponse<String> idResponse = client.send(idRequest, HttpResponse.BodyHandlers.ofString());
+                if (idResponse.statusCode() == 200) {
+                    String instanceId = idResponse.body().trim();
+                    log.info("Successfully resolved Instance ID via IMDSv2: {}", instanceId);
+                    return instanceId;
+                }
+            }
+        } catch (Exception e) {
+            log.debug("IMDSv2 failed: {}", e.getMessage());
+        }
+
+        // IMDSv1 Fallback
+        try {
+            HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(1))
+                    .build();
+
+            HttpRequest idRequest = HttpRequest.newBuilder()
+                    .uri(URI.create("http://169.254.169.254/latest/meta-data/instance-id"))
+                    .GET()
+                    .timeout(Duration.ofSeconds(1))
+                    .build();
+
+            HttpResponse<String> idResponse = client.send(idRequest, HttpResponse.BodyHandlers.ofString());
+            if (idResponse.statusCode() == 200) {
+                String instanceId = idResponse.body().trim();
+                log.info("Successfully resolved Instance ID via IMDSv1: {}", instanceId);
+                return instanceId;
+            }
+        } catch (Exception e) {
+            log.debug("IMDSv1 failed: {}", e.getMessage());
+        }
+
+        log.warn("Failed to resolve EC2 Instance ID via IMDS. CloudWatch API request might fail.");
+        return "";
+    }
+
+    /**
      * CloudWatch API를 통해 시간당 평균 CPUUtilization(Period 3600초)을 조회한다.
      */
     private List<Double> fetchFromCloudWatch(LocalDate targetDate) {
         EsgProperties.Cloudwatch cw = esgProperties.getCloudwatch();
+
+        // 인스턴스 ID 동적 분석
+        String instanceId = resolveInstanceId(cw.getDimensionValue());
+        if (instanceId == null || instanceId.isEmpty()) {
+            throw new IllegalStateException("EC2 Instance ID is empty and could not be resolved via IMDS.");
+        }
 
         Instant startTime = targetDate.atStartOfDay(SEOUL_ZONE).toInstant();
         Instant endTime = targetDate.plusDays(1).atStartOfDay(SEOUL_ZONE).toInstant();
@@ -78,7 +161,7 @@ public class CloudWatchService {
                 .metricName(cw.getMetricName())
                 .dimensions(Dimension.builder()
                         .name(cw.getDimensionName())
-                        .value(cw.getDimensionValue())
+                        .value(instanceId)
                         .build())
                 .startTime(startTime)
                 .endTime(endTime)
@@ -88,6 +171,11 @@ public class CloudWatchService {
 
         GetMetricStatisticsResponse response = cloudWatchClient.getMetricStatistics(request);
         List<Datapoint> datapoints = new ArrayList<>(response.datapoints());
+
+        // 조회된 데이터가 없으면 예외를 발생시켜 Fallback이 작동하도록 처리
+        if (datapoints.isEmpty()) {
+            throw new IllegalStateException("CloudWatch returned 0 datapoints (no metric data found).");
+        }
 
         // 시간 순 정렬 후 24개 슬롯에 매핑
         datapoints.sort(Comparator.comparing(Datapoint::timestamp));
