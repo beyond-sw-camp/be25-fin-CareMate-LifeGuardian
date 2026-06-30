@@ -53,8 +53,9 @@ export interface SalesCustomer {
   webformStatusName?: string
 
   // 리포트 생성/발송 상태입니다. 리포트가 없거나 발송 전이면 관련 값이 비어 있을 수 있습니다.
-  isActive?: boolean | null
+  graduated?: boolean | null
   reportId?: number
+  reportUrl?: string | null
   hasReport: boolean
   reportStatusCode?: string
   reportStatusName: string
@@ -138,7 +139,7 @@ const normalizeSalesCustomer = (customer: RawSalesCustomer): SalesCustomer => {
     asString(customer.contractStatusName) ??
     asString(customer.contractStatus) ??
     ''
-  const isActive = asBoolean(customer.isActive ?? customer.is_active)
+  const graduated = asBoolean(customer.graduated)
 
   return {
     ...(customer as SalesCustomer),
@@ -149,9 +150,9 @@ const normalizeSalesCustomer = (customer: RawSalesCustomer): SalesCustomer => {
     contractStatusCode,
     contractStatusName,
     parentId: asNumber(customer.parentId) ?? null,
-    isActive: isActive ?? null,
-    reportStatusName: isActive === false ? '졸업' : (customer.reportStatusName ?? ''),
-    canSendReport: isActive === false ? false : Boolean(customer.canSendReport),
+    graduated: graduated ?? null,
+    reportStatusName: graduated ? '졸업' : (customer.reportUrl ? customer.reportStatusName ?? '' : '미생성'),
+    canSendReport: graduated ? false : Boolean(customer.canSendReport),
     webformStatusCode: asString(customer.webformStatusCode) ?? asString(customer.webFormStatusCode),
     webformStatusName: asString(customer.webformStatusName) ?? asString(customer.webFormStatusName),
   }
@@ -183,6 +184,13 @@ export interface WebformSendResult {
   webformStatusCode: string
   webformStatusName: string
   issuedAt: string
+  success?: boolean
+  failed?: boolean
+  reportProcessFailed?: boolean
+  reportProcessed?: boolean
+  reportProcessStatus?: string
+  reportProcessingStatus?: string
+  message?: string
 }
 
 // reportIds가 비어 있으면 서버가 현재 조건 기준 전체 발송으로 처리합니다.
@@ -237,14 +245,8 @@ export async function getSalesSummary(targetYearMonth: string) {
 
 // 검색 조건과 페이지 정보를 함께 보내 영업현황 고객 목록을 조회합니다.
 export async function getSalesList(params: SalesSearchParams) {
-  const { customerStageCode, ...restParams } = params
-  const requestParams = {
-    ...restParams,
-    conversionStatusCode: customerStageCode,
-  }
-
   const response = await api.get<ApiResponse<SalesPage>>('/v1/sales/performance/contracts', {
-    params: requestParams,
+    params,
     paramsSerializer: serializeSalesSearchParams,
   })
 
