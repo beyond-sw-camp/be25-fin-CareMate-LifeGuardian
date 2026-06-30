@@ -149,24 +149,6 @@ const reportButtonLabel = (customer: ContactCustomer) => {
 
 <template>
   <div class="contact-table-wrapper">
-    <div class="contact-table-wrapper__actions">
-      <button
-        class="contact-table__bulk-button"
-        type="button"
-        @click="emit('sendBulkWebForm')"
-      >
-        웹폼 발송
-      </button>
-
-      <button
-        class="contact-table__bulk-button"
-        type="button"
-        @click="emit('sendBulkReport')"
-      >
-        리포트 발송
-      </button>
-    </div>
-
     <div class="contact-table">
       <table>
         <thead>
@@ -324,31 +306,6 @@ const reportButtonLabel = (customer: ContactCustomer) => {
   position: relative;
 }
 
-.contact-table-wrapper__actions {
-  position: absolute;
-  top: -34px;
-  right: 12px;
-  display: flex;
-  gap: 8px;
-}
-
-.contact-table__bulk-button {
-  min-width: 64px;
-  height: 24px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--color-primary);
-  color: #ffffff;
-  padding: 0 10px;
-  font-size: 10px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.contact-table__bulk-button:hover {
-  background: color-mix(in srgb, var(--color-primary) 84%, black);
-}
-
 .contact-table {
   overflow-x: auto;
   overflow-y: visible;
@@ -408,13 +365,18 @@ const reportButtonLabel = (customer: ContactCustomer) => {
 }
 
 .contact-table__customer-name {
-  color: inherit;
-  font-weight: 700;
+  display: inline-block;
+  color: #ea5a5a;
+  font-weight: 800;
+  transition: 
+    color 120ms ease,
+    text-decoration-color 120ms ease;
 }
 
 .contact-table__customer-name:hover {
   color: var(--color-primary);
   text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .contact-table__reason-tooltip {

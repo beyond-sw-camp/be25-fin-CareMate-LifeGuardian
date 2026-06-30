@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axios from 'axios'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import AppHeader from '../../components/common/Header.vue'
@@ -33,6 +33,7 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 const noticeMessage = ref('')
 const noticeMessageType = ref<'success' | 'error'>('success')
+const noticeTimerId = ref<number | null>(null)
 
 const sendingWebFormIds = ref<number[]>([])
 const sendingReportIds = ref<number[]>([])
@@ -68,6 +69,15 @@ const getErrorMessage = (
 const showNoticeMessage = (message: string, type: 'success' | 'error') => {
   noticeMessage.value = message
   noticeMessageType.value = type
+
+  if (noticeTimerId.value !== null) {
+    window.clearTimeout(noticeTimerId.value)
+  }
+
+  noticeTimerId.value = window.setTimeout(() => {
+    noticeMessage.value = ''
+    noticeTimerId.value = null
+  }, 5000)
 }
 
 const loadDashboard = async () => {
@@ -260,6 +270,12 @@ const handleGoSalesFilter = (filter: {
 onMounted(() => {
   void loadDashboard()
 })
+
+onBeforeUnmount(() => {
+  if (noticeTimerId.value !== null) {
+    window.clearTimeout(noticeTimerId.value)
+  }
+})
 </script>
 
 <template>
@@ -268,13 +284,6 @@ onMounted(() => {
 
     <main class="app-main page-placeholder">
       <AppHeader title="영업사원 대시보드" />
-      <p
-        v-if="noticeMessage"
-        class="dashboard-message"
-        :class="`dashboard-message--${noticeMessageType}`"
-      >
-        {{ noticeMessage }}
-      </p>
       <p
         v-if="errorMessage"
         class="dashboard-state dashboard-state--error"
@@ -301,7 +310,34 @@ onMounted(() => {
               오늘 연락 고객
               <span>총 {{ contactCustomers.length }}명</span>
             </h3>
+
+            <div class="dashboard-contact__actions">
+              <button
+                class="dashboard-contact__bulk-button"
+                type="button"
+                @click="handleSendBulkWebForms"
+              >
+                웹폼 일괄발송
+              </button>
+
+              <button
+                class="dashboard-contact__bulk-button"
+                type="button"
+                @click="handleSendBulkReports"
+              >
+                리포트 일괄발송
+              </button>
+            </div>
           </div>
+          
+          <p
+            v-if="noticeMessage"
+            class="dashboard-message"
+            :class="`dashboard-message--${noticeMessageType}`"
+          >
+            {{ noticeMessage }}
+          </p>
+
           <DashboardContactCustomerTable
             v-model:selected-customer-ids="selectedCustomerIds"
             :customers="displayedContactCustomers"
@@ -309,8 +345,6 @@ onMounted(() => {
             :sending-report-ids="sendingReportIds"
             @send-web-form="handleSendWebForm"
             @send-report="handleSendReport"
-            @send-bulk-web-form="handleSendBulkWebForms"
-            @send-bulk-report="handleSendBulkReports"
           />
           <div class="dashboard-contact__footer">
             <SalesPagination
@@ -384,6 +418,10 @@ onMounted(() => {
 }
 
 .dashboard-contact__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 10px;
 }
 
@@ -400,6 +438,30 @@ onMounted(() => {
   font-size: 11px;
   font-weight: 700;
 }
+
+.dashboard-contact__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dashboard-contact__bulk-button {
+  min-width: 64px;
+  height: 24px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: #ffffff;
+  padding: 0 10px;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.dashboard-contact__bulk-button:hover {
+  background: color-mix(in srgb, var(--color-primary) 84%, black);
+}
+
 
 .dashboard-contact__footer {
   display: flex;
