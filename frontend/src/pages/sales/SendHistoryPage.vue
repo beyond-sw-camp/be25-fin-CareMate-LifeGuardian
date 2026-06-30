@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axios from 'axios'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import {
   getReportHistory,
   type ReportHistoryItem,
@@ -13,6 +13,17 @@ import AppSidebar from '../../components/common/Sidebar.vue'
 import SalesPagination from '../../components/sales/SalesPagination.vue'
 
 type StatusTone = 'success' | 'failed' | 'pending'
+type OptionScope = ReportHistorySendType
+type ItemTypeOption = {
+  label: string
+  value: ReportHistorySendItemType
+  scopes: OptionScope[]
+}
+type StatusOption = {
+  label: string
+  value: ReportHistorySendStatus
+  scopes: OptionScope[]
+}
 
 const activeType = ref<ReportHistorySendType>('all')
 const activeItemType = ref<ReportHistorySendItemType>('all')
@@ -33,20 +44,38 @@ const typeTabs = [
   { label: '웹폼', value: 'webform' },
 ] as const
 
-const itemTypeOptions = [
-  { label: '전체 항목', value: 'all' },
-  { label: '생애주기 리포트', value: 'report_lifecycle' },
-  { label: '질병 통계 리포트', value: 'report_disease' },
-  { label: '상담 웹폼', value: 'webform' },
-] as const
+const itemTypeOptions: ItemTypeOption[] = [
+  { label: '전체 항목', value: 'all', scopes: ['all', 'report', 'webform'] },
+  { label: '생애주기 리포트', value: 'report_lifecycle', scopes: ['all', 'report'] },
+  { label: '질병 통계 리포트', value: 'report_disease', scopes: ['all', 'report'] },
+  { label: '상담 웹폼', value: 'webform', scopes: ['all', 'webform'] },
+]
 
-const statusOptions = [
-  { label: '전체 상태', value: 'all' },
-  { label: '발송대기', value: 'pending' },
-  { label: '발송성공', value: 'success' },
-  { label: '발송실패', value: 'failed' },
-  { label: '회수완료', value: 'collected' },
-] as const
+const statusOptions: StatusOption[] = [
+  { label: '전체 상태', value: 'all', scopes: ['all', 'report', 'webform'] },
+  { label: '발송대기', value: 'pending', scopes: ['all', 'report', 'webform'] },
+  { label: '발송성공', value: 'success', scopes: ['all', 'report', 'webform'] },
+  { label: '발송실패', value: 'failed', scopes: ['all', 'report', 'webform'] },
+  { label: '회수완료', value: 'collected', scopes: ['all', 'webform'] },
+]
+
+const visibleItemTypeOptions = computed(() =>
+  itemTypeOptions.filter((option) => option.scopes.includes(activeType.value)),
+)
+
+const visibleStatusOptions = computed(() =>
+  statusOptions.filter((option) => option.scopes.includes(activeType.value)),
+)
+
+const syncFiltersWithType = () => {
+  if (!visibleItemTypeOptions.value.some((option) => option.value === activeItemType.value)) {
+    activeItemType.value = 'all'
+  }
+
+  if (!visibleStatusOptions.value.some((option) => option.value === activeStatus.value)) {
+    activeStatus.value = 'all'
+  }
+}
 
 const getErrorMessage = (error: unknown) => {
   if (axios.isAxiosError(error)) {
@@ -87,6 +116,7 @@ const loadHistory = async (page = currentPage.value) => {
 
 const handleTypeChange = (sendType: ReportHistorySendType) => {
   activeType.value = sendType
+  syncFiltersWithType()
   void loadHistory(1)
 }
 
@@ -136,7 +166,7 @@ onMounted(() => {
           <label>
             <span>항목</span>
             <select v-model="activeItemType" @change="handleSearch">
-              <option v-for="option in itemTypeOptions" :key="option.value" :value="option.value">
+              <option v-for="option in visibleItemTypeOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
               </option>
             </select>
@@ -145,21 +175,22 @@ onMounted(() => {
           <label>
             <span>상태</span>
             <select v-model="activeStatus" @change="handleSearch">
-              <option v-for="option in statusOptions" :key="option.value" :value="option.value">
+              <option v-for="option in visibleStatusOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
               </option>
             </select>
           </label>
 
-          <label class="send-history-search">
-            <span>검색</span>
+          <div class="send-history-search" role="search">
+            <label for="send-history-keyword">검색</label>
             <input
+              id="send-history-keyword"
               v-model="keyword"
               placeholder="고객명, 상태, 발송 항목"
               @keyup.enter="handleSearch"
             />
             <button type="button" @click="handleSearch">조회</button>
-          </label>
+          </div>
         </div>
       </section>
 
@@ -270,8 +301,7 @@ onMounted(() => {
   min-width: 0;
 }
 
-.send-history-filters label,
-.send-history-search {
+.send-history-filters label {
   display: grid;
   grid-template-columns: max-content minmax(132px, 170px);
   align-items: center;
@@ -282,11 +312,23 @@ onMounted(() => {
 }
 
 .send-history-search {
-  grid-template-columns: max-content minmax(220px, 300px) max-content;
+  display: grid;
+  grid-template-columns: max-content minmax(240px, 320px) 54px;
+  align-items: center;
+  gap: 8px;
+  color: #394252;
+  font-size: 11px;
+  font-weight: 800;
+  min-width: 0;
+}
+
+.send-history-search label {
+  white-space: nowrap;
 }
 
 .send-history-filters select,
 .send-history-search input {
+  min-width: 0;
   height: 30px;
   border: 1px solid #d9e0ea;
   border-radius: 5px;
@@ -298,14 +340,16 @@ onMounted(() => {
 }
 
 .send-history-search button {
+  width: 54px;
   height: 30px;
   border: 0;
   border-radius: 5px;
   background: var(--color-primary);
   color: #ffffff;
-  padding: 0 12px;
+  padding: 0;
   font-size: 11px;
   font-weight: 850;
+  white-space: nowrap;
 }
 
 .send-history-filters select:focus,
@@ -453,6 +497,10 @@ onMounted(() => {
   .send-history-search {
     display: grid;
     grid-template-columns: 1fr;
+  }
+
+  .send-history-search button {
+    width: 100%;
   }
 }
 </style>

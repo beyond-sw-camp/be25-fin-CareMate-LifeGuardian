@@ -6,93 +6,80 @@ import {
   resolveSalesCustomerStageName,
   type SalesCustomer,
 } from '@/api/sales'
+import SalesReportSendButton from '@/components/sales/SalesReportSendButton.vue'
 import SalesWebformSendButton from '@/components/sales/SalesWebformSendButton.vue'
 
 const props = defineProps<{
   customers: SalesCustomer[]
-  sendingCustomerIds?: number[]
-  selectedReportIds?: number[]
-  sendReport?: (customer: SalesCustomer) => void
+  selectedReportCustomerIds?: number[]
 }>()
 
 const emit = defineEmits<{
-  'update:selectedReportIds': [reportIds: number[]]
+  'update:selectedReportCustomerIds': [customerIds: number[]]
 }>()
 
 const SENDABLE_REPORT_STATUS_CODES = new Set(['01', '02', '03'])
 const selectAllCheckbox = ref<HTMLInputElement | null>(null)
 
-// 부모 페이지에서 내려준 진행 중 ID 목록으로 행 단위 로딩 상태를 판단합니다.
-const isSending = (customerId: number) => props.sendingCustomerIds?.includes(customerId) ?? false
-
 // 리포트 ID가 있고 발송 버튼 노출 조건을 만족하는 고객만 체크박스 선택 대상입니다.
-const isSelectableReport = (customer: SalesCustomer) =>
-  typeof customer.reportId === 'number' && customer.reportId > 0 && canShowSendButton(customer)
-const selectableReportIds = computed(() =>
-  props.customers
-    .filter(isSelectableReport)
-    .map((customer) => customer.reportId!),
-)
+const selectableCustomerIds = computed(() => props.customers.map((customer) => customer.customerId))
 
 // 백엔드 상태 코드와 canSendReport 플래그를 함께 보고 발송/재발송 버튼 노출 여부를 결정합니다.
 const canShowSendButton = (customer: SalesCustomer) =>
+  !customer.graduated &&
   customer.hasReport &&
   Boolean(customer.reportStatusCode) &&
   SENDABLE_REPORT_STATUS_CODES.has(customer.reportStatusCode!) &&
   (customer.canSendReport || customer.reportStatusCode === '02')
-const sendButtonLabel = (customer: SalesCustomer) => {
-  if (isSending(customer.customerId)) return '발송 중'
-  return customer.reportStatusCode === '02' ? '재발송' : '발송'
-}
 
 const webformStatusName = (customer: SalesCustomer) =>
   customer.webformStatusName ?? '-'
 
-const handleReportClick = (customer: SalesCustomer) => {
-  props.sendReport?.(customer)
+const reportStatusName = (customer: SalesCustomer) => {
+  if (customer.graduated) return '졸업'
+  if (!customer.reportUrl) return '미생성'
+  return customer.reportStatusName
 }
+
+const canOpenCustomerDetail = (customer: SalesCustomer) =>
+  customer.parentId != null
 
 const isAllSelected = computed(
   () =>
-    selectableReportIds.value.length > 0 &&
-    selectableReportIds.value.every((reportId) => props.selectedReportIds?.includes(reportId)),
+    selectableCustomerIds.value.length > 0 &&
+    selectableCustomerIds.value.every((customerId) =>
+      props.selectedReportCustomerIds?.includes(customerId),
+    ),
 )
 const isPartiallySelected = computed(
-  () => Boolean(props.selectedReportIds?.length) && !isAllSelected.value,
+  () => Boolean(props.selectedReportCustomerIds?.length) && !isAllSelected.value,
 )
 
 // 헤더 체크박스는 현재 화면에서 선택 가능한 리포트만 대상으로 전체 선택을 토글합니다.
 const toggleAllCustomers = () => {
-  emit('update:selectedReportIds', isAllSelected.value ? [] : selectableReportIds.value)
+  emit('update:selectedReportCustomerIds', isAllSelected.value ? [] : selectableCustomerIds.value)
 }
 
 // 개별 행 체크박스 선택 상태를 부모의 selectedReportIds v-model로 되돌립니다.
 const toggleReport = (customer: SalesCustomer) => {
-  if (!isSelectableReport(customer)) return
+  const selectedIds = props.selectedReportCustomerIds ?? []
+  const nextIds = selectedIds.includes(customer.customerId)
+    ? selectedIds.filter((selectedCustomerId) => selectedCustomerId !== customer.customerId)
+    : [...selectedIds, customer.customerId]
 
-  const reportId = customer.reportId!
-  const selectedIds = props.selectedReportIds ?? []
-  const nextIds = selectedIds.includes(reportId)
-    ? selectedIds.filter((selectedReportId) => selectedReportId !== reportId)
-    : [...selectedIds, reportId]
-
-  emit('update:selectedReportIds', nextIds)
+  emit('update:selectedReportCustomerIds', nextIds)
 }
 
 // 페이지/검색 조건 변경으로 화면에서 사라진 리포트는 선택 목록에서도 제거합니다.
 watch(
   () => props.customers,
   (customers) => {
-    const visibleReportIds = new Set(
-      customers
-        .filter(isSelectableReport)
-        .map((customer) => customer.reportId!),
-    )
-    const selectedIds = props.selectedReportIds ?? []
-    const nextIds = selectedIds.filter((reportId) => visibleReportIds.has(reportId))
+    const visibleCustomerIds = new Set(customers.map((customer) => customer.customerId))
+    const selectedIds = props.selectedReportCustomerIds ?? []
+    const nextIds = selectedIds.filter((customerId) => visibleCustomerIds.has(customerId))
 
     if (nextIds.length !== selectedIds.length) {
-      emit('update:selectedReportIds', nextIds)
+      emit('update:selectedReportCustomerIds', nextIds)
     }
   },
 )
@@ -183,8 +170,8 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
               ref="selectAllCheckbox"
               type="checkbox"
               :checked="isAllSelected"
-              :disabled="selectableReportIds.length === 0"
-              aria-label="현재 목록의 발송 가능한 리포트 전체 선택"
+              :disabled="selectableCustomerIds.length === 0"
+              aria-label="현재 목록의 고객 전체 선택"
               @change="toggleAllCustomers"
             />
           </th>
@@ -213,21 +200,26 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
           <td>
             <input
               type="checkbox"
-              :checked="Boolean(customer.reportId && selectedReportIds?.includes(customer.reportId))"
-              :disabled="!isSelectableReport(customer)"
-              :aria-label="`${customer.customerName} 리포트 선택`"
+              :checked="Boolean(selectedReportCustomerIds?.includes(customer.customerId))"
+              :aria-label="`${customer.customerName} 선택`"
               @change="toggleReport(customer)"
             />
           </td>
           <td>
             <RouterLink
+              v-if="canOpenCustomerDetail(customer)"
               class="customer-name"
-              :class="{ 'customer-name--age-shift': ageShiftGuide(customer) }"
+              :class="{
+                'customer-name--link': true,
+                'customer-name--age-shift': ageShiftGuide(customer),
+              }"
               :tabindex="ageShiftGuide(customer) ? 0 : undefined"
               :to="{
                 name: 'user-detail',
                 params: { customerId: customer.customerId },
-                query: { conversionStatusCode: resolveSalesCustomerStageCode(customer) },
+                query: {
+                  conversionStatusCode: resolveSalesCustomerStageCode(customer),
+                },
               }"
             >
               {{ customer.customerName }}
@@ -239,6 +231,21 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
                 {{ ageShiftGuide(customer) }}
               </span>
             </RouterLink>
+            <span
+              v-else
+              class="customer-name customer-name--disabled"
+              :class="{ 'customer-name--age-shift': ageShiftGuide(customer) }"
+              :tabindex="ageShiftGuide(customer) ? 0 : undefined"
+            >
+              {{ customer.customerName }}
+              <span
+                v-if="ageShiftGuide(customer)"
+                class="customer-name__tooltip"
+                role="tooltip"
+              >
+                {{ ageShiftGuide(customer) }}
+              </span>
+            </span>
           </td>
           <td>{{ genderLabel(customer.gender) }}</td>
           <td>{{ customer.age }}</td>
@@ -262,7 +269,12 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
           <td>{{ customer.insuredName }}</td>
           <td>{{ customer.webformReceivedAt }}</td>
           <td class="report-status">{{ webformStatusName(customer) }}</td>
-          <td class="report-status">{{ customer.reportStatusName }}</td>
+          <td
+            class="report-status"
+            :class="{ 'report-status--graduated': customer.graduated }"
+          >
+            {{ reportStatusName(customer) }}
+          </td>
           <td>
             <div class="sales-table__actions">
               <SalesWebformSendButton :customer="customer" />
@@ -270,18 +282,7 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
           </td>
           <td>
             <div class="sales-table__actions">
-              <button
-                class="report-button"
-                :class="{
-                  'report-button--resend': customer.reportStatusCode === '02',
-                  'report-button--disabled': !canShowSendButton(customer),
-                }"
-                type="button"
-                :disabled="!canShowSendButton(customer) || isSending(customer.customerId)"
-                @click="handleReportClick(customer)"
-              >
-                {{ canShowSendButton(customer) ? sendButtonLabel(customer) : '발송' }}
-              </button>
+              <SalesReportSendButton :customer="customer" />
             </div>
           </td>
         </tr>
@@ -310,16 +311,16 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
 
 .sales-table th,
 .sales-table td {
-  height: 36px;
+  height: 32px;
   border-bottom: 1px solid #edf1f6;
-  padding: 0 9px;
+  padding: 0 8px;
   text-align: center;
   font-size: 11px;
   white-space: nowrap;
 }
 
 .sales-table th {
-  height: 32px;
+  height: 30px;
   background: #f6f8fb;
   color: #4c586b;
   font-weight: 800;
@@ -353,16 +354,16 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
   accent-color: var(--color-primary);
 }
 
-.sales-table tbody tr.sales-table__row--age-shift-warning .customer-name {
+.sales-table tbody tr.sales-table__row--age-shift-warning .customer-name--age-shift {
   text-decoration-color: rgb(251 146 60 / 42%);
 }
 
-.sales-table tbody tr.sales-table__row--age-shift-near .customer-name {
+.sales-table tbody tr.sales-table__row--age-shift-near .customer-name--age-shift {
   text-decoration-color: rgb(250 204 21 / 48%);
 }
 
-.sales-table tbody tr.sales-table__row--age-shift-warning .customer-name,
-.sales-table tbody tr.sales-table__row--age-shift-near .customer-name {
+.sales-table tbody tr.sales-table__row--age-shift-warning .customer-name--age-shift,
+.sales-table tbody tr.sales-table__row--age-shift-near .customer-name--age-shift {
   text-decoration-line: underline;
   text-decoration-skip-ink: none;
   text-decoration-thickness: 0.62em;
@@ -376,8 +377,16 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
   font-weight: 700;
 }
 
-.customer-name:hover {
+.customer-name--link {
+  text-decoration: none;
+}
+
+.customer-name--link:hover {
   color: var(--color-primary);
+}
+
+.customer-name--disabled {
+  color: #98a2b3;
 }
 
 .customer-name--age-shift {
@@ -488,7 +497,7 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
   height: 24px;
   border: 0;
   border-radius: 5px;
-  background: #4e63e6;
+  background: var(--color-primary);
   color: #ffffff;
   padding: 0 10px;
   font-size: 10px;
@@ -502,32 +511,32 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
   gap: 5px;
 }
 
-.report-button--disabled {
-  background: #c5cad3;
-  color: #ffffff;
-}
-
 .report-button--webform {
   min-width: 54px;
 }
 
 .report-button--resend {
-  border: 1px solid #4e63e6;
-  background: #f2f5ff;
-  color: #3446c5;
-  box-shadow: inset 0 0 0 1px rgb(78 99 230 / 8%);
+  border: 1px solid var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 8%, white);
+  color: var(--color-primary);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
 
 .report-button--resend:hover:not(:disabled) {
-  background: #e7ecff;
-  color: #2638b8;
+  background: color-mix(in srgb, var(--color-primary) 14%, white);
+  color: var(--color-primary);
 }
 
 .report-button:hover:not(:disabled) {
-  background: #4055d4;
+  background: color-mix(in srgb, var(--color-primary) 84%, black);
 }
 
 .report-status {
   font-weight: 400;
+}
+
+.report-status--graduated {
+  color: #8a6412;
+  font-weight: 800;
 }
 </style>

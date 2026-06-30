@@ -3,7 +3,9 @@ package com.caremate.lifeguardian.report.service;
 import com.caremate.lifeguardian.common.exception.BaseException;
 import com.caremate.lifeguardian.report.dto.internal.ReportTargetDto;
 import com.caremate.lifeguardian.report.dto.internal.data.DiseaseRiskItemDto;
+import com.caremate.lifeguardian.report.dto.internal.data.DiseaseRiskSummaryDto;
 import com.caremate.lifeguardian.report.dto.internal.data.GrowthStandardDto;
+import com.caremate.lifeguardian.report.dto.internal.data.ReportContractSummaryDto;
 import com.caremate.lifeguardian.report.dto.internal.data.ReportCustomerInfoDto;
 import com.caremate.lifeguardian.report.dto.internal.data.ReportWebformDto;
 import com.caremate.lifeguardian.report.mapper.ReportMapper;
@@ -27,8 +29,12 @@ public class ReportDataServiceImpl {
 
     private static final String GROWTH_REPORT_TYPE = "01";
     private static final String INPATIENT = "입원";
-    private static final String OUTPATIENT = "외래";
+    private static final String OUTPATIENT = "OUTPATIENT";
     private static final int RISK_LIMIT_PER_TREATMENT = 2;
+    private static final int TOP_DISEASE_LIMIT = 5;
+    private static final int UNCONSULTED_RISK_CARD_LIMIT = 2;
+    private static final int NEXT_WATCH_DISEASE_LIMIT = 3;
+    private static final int CONTRACT_SUMMARY_LIMIT = 3;
 
     private final ReportMapper reportMapper;
     private final GrowthChartService growthChartService;
@@ -47,23 +53,65 @@ public class ReportDataServiceImpl {
         }
 
         AgeGroup currentAgeGroup = AgeGroup.fromAge(customer.getChildAge());
+        AgeGroup nextAgeGroup = currentAgeGroup.next();
+        LifeStage currentLifeStage = LifeStage.fromAge(customer.getChildAge());
+        LifeStage nextLifeStage = currentLifeStage.next();
         ReportWebformDto webform = target.getWebFormId() == null
                 ? null
                 : reportMapper.selectReportWebform(target.getWebFormId());
+        boolean unconsultedPotentialCustomer = "01".equals(target.getConversionStatusCode())
+                && "01".equals(customer.getConsultStatusCode());
+        boolean integratedCustomer = "02".equals(target.getConversionStatusCode());
+
+        List<DiseaseRiskItemDto> topDiseases = new ArrayList<>(
+                reportMapper.selectTopDiseaseRisks(
+                        currentAgeGroup.databaseCode,
+                        customer.getChildGender(),
+                        TOP_DISEASE_LIMIT
+                )
+        );
+        applyDiseaseDisplayNames(topDiseases);
+        applyDiseaseBarWidths(topDiseases);
+        List<DiseaseRiskSummaryDto> diseaseSummaries = new ArrayList<>(
+                reportMapper.selectDiseaseRiskSummaries(
+                        currentAgeGroup.databaseCode,
+                        customer.getChildGender()
+                )
+        );
+        applySummaryDisplayNames(diseaseSummaries);
+        applySummaryBarWidths(diseaseSummaries);
+        List<DiseaseRiskItemDto> nextWatchDiseases = new ArrayList<>(
+                reportMapper.selectTopDiseaseRisks(
+                        nextAgeGroup.databaseCode,
+                        customer.getChildGender(),
+                        NEXT_WATCH_DISEASE_LIMIT
+                )
+        );
+        applyDiseaseDisplayNames(nextWatchDiseases);
+        List<ReportContractSummaryDto> contractSummaries = integratedCustomer
+                ? reportMapper.selectContractSummaries(target.getCustomerId(), CONTRACT_SUMMARY_LIMIT)
+                : List.of();
 
         List<DiseaseRiskItemDto> currentRisks = new ArrayList<>();
-        currentRisks.addAll(loadRisks(
-                currentAgeGroup,
-                customer.getChildGender(),
-                INPATIENT,
-                RISK_LIMIT_PER_TREATMENT
-        ));
-        currentRisks.addAll(loadRisks(
-                currentAgeGroup,
-                customer.getChildGender(),
-                OUTPATIENT,
-                RISK_LIMIT_PER_TREATMENT
-        ));
+        if (unconsultedPotentialCustomer && webform == null) {
+            currentRisks.addAll(topDiseases.stream()
+                    .limit(UNCONSULTED_RISK_CARD_LIMIT)
+                    .peek(item -> item.setDescription(createTopDiseaseDescription(currentAgeGroup, item)))
+                    .toList());
+        } else {
+            currentRisks.addAll(loadRisks(
+                    currentAgeGroup,
+                    customer.getChildGender(),
+                    INPATIENT,
+                    RISK_LIMIT_PER_TREATMENT
+            ));
+            currentRisks.addAll(loadRisks(
+                    currentAgeGroup,
+                    customer.getChildGender(),
+                    OUTPATIENT,
+                    RISK_LIMIT_PER_TREATMENT
+            ));
+        }
 
         List<GrowthStandardDto> growthStandards = List.of();
         String heightSummary = null;
@@ -93,6 +141,8 @@ public class ReportDataServiceImpl {
         variables.put("generatedAt", LocalDate.now());
         variables.put("reportTitle", webform == null ? "질병 통계 리포트" : "성장 리포트");
         variables.put("hasWebform", webform != null);
+        variables.put("unconsultedPotentialCustomer", unconsultedPotentialCustomer);
+        variables.put("integratedCustomer", integratedCustomer);
         variables.put("customer", customer);
         variables.put("webform", webform);
         variables.put("growthStandards", growthStandards);
@@ -100,7 +150,20 @@ public class ReportDataServiceImpl {
                 ? null
                 : growthChartService.createCombinedChart(growthStandards));
         variables.put("currentRisks", currentRisks);
+        variables.put("topDiseases", topDiseases);
+        variables.put("diseaseSummaries", diseaseSummaries);
+        variables.put("nextWatchDiseases", nextWatchDiseases);
+        variables.put("contractSummaries", contractSummaries);
         variables.put("currentAgeGroupName", currentAgeGroup.displayName);
+        variables.put("nextAgeGroupName", nextAgeGroup.displayName);
+        variables.put("currentLifeStageName", currentLifeStage.displayName);
+        variables.put("nextLifeStageName", nextLifeStage.displayName);
+        variables.put("nextLifeStageTransition", currentLifeStage == nextLifeStage
+                ? "현재 생애주기가 이어지는 구간입니다."
+                : "%d세부터 %s로 전환됩니다.".formatted(
+                        nextLifeStage.minAge,
+                        nextLifeStage.displayName
+                ));
         variables.put("heightSummary", heightSummary);
         variables.put("weightSummary", weightSummary);
         return variables;
@@ -123,6 +186,7 @@ public class ReportDataServiceImpl {
                         limit
                 )
         );
+        applyDiseaseDisplayNames(risks);
 
         return risks.stream()
                 .peek(item -> item.setDescription(createRiskDescription(ageGroup, item)))
@@ -138,13 +202,86 @@ public class ReportDataServiceImpl {
                 .append("에서 ")
                 .append(item.getDiseaseName())
                 .append(" 관련 ")
-                .append(item.getTreatmentType())
+                .append(item.getTreatmentTypeName())
                 .append(" 진료가 많이 나타납니다.");
 
         if (item.getCategoryName() != null) {
             description.append(" ").append(item.getCategoryName()).append(" 점검이 필요할 수 있습니다.");
         }
         return description.toString();
+    }
+
+    private void applyDiseaseBarWidths(List<DiseaseRiskItemDto> diseases) {
+        int maxPatientCount = diseases.stream()
+                .map(DiseaseRiskItemDto::getPatientCount)
+                .filter(count -> count != null && count > 0)
+                .max(Integer::compareTo)
+                .orElse(0);
+
+        for (DiseaseRiskItemDto disease : diseases) {
+            if (maxPatientCount == 0 || disease.getPatientCount() == null) {
+                disease.setBarWidthPercent(0);
+                continue;
+            }
+            disease.setBarWidthPercent(Math.max(
+                    6,
+                    Math.round(disease.getPatientCount() * 100.0f / maxPatientCount)
+            ));
+        }
+    }
+
+    private void applyDiseaseDisplayNames(List<DiseaseRiskItemDto> diseases) {
+        diseases.forEach(disease ->
+                disease.setTreatmentTypeName(toTreatmentTypeName(disease.getTreatmentType()))
+        );
+    }
+
+    private void applySummaryDisplayNames(List<DiseaseRiskSummaryDto> summaries) {
+        summaries.forEach(summary ->
+                summary.setTreatmentTypeName(toTreatmentTypeName(summary.getTreatmentType()))
+        );
+    }
+
+    private void applySummaryBarWidths(List<DiseaseRiskSummaryDto> summaries) {
+        int maxPatientCount = summaries.stream()
+                .map(DiseaseRiskSummaryDto::getTotalPatientCount)
+                .filter(count -> count != null && count > 0)
+                .max(Integer::compareTo)
+                .orElse(0);
+
+        for (DiseaseRiskSummaryDto summary : summaries) {
+            if (maxPatientCount == 0 || summary.getTotalPatientCount() == null) {
+                summary.setBarWidthPercent(0);
+                continue;
+            }
+            summary.setBarWidthPercent(Math.max(
+                    6,
+                    Math.round(summary.getTotalPatientCount() * 100.0f / maxPatientCount)
+            ));
+        }
+    }
+
+    private String toTreatmentTypeName(String treatmentType) {
+        if ("OUTPATIENT".equalsIgnoreCase(treatmentType)) {
+            return "외래";
+        }
+        if ("INPATIENT".equalsIgnoreCase(treatmentType)) {
+            return "입원";
+        }
+        return treatmentType == null ? "-" : treatmentType;
+    }
+
+    private String createTopDiseaseDescription(
+            AgeGroup ageGroup,
+            DiseaseRiskItemDto item
+    ) {
+        return "%s %s 기준 %s 진료 인원 %,d명"
+                .formatted(
+                        ageGroup.displayName,
+                        item.getTreatmentTypeName(),
+                        item.getDiseaseName(),
+                        item.getPatientCount() == null ? 0 : item.getPatientCount()
+                );
     }
 
     /**
@@ -302,6 +439,43 @@ public class ReportDataServiceImpl {
                 }
             }
             return age < 0 ? AGE_01 : AGE_04;
+        }
+
+        private AgeGroup next() {
+            int nextOrdinal = Math.min(ordinal() + 1, values().length - 1);
+            return values()[nextOrdinal];
+        }
+
+    }
+
+    private enum LifeStage {
+        INFANT(0, 6, "영유아기"),
+        SCHOOL(7, 13, "학령기"),
+        ADOLESCENT(14, 20, "청소년기"),
+        ADULT(21, 200, "성인");
+
+        private final int minAge;
+        private final int maxAge;
+        private final String displayName;
+
+        LifeStage(int minAge, int maxAge, String displayName) {
+            this.minAge = minAge;
+            this.maxAge = maxAge;
+            this.displayName = displayName;
+        }
+
+        private static LifeStage fromAge(int age) {
+            for (LifeStage stage : values()) {
+                if (age >= stage.minAge && age <= stage.maxAge) {
+                    return stage;
+                }
+            }
+            return age < 0 ? INFANT : ADULT;
+        }
+
+        private LifeStage next() {
+            int nextOrdinal = Math.min(ordinal() + 1, values().length - 1);
+            return values()[nextOrdinal];
         }
 
     }

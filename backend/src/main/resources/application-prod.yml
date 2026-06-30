@@ -64,7 +64,7 @@ jwt:
 
 aws:
   lambda:
-    recommend-url: ${AWS_LAMBDA_RECOMMEND_URL:http://localhost:8000/recommend}
+    recommend-url: ${AWS_LAMBDA_RECOMMEND_URL:http://172.17.0.1:8000/recommend}
   cloudwatch:
     region: ap-northeast-2
     access-key: ""     # ~/.aws/credentials 파일을 읽도록 빈 값 처리
@@ -88,19 +88,19 @@ app:
       bucket: ${S3_BUCKET}
       region: ${S3_REGION:ap-northeast-2}
       key-prefix: ${S3_REPORT_KEY_PREFIX:reports}
-      public-base-url: ${S3_PUBLIC_BASE_URL:}
       path-style-access: false
+      presigned-url-expiration-minutes: ${REPORT_PRESIGNED_URL_EXPIRATION_MINUTES:10}
 
     pdf:
       font-location: ${REPORT_PDF_FONT_LOCATION:classpath:/fonts/Pretendard-Regular.ttf}
 
     batch:
-      enabled: ${REPORT_BATCH_ENABLED:false}
-      cron: ${REPORT_BATCH_CRON:0 0 3 * * *}
+      enabled: ${REPORT_BATCH_ENABLED:true}
+      cron: ${REPORT_BATCH_CRON:0 3 * * * *}
       zone: ${REPORT_BATCH_ZONE:Asia/Seoul}
 
   lifecycle:
     batch:
-      enabled: ${LIFECYCLE_BATCH_ENABLED:false}
+      enabled: ${LIFECYCLE_BATCH_ENABLED:true}
       cron: ${LIFECYCLE_BATCH_CRON:0 1 * * * *}
       zone: ${LIFECYCLE_BATCH_ZONE:Asia/Seoul}

@@ -5,9 +5,13 @@ import com.caremate.lifeguardian.report.dto.internal.ReportSendTargetDto;
 import com.caremate.lifeguardian.report.dto.internal.ReportTargetDto;
 import com.caremate.lifeguardian.report.dto.response.ReportBulkSendResultDto;
 import com.caremate.lifeguardian.report.dto.response.ReportCreateResultDto;
+import com.caremate.lifeguardian.report.dto.response.ReportPreviewUrlResponse;
+import com.caremate.lifeguardian.report.mapper.ReportMapper;
 import com.caremate.lifeguardian.report.dto.response.ReportSendResultDto;
 import com.caremate.lifeguardian.report.mapper.ReportSendMapper;
+import com.caremate.lifeguardian.report.service.ReportStorageServiceImpl.PresignedReportUrl;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -22,6 +26,7 @@ import java.util.Set;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ReportServiceImpl implements ReportService {
 
     private static final String SEND_PENDING = "01";
@@ -29,6 +34,8 @@ public class ReportServiceImpl implements ReportService {
     private static final String SEND_FAILED = "03";
 
     private final ReportTransactionService reportTransactionService;
+    private final ReportStorageServiceImpl reportStorageService;
+    private final ReportMapper reportMapper;
     private final ReportSendMapper reportSendMapper;
 
     /**
@@ -43,11 +50,41 @@ public class ReportServiceImpl implements ReportService {
                 validateTarget(target);
                 results.add(reportTransactionService.createReport(target));
             } catch (Exception e) {
+                log.warn(
+                        "Report creation failed: customerId={}, conversionStatusCode={}, reportTypeCode={}, webFormId={}",
+                        target.getCustomerId(),
+                        target.getConversionStatusCode(),
+                        target.getReportTypeCode(),
+                        target.getWebFormId(),
+                        e
+                );
                 results.add(ReportCreateResultDto.fail(target, e.getMessage()));
             }
         }
 
         return results;
+    }
+
+    @Override
+    public ReportPreviewUrlResponse createReportPreviewUrl(Long reportId, Long currentUserId) {
+        if (reportId == null || reportId < 1) {
+            throw new BaseException(400, "유효하지 않은 리포트 ID입니다.");
+        }
+        if (currentUserId == null || currentUserId < 1) {
+            throw new BaseException(401, "로그인이 필요합니다.");
+        }
+
+        String reportLocation = reportMapper.selectReportLocationForPreview(reportId, currentUserId);
+        if (reportLocation == null || reportLocation.isBlank()) {
+            throw new BaseException(404, "리포트를 찾을 수 없거나 열람 권한이 없습니다.");
+        }
+
+        PresignedReportUrl presignedUrl = reportStorageService.createReadUrl(reportLocation);
+        return ReportPreviewUrlResponse.builder()
+                .reportId(reportId)
+                .previewUrl(presignedUrl.url())
+                .expiresAt(presignedUrl.expiresAt())
+                .build();
     }
 
     /**
@@ -153,6 +190,15 @@ public class ReportServiceImpl implements ReportService {
     }
 
     private void validateTarget(ReportTargetDto target) {
+        int ownedCustomerCount = reportMapper.countReportTargetBySalesUser(
+                target.getCustomerId(),
+                target.getConversionStatusCode(),
+                target.getCurrentUserId()
+        );
+        if (ownedCustomerCount < 1) {
+            throw new BaseException(403, "해당 고객의 리포트를 생성할 권한이 없습니다.");
+        }
+
         if ("01".equals(target.getReportTypeCode())
                 && target.getWebFormId() == null) {
             throw new BaseException(400, "성장 리포트는 웹폼 응답이 필요합니다.");
