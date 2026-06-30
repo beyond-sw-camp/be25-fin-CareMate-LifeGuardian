@@ -6,7 +6,7 @@
     <style>
         @page {
             size: A4;
-            margin: 10mm 12mm;
+            margin: 8mm 10mm;
         }
 
         * {
@@ -92,19 +92,19 @@
         }
 
         .section {
-            margin-top: 13px;
+            margin-top: 9px;
             page-break-inside: auto;
         }
 
         .section-title {
-            margin: 0 0 4px;
+            margin: 0 0 3px;
             color: #202b42;
-            font-size: 14px;
+            font-size: 12px;
             page-break-after: avoid;
         }
 
         .section-description {
-            margin-bottom: 7px;
+            margin-bottom: 5px;
             color: #7b8496;
             font-size: 8px;
             page-break-after: avoid;
@@ -218,6 +218,129 @@
             color: #5d6678;
         }
 
+        .disease-chart {
+            margin-top: 5px;
+            padding: 8px 10px;
+            border: 1px solid #dfe7f1;
+            border-radius: 6px;
+            background: #ffffff;
+        }
+
+        .disease-row {
+            margin-top: 7px;
+        }
+
+        .disease-label {
+            color: #374151;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .disease-count {
+            width: 78px;
+            color: #6b7280;
+            font-weight: normal;
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .disease-label-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .disease-label-table td {
+            padding: 0;
+            border: 0;
+            vertical-align: top;
+        }
+
+        .disease-name-cell {
+            padding-right: 8px;
+        }
+
+        .bar-track {
+            width: 100%;
+            height: 11px;
+            margin-top: 3px;
+            border-radius: 11px;
+            background: #edf2f7;
+        }
+
+        .bar-fill {
+            height: 11px;
+            border-radius: 11px;
+            background: #5f7fa8;
+        }
+
+        .summary-grid {
+            width: 100%;
+            margin-top: 4px;
+            border-collapse: separate;
+            border-spacing: 4px;
+        }
+
+        .summary-grid td {
+            width: 50%;
+            padding: 6px 8px;
+            border: 1px solid #e1e8f0;
+            border-radius: 6px;
+            background: #f8fbff;
+            vertical-align: top;
+        }
+
+        .summary-label {
+            color: #64748b;
+            font-size: 8px;
+        }
+
+        .summary-value {
+            margin-top: 2px;
+            color: #1f2937;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .summary-help {
+            margin-top: 5px;
+            color: #64748b;
+            font-size: 8px;
+        }
+
+        .watch-list {
+            margin: 6px 0 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .watch-list li {
+            margin-top: 4px;
+            padding: 5px 7px;
+            border-radius: 5px;
+            background: #ffffff;
+            color: #374151;
+        }
+
+        .contract-table {
+            width: 100%;
+            margin-top: 5px;
+            border-collapse: collapse;
+            font-size: 8.5px;
+        }
+
+        .contract-table th,
+        .contract-table td {
+            padding: 4px 5px;
+            border-bottom: 1px solid #e5edf5;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .contract-table th {
+            color: #64748b;
+            background: #f8fbff;
+        }
+
         .empty {
             padding: 12px;
             color: #7b8496;
@@ -232,6 +355,55 @@
             border: 1px solid #ead7f1;
             border-radius: 5px;
             background: #fbf5ff;
+        }
+
+        .advisor-box {
+            margin-top: 9px;
+            padding: 8px 10px;
+            border: 1px solid #cfe1f5;
+            border-radius: 7px;
+            background: #f4f8fd;
+            page-break-inside: avoid;
+        }
+
+        .advisor-title {
+            margin: 0 0 4px;
+            color: #1f2a44;
+            font-size: 12px;
+        }
+
+        .advisor-grid {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 4px;
+        }
+
+        .advisor-grid td {
+            width: 50%;
+            padding: 5px 7px;
+            border-radius: 5px;
+            background: #ffffff;
+            vertical-align: top;
+        }
+
+        .advisor-label {
+            color: #64748b;
+            font-size: 8px;
+        }
+
+        .advisor-value {
+            margin-top: 2px;
+            color: #111827;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .advisor-action {
+            margin-top: 5px;
+            padding: 7px 9px;
+            border-radius: 5px;
+            background: #ffffff;
+            color: #475569;
         }
     </style>
 </head>
@@ -283,6 +455,74 @@
     </tr>
 </table>
 
+<section class="section" th:if="${integratedCustomer}">
+    <h2 class="section-title">가입 보험 요약</h2>
+    <div class="section-description">
+        현재 고객에게 연결된 계약 중 최근 계약을 기준으로 상품과 계약 상태를 요약했습니다.
+    </div>
+    <div th:if="${#lists.isEmpty(contractSummaries)}" class="empty">
+        현재 고객에게 연결된 계약 정보가 없습니다.
+    </div>
+    <table th:if="${!#lists.isEmpty(contractSummaries)}" class="contract-table">
+        <tr>
+            <th>상품명</th>
+            <th>계약자</th>
+            <th>피보험자</th>
+            <th>계약 상태</th>
+            <th>계약일</th>
+        </tr>
+        <tr th:each="contract : ${contractSummaries}">
+            <td th:text="${contract.productName}">상품명</td>
+            <td th:text="${contract.contractorName ?: '-'}">계약자</td>
+            <td th:text="${contract.insuredName ?: '-'}">피보험자</td>
+            <td>
+                <span th:text="${contract.contractStatusName}">수납완료</span>
+                /
+                <span th:text="${contract.contractResultStatusName}">계약성공</span>
+            </td>
+            <td th:text="${#temporals.format(contract.contractDate, 'yyyy-MM-dd')}">2026-06-30</td>
+        </tr>
+    </table>
+</section>
+
+<section class="section">
+    <h2 class="section-title">현재 생애주기 요약</h2>
+    <div class="section-description">
+        고객의 생년월일과 현재 나이를 기준으로 상담에 필요한 생애주기 정보를 정리했습니다.
+    </div>
+
+    <table class="summary-grid">
+        <tr>
+            <td>
+                <div class="summary-label">현재 생애주기</div>
+                <div class="summary-value" th:text="${currentLifeStageName}">청소년기</div>
+                <div class="summary-help">
+                    현재 연령대: <span th:text="${currentAgeGroupName}">15~19세</span>
+                </div>
+            </td>
+            <td>
+                <div class="summary-label">다음 생애주기 변화</div>
+                <div class="summary-value" th:text="${nextLifeStageName}">성인</div>
+                <div class="summary-help" th:text="${nextLifeStageTransition}">21세부터 성인으로 전환됩니다.</div>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                <div class="summary-label">다음 연령대에서 병원 이용이 많은 질환</div>
+                <ul class="watch-list">
+                    <li th:each="disease : ${nextWatchDiseases}">
+                        <span th:text="${disease.diseaseName}">질환명</span>
+                        <span>
+                            (<span th:text="${disease.treatmentTypeName}">외래</span>,
+                            <span th:text="${#numbers.formatInteger(disease.patientCount, 0, 'COMMA')}">0</span>명)
+                        </span>
+                    </li>
+                </ul>
+            </td>
+        </tr>
+    </table>
+</section>
+
 <section class="section" th:if="${hasWebform}">
     <h2 class="section-title">표준 성장 곡선 분석</h2>
     <div class="section-description">
@@ -324,7 +564,91 @@
 
 </section>
 
-<section class="section risk-section">
+<section class="section">
+    <h2 class="section-title">통계 기준 요약</h2>
+    <div class="section-description">
+        상담 전 확인된 기본정보와 현재 DB에 적재된 최신 질병 통계를 기준으로 구성했습니다.
+    </div>
+
+    <table class="summary-grid">
+        <tr>
+            <td>
+                <div class="summary-label">분석 기준</div>
+                <div class="summary-value">
+                    <span th:text="${currentAgeGroupName}">연령대</span> /
+                    <span th:text="${customer.childGender == 'MALE' ? '남성' : '여성'}">성별</span>
+                </div>
+            </td>
+            <td th:if="${!integratedCustomer}">
+                <div class="summary-label">상담 상태</div>
+                <div class="summary-value" th:text="${customer.consultStatusName ?: '미상담'}">미상담</div>
+            </td>
+            <td th:if="${integratedCustomer}">
+                <div class="summary-label">고객 유형</div>
+                <div class="summary-value">통합 고객</div>
+            </td>
+        </tr>
+    </table>
+
+    <div th:if="${!#lists.isEmpty(diseaseSummaries)}" class="disease-chart">
+        <div th:each="summary : ${diseaseSummaries}" class="disease-row">
+            <div class="disease-label">
+                <table class="disease-label-table">
+                    <tr>
+                        <td class="disease-name-cell">
+                            <span th:text="${summary.treatmentTypeName + ' 진료'}">외래 진료</span>
+                        </td>
+                        <td class="disease-count">
+                            <span th:text="${#numbers.formatInteger(summary.totalPatientCount, 0, 'COMMA')}">0</span>명
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div class="bar-track">
+                <div class="bar-fill" th:style="'width:' + ${summary.barWidthPercent} + '%;'"></div>
+            </div>
+            <div class="summary-help">
+                <span th:text="${summary.dataYear}">2025</span>년 동일 연령대 주요 질환 통계 기준
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <h2 class="section-title">동일 연령대 주요 질환 TOP 5</h2>
+    <div class="section-description">
+        현재 고객과 같은 연령대·성별에서 진료 인원이 많은 질환 순위입니다.
+    </div>
+
+    <div th:if="${#lists.isEmpty(topDiseases)}" class="empty">
+        현재 연령대에 적재된 질병 통계가 없습니다.
+    </div>
+    <div th:if="${!#lists.isEmpty(topDiseases)}" class="disease-chart">
+        <div th:each="disease : ${topDiseases}" class="disease-row">
+            <div class="disease-label">
+                <table class="disease-label-table">
+                    <tr>
+                        <td class="disease-name-cell">
+                            <span th:text="${disease.rank}">1</span>위
+                            <span th:text="${disease.diseaseName}">질환명</span>
+                            <span>
+                                (<span th:text="${disease.treatmentTypeName}">외래</span>)
+                            </span>
+                        </td>
+                        <td class="disease-count">
+                            <span th:text="${#numbers.formatInteger(disease.patientCount, 0, 'COMMA')}">0</span>명
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div class="bar-track">
+                <div class="bar-fill" th:style="'width:' + ${disease.barWidthPercent} + '%;'"></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section risk-section" th:if="${integratedCustomer or hasWebform}">
     <h2 class="section-title">생애주기별 질병·상해 위험 분석</h2>
     <div class="section-description">
         질병관리청 통계의 진료 인원 순위를 기준으로 현재 연령대의 주요 위험을 보여줍니다.
@@ -338,12 +662,37 @@
          th:class="${status.index == 0 ? 'risk-card primary' : 'risk-card'}">
         <span class="risk-name" th:text="${risk.diseaseName}">질병명</span>
         <span class="risk-rank">
-            <span th:text="${risk.treatmentType}">입원</span>
+            <span th:text="${risk.treatmentTypeName}">입원</span>
             <span th:text="${risk.rank}">1</span>위
         </span>
         <div class="risk-description" th:text="${risk.description}">위험 설명</div>
     </div>
 
+</section>
+
+<section class="advisor-box">
+    <h2 class="advisor-title">담당 설계사 안내</h2>
+    <table class="advisor-grid">
+        <tr>
+            <td>
+                <div class="advisor-label">담당 설계사</div>
+                <div class="advisor-value" th:text="${customer.salesUserName ?: '-'}">담당자명</div>
+            </td>
+            <td>
+                <div class="advisor-label">연락처</div>
+                <div class="advisor-value" th:text="${customer.salesUserPhone ?: '-'}">010-0000-0000</div>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                <div class="advisor-label">이메일</div>
+                <div class="advisor-value" th:text="${customer.salesUserEmail ?: '-'}">advisor@example.com</div>
+            </td>
+        </tr>
+    </table>
+    <div class="advisor-action">
+        더 정확한 리포트를 위해 상담을 요청하거나 웹폼을 작성하면 키·몸무게, 병력, 생활습관 정보를 반영한 개인 맞춤 분석을 확인할 수 있습니다.
+    </div>
 </section>
 
 </body>

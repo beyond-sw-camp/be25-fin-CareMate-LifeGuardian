@@ -12,10 +12,12 @@ public class DiseaseRiskItemDto {
     private String diseaseCode;
     private String diseaseName;
     private String treatmentType;
+    private String treatmentTypeName;
     private Integer patientCount;
     private Integer rank;
     private String categoryCode;
     private String categoryName;
     private String coverageName;
     private String description;
+    private Integer barWidthPercent;
 }
