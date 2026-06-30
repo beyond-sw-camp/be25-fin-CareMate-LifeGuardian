@@ -81,7 +81,9 @@ const resetVerification = () => {
 }
 
 watch([customerId, conversionStatusCode], () => {
-  resetVerification()
+  if (!isTokenVerified.value) {
+    resetVerification()
+  }
 })
 
 // 관심 카테고리 옵션 정의
