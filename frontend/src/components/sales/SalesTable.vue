@@ -42,7 +42,7 @@ const reportStatusName = (customer: SalesCustomer) => {
 }
 
 const canOpenCustomerDetail = (customer: SalesCustomer) =>
-  typeof customer.parentId === 'number' && customer.parentId > 0
+  customer.parentId != null
 
 const isAllSelected = computed(
   () =>
