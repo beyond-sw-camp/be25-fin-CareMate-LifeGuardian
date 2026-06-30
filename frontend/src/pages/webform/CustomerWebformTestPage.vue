@@ -455,9 +455,9 @@ const handleSubmit = async () => {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  --primary: #4e63e6;
-  --primary-hover: #374bd1;
-  --primary-rgb: 78, 99, 230;
+  --primary: #ff4e00;
+  --primary-hover: #e64600;
+  --primary-rgb: 255, 78, 0;
   background: linear-gradient(135deg, #f5f7fc 0%, #eef1f8 100%);
   font-family: 'Outfit', 'Noto Sans KR', sans-serif;
   color: #273043;
@@ -473,7 +473,7 @@ const handleSubmit = async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1.5px solid rgba(78, 99, 230, 0.08);
+  border-bottom: 1.5px solid rgba(255, 78, 0, 0.08);
   padding-bottom: 8px;
 }
 
@@ -494,7 +494,7 @@ const handleSubmit = async () => {
 .logo-text {
   font-size: 14px;
   font-weight: 900;
-  background: linear-gradient(135deg, #4e63e6 0%, #303f9f 100%);
+  background: linear-gradient(135deg, #ff4e00 0%, #cc3e00 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }

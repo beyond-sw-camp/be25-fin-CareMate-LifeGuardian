@@ -129,7 +129,7 @@ const handleCopy = async () => {
 .header-icon {
   width: 36px;
   height: 36px;
-  background: rgba(78, 99, 230, 0.08);
+  background: rgba(255, 78, 0, 0.08);
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -175,7 +175,7 @@ const handleCopy = async () => {
 }
 
 .customer-info-text strong {
-  color: #4e63e6;
+  color: #ff4e00;
   font-weight: 800;
 }
 
@@ -192,7 +192,7 @@ const handleCopy = async () => {
 }
 
 .link-copy-container:focus-within {
-  border-color: #4e63e6;
+  border-color: #ff4e00;
 }
 
 .link-input {
@@ -208,7 +208,7 @@ const handleCopy = async () => {
 }
 
 .copy-btn {
-  background: #4e63e6;
+  background: #ff4e00;
   color: #ffffff;
   border: none;
   border-radius: 8px;
@@ -221,7 +221,7 @@ const handleCopy = async () => {
 }
 
 .copy-btn:hover {
-  background: #3c51d6;
+  background: #e64600;
 }
 
 .copy-btn.copied {

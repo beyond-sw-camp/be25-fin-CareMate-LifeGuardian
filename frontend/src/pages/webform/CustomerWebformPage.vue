@@ -480,10 +480,10 @@ const closeErrorModal = () => {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 
-  --primary: #4e63e6;
-  --primary-hover: #374bd1;
+  --primary: #ff4e00;
+  --primary-hover: #e64600;
   --bg-gradient: linear-gradient(135deg, #f5f7fc 0%, #eef1f8 100%);
-  --card-shadow: 0 8px 30px rgba(78, 99, 230, 0.04);
+  --card-shadow: 0 8px 30px rgba(255, 78, 0, 0.04);
   --border-glass: 1px solid rgba(255, 255, 255, 0.7);
   --text-main: #273043;
   --text-muted: #6e798f;
@@ -562,7 +562,7 @@ const closeErrorModal = () => {
 
 .card-glass:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 35px rgba(78, 99, 230, 0.07);
+  box-shadow: 0 12px 35px rgba(255, 78, 0, 0.07);
 }
 
 /* 섹션 타이틀 */
@@ -642,7 +642,7 @@ label {
 
 .input-text:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 4px rgba(78, 99, 230, 0.12);
+  box-shadow: 0 0 0 4px rgba(255, 78, 0, 0.12);
   background: white;
 }
 
@@ -701,7 +701,7 @@ label {
 
 .radio-label.active {
   border-color: var(--primary);
-  background: rgba(78, 99, 230, 0.04);
+  background: rgba(255, 78, 0, 0.04);
   color: var(--primary);
 }
 
@@ -749,7 +749,7 @@ label {
   background: var(--primary);
   border-color: var(--primary);
   color: white;
-  box-shadow: 0 4px 12px rgba(78, 99, 230, 0.2);
+  box-shadow: 0 4px 12px rgba(255, 78, 0, 0.2);
 }
 
 /* 점검 카테고리 / 예산 그리드 선택 카드 */
@@ -870,8 +870,8 @@ label {
 /* 카테고리 선택된 경우 */
 .select-card.selected {
   border-color: var(--primary);
-  background: rgba(78, 99, 230, 0.02);
-  box-shadow: 0 8px 20px rgba(78, 99, 230, 0.08);
+  background: rgba(255, 78, 0, 0.02);
+  box-shadow: 0 8px 20px rgba(255, 78, 0, 0.08);
 }
 
 .select-card.selected .select-card__check {
@@ -936,7 +936,7 @@ label {
 
 .checkbox-card.checked {
   border-color: var(--primary);
-  background: rgba(78, 99, 230, 0.02);
+  background: rgba(255, 78, 0, 0.02);
 }
 
 .checkbox-card.checked .checkbox-box {
@@ -966,7 +966,7 @@ label {
   font-weight: 900;
   cursor: pointer;
   transition: all 0.25s ease;
-  box-shadow: 0 6px 20px rgba(78, 99, 230, 0.25);
+  box-shadow: 0 6px 20px rgba(255, 78, 0, 0.25);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -976,7 +976,7 @@ label {
 .submit-button:hover:not(:disabled) {
   background: var(--primary-hover);
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(78, 99, 230, 0.35);
+  box-shadow: 0 8px 25px rgba(255, 78, 0, 0.35);
 }
 
 .submit-button:disabled {
