@@ -108,6 +108,16 @@ const router = createRouter({
             allowedRoles: [ADMIN_ROLE],
         },
     },
+    {
+      path: '/webform',
+      name: 'webform',
+      component: () => import('../pages/webform/CustomerWebformPage.vue'),
+    },
+    {
+      path: '/webform-ppt',
+      name: 'webform-ppt',
+      component: () => import('../pages/webform/CustomerWebformTestPage.vue'),
+    },
   ],
 })
 
