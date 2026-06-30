@@ -112,8 +112,79 @@ LifeGuardian은 보험사가 보유한 0~20세 자녀 가망고객 데이터를 
 <details>
 <summary><b>📁 폴더 구조 펼쳐보기</b></summary>
 
-```txt
-
+```text
+LifeGuardianCICD/
+├── .github/                       # GitHub 설정 및 CI/CD 워크플로우
+│   ├── ISSUE_TEMPLATE/            # 이슈 작성 템플릿
+│   ├── workflows/                 # CI/CD 배포 자동화 스크립트 (.yml)
+│   │   ├── ai-deploy.yml          # AI 추천 서비스 배포 자동화
+│   │   ├── backend-deploy.yml     # 백엔드 서비스 배포 자동화
+│   │   └── frontend-deploy.yml    # 프론트엔드 서비스 배포 자동화
+│   ├── CODEOWNERS                 # 코드 관리자 지정 파일
+│   └── PULL_REQUEST_TEMPLATE.md   # Pull Request 기본 템플릿
+├── ai/                            # FastAPI / Python 기반 AI 추천 서비스
+│   ├── Dockerfile                 # AI 컨테이너 빌드 파일
+│   ├── app.py                     # AI 서비스 메인 애플리케이션 파일
+│   └── requirements.txt           # Python 의존성 라이브러리 목록
+├── backend/                       # Spring Boot 기반 백엔드 애플리케이션
+│   ├── .gitattributes             # Git 속성 설정 파일
+│   ├── .gitignore                 # Git 제외 대상 설정 파일
+│   ├── Dockerfile                 # 백엔드 컨테이너 빌드 파일
+│   ├── lifeguaridan.iml           # IntelliJ 프로젝트 설정 파일
+│   ├── mvnw                       # Maven Wrapper 실행 스크립트 (Unix)
+│   ├── mvnw.cmd                   # Maven Wrapper 실행 스크립트 (Windows)
+│   ├── pom.xml                    # Maven 의존성 및 프로젝트 빌드 구성
+│   └── src/                       # 백엔드 소스코드 디렉터리
+│       ├── main/
+│       │   ├── java/com/caremate/lifeguardian/
+│       │   │   ├── admin/         # 관리자 페이지 기능 패키지
+│       │   │   ├── auth/          # 인증 및 권한 관리 패키지 (JWT 등)
+│       │   │   ├── batch/         # 배치 작업 처리 패키지
+│       │   │   ├── common/        # 공통 유틸리티 및 예외 처리 패키지
+│       │   │   ├── config/        # Security, DB 등 환경설정 패키지
+│       │   │   ├── dashboard/     # 대시보드 통계/데이터 패키지
+│       │   │   ├── esg/           # ESG 평가 관리 패키지
+│       │   │   ├── member/        # 회원 관리 패키지
+│       │   │   ├── potential/     # 잠재고객 분석/예측 패키지
+│       │   │   ├── recommendai/   # AI 추천 결과 관련 패키지
+│       │   │   ├── recommendation/ # 추천 기능 서비스 패키지
+│       │   │   ├── report/        # 리포트 생성 패키지
+│       │   │   ├── reporthistory/ # 리포트 이력 관리 패키지
+│       │   │   ├── sales/         # 영업/매출 관리 패키지
+│       │   │   ├── scheduler/     # 스케줄러 등록 패키지
+│       │   │   ├── script/        # 스크립트 로직 패키지
+│       │   │   ├── userdetail/    # 사용자 상세 정보 패키지
+│       │   │   ├── webform/       # 웹폼 신청 처리 패키지
+│       │   │   └── LifeguardianApplication.java  # 스프링부트 실행 파일
+│       │   └── resources/         # 백엔드 설정 및 리소스 파일
+│       │       ├── fonts/         # 폰트 파일 저장소
+│       │       ├── mapper/        # MyBatis SQL Mapper XML 디렉터리
+│       │       ├── templates/     # 템플릿 파일 디렉터리
+│       │       ├── application-local.yml  # 로컬 환경 설정 파일
+│       │       ├── application-prod.yml   # 운영 환경 설정 파일
+│       │       └── application.yml        # 공통 환경 설정 파일
+│       └── test/                  # 백엔드 단위/통합 테스트 코드 디렉터리
+├── frontend/                      # Vue 3 / Vite 기반 프론트엔드 애플리케이션
+│   ├── .env.example               # 환경 변수 설정 예시 파일
+│   ├── .gitignore                 # Git 제외 대상 설정 파일
+│   ├── env.d.ts                   # TypeScript 환경 변수 정의 파일
+│   ├── index.html                 # 싱글 페이지 애플리케이션(SPA) 진입 파일
+│   ├── package.json               # 의존성 라이브러리 및 스크립트 설정 파일
+│   ├── tsconfig.json              # TypeScript 설정 파일
+│   ├── vite.config.ts             # Vite 빌드 및 플러그인 설정 파일
+│   └── src/                       # 프론트엔드 소스코드 디렉터리
+│       ├── api/                   # API 비동기 통신 정의 모듈
+│       ├── assets/                # 이미지, 아이콘, 폰트 등 정적 리소스
+│       ├── components/            # 재사용 가능한 UI 컴포넌트
+│       ├── constants/             # 프로젝트 내 상수 정의 파일
+│       ├── pages/                 # 라우터와 매핑되는 뷰 페이지 컴포넌트
+│       ├── router/                # 라우팅 설정 파일 (index.ts)
+│       ├── stores/                # Pinia 전역 상태 관리 저장소 (auth.ts 등)
+│       ├── utils/                 # 공통 유틸리티 헬퍼 함수
+│       ├── App.vue                # 최상위 루트 Vue 컴포넌트
+│       └── main.ts                # 프론트엔드 실행 진입 파일
+└── out/                           # 빌드 출력 디렉터리
+    └── production/                # 프로덕션 빌드 결과물 경로
 ```
 </details>
 <br/><br/>
