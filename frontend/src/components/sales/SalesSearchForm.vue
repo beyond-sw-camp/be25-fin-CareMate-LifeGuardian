@@ -372,9 +372,9 @@ const removeFilter = (remove: () => void) => {
 }
 
 .sales-search__quick-button:hover {
-  border-color: #cbd7ee;
-  background: #eef3ff;
-  color: #4055d4;
+  border-color: color-mix(in srgb, var(--color-primary) 34%, white);
+  background: color-mix(in srgb, var(--color-primary) 10%, white);
+  color: var(--color-primary);
 }
 
 .sales-search__row {
@@ -416,9 +416,9 @@ const removeFilter = (remove: () => void) => {
 }
 
 .sales-search__input:focus {
-  border-color: #8db5ff;
+  border-color: var(--color-primary);
   background: #ffffff;
-  box-shadow: 0 0 0 3px rgb(26 109 255 / 10%);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 14%, transparent);
 }
 
 .sales-search__input::placeholder {
@@ -481,10 +481,10 @@ const removeFilter = (remove: () => void) => {
   align-items: center;
   gap: 5px;
   height: 20px;
-  border: 1px solid #d6e0f7;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 26%, white);
   border-radius: 999px;
-  background: #f3f6ff;
-  color: #4055d4;
+  background: color-mix(in srgb, var(--color-primary) 8%, white);
+  color: var(--color-primary);
   padding: 0 8px;
   font-size: 10px;
   font-weight: 800;
@@ -566,10 +566,10 @@ const removeFilter = (remove: () => void) => {
 }
 
 .sales-search__toggle input:checked + span {
-  border-color: #b8c7ff;
-  background: #eef3ff;
-  color: #4055d4;
-  box-shadow: inset 0 0 0 1px rgb(78 99 230 / 10%);
+  border-color: color-mix(in srgb, var(--color-primary) 34%, white);
+  background: color-mix(in srgb, var(--color-primary) 10%, white);
+  color: var(--color-primary);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 12%, transparent);
 }
 
 .sales-search__toggle input:checked + span::before {
@@ -578,7 +578,7 @@ const removeFilter = (remove: () => void) => {
 }
 
 .sales-search__toggle input:focus-visible + span {
-  outline: 2px solid rgb(78 99 230 / 25%);
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 26%, transparent);
   outline-offset: 2px;
 }
 

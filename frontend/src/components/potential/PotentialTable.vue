@@ -195,7 +195,7 @@ const genderLabel = (gender: string) => {
 }
 
 .potential-table__row--selected {
-  background: #e9edf4;
+  background: color-mix(in srgb, var(--color-primary) 10%, white);
 }
 
 .potential-table__row--graduated {
@@ -204,7 +204,7 @@ const genderLabel = (gender: string) => {
 }
 
 .potential-table__row--selected.potential-table__row--graduated {
-  background: #dfe4ec;
+  background: color-mix(in srgb, var(--color-primary) 14%, white);
 }
 
 .potential-table__customer-name {

@@ -343,8 +343,8 @@ onBeforeUnmount(() => {
 }
 
 .potential-search__input:focus {
-  border-color: #5468ff;
-  box-shadow: 0 0 0 3px rgb(84 104 255 / 10%);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 14%, transparent);
 }
 
 .potential-list {
@@ -477,13 +477,13 @@ onBeforeUnmount(() => {
 }
 
 .potential-button--register {
-  border: 1.5px solid #5468ff;
+  border: 1.5px solid var(--color-primary);
   background: #ffffff;
-  color: #5468ff;
+  color: var(--color-primary);
 }
 
 .potential-button--register:hover {
-  background: #f6f8fb;
+  background: color-mix(in srgb, var(--color-primary) 8%, white);
 }
 
 </style>

@@ -555,7 +555,7 @@ onBeforeUnmount(() => {
   height: 24px;
   border: 0;
   border-radius: 5px;
-  background: #4e63e6;
+  background: var(--color-primary);
   color: #ffffff;
   padding: 0 10px;
   font-size: 10px;
@@ -576,7 +576,7 @@ onBeforeUnmount(() => {
 }
 
 .report-button:hover:not(:disabled) {
-  background: #4055d4;
+  background: color-mix(in srgb, var(--color-primary) 84%, black);
 }
 
 .report-button:disabled {
@@ -603,8 +603,8 @@ onBeforeUnmount(() => {
   flex: 0 0 auto;
   border-bottom: 1px solid #e8edf5;
   background:
-    radial-gradient(circle at 90% 10%, rgb(56 163 255 / 13%), transparent 40%),
-    linear-gradient(135deg, #f7faff 0%, #ffffff 70%);
+    radial-gradient(circle at 90% 10%, color-mix(in srgb, var(--color-primary) 14%, transparent), transparent 40%),
+    linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 7%, white) 0%, #ffffff 70%);
   padding: 14px 56px 13px 20px;
 }
 
@@ -665,8 +665,8 @@ onBeforeUnmount(() => {
   flex: 0 0 auto;
   place-items: center;
   border-radius: 9px;
-  background: #eaf3ff;
-  color: #3783e8;
+  background: color-mix(in srgb, var(--color-primary) 10%, white);
+  color: var(--color-primary);
   font-size: 10px;
   font-weight: 900;
 }
