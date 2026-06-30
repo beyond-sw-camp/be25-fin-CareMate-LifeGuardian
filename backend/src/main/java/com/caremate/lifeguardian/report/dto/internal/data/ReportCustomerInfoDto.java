@@ -28,4 +28,10 @@ public class ReportCustomerInfoDto {
     private String childGender;
     private String relationCode;
     private String relationName;
+    private String consultStatusCode;
+    private String consultStatusName;
+    private Long salesUserId;
+    private String salesUserName;
+    private String salesUserPhone;
+    private String salesUserEmail;
 }
