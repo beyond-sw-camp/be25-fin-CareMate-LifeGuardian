@@ -366,17 +366,20 @@ const reportButtonLabel = (customer: ContactCustomer) => {
 
 .contact-table__customer-name {
   display: inline-block;
-  color: #ea5a5a;
-  font-weight: 800;
-  transition: 
-    color 120ms ease,
-    text-decoration-color 120ms ease;
+  color: inherit;
+  font-weight: 700;
+  
+  text-decoration-line: underline;
+  text-decoration-skip-ink: none;
+  text-decoration-thickness: 0.62em;
+  text-underline-offset: -0.3em;
+  text-decoration-color: rgb(239 68 68 / 45%);
+
+  transition: color 120ms ease;
 }
 
 .contact-table__customer-name:hover {
   color: var(--color-primary);
-  text-decoration: underline;
-  text-underline-offset: 2px;
 }
 
 .contact-table__reason-tooltip {
