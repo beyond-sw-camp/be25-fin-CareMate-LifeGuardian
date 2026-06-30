@@ -330,7 +330,7 @@ const reportButtonLabel = (customer: ContactCustomer) => {
   height: 24px;
   border: 0;
   border-radius: 999px;
-  background: #4e63e6;
+  background: var(--color-primary);
   color: #ffffff;
   padding: 0 10px;
   font-size: 10px;
@@ -339,7 +339,7 @@ const reportButtonLabel = (customer: ContactCustomer) => {
 }
 
 .contact-table__bulk-button:hover {
-  background: #4055d4;
+  background: color-mix(in srgb, var(--color-primary) 84%, black);
 }
 
 .contact-table {
@@ -501,7 +501,7 @@ const reportButtonLabel = (customer: ContactCustomer) => {
   height: 24px;
   border: 0;
   border-radius: 999px;
-  background: #4e63e6;
+  background: var(--color-primary);
   color: #ffffff;
   padding: 0 10px;
   font-size: 10px;
@@ -510,7 +510,7 @@ const reportButtonLabel = (customer: ContactCustomer) => {
 }
 
 .contact-table__button:hover:not(:disabled) {
-  background: #4055d4;
+  background: color-mix(in srgb, var(--color-primary) 84%, black);
 }
 
 .contact-table__button--disabled,
@@ -522,9 +522,9 @@ const reportButtonLabel = (customer: ContactCustomer) => {
 
 .contact-table__button--sent,
 .contact-table__button--sent:disabled {
-  border: 1px solid #4e63e6;
-  background: #e5e7eb;
-  color: #4e63e6;
+  border: 1px solid var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 10%, white);
+  color: var(--color-primary);
   cursor: default;
 }
 

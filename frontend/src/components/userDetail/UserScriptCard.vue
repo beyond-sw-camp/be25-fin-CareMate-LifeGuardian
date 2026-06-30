@@ -18,21 +18,6 @@ const scriptLines = computed(() => {
 
 const scriptText = computed(() => scriptLines.value.join('\n'))
 
-const generatedAt = computed(() => {
-  if (!props.script?.generatedAt) return ''
-
-  const date = new Date(props.script.generatedAt)
-  if (Number.isNaN(date.getTime())) return props.script.generatedAt
-
-  return new Intl.DateTimeFormat('ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date)
-})
-
 const copyScript = async () => {
   if (!scriptText.value) return
 
@@ -60,20 +45,15 @@ const copyScript = async () => {
   <section class="script-card card">
     <header class="script-header">
       <div class="script-heading">
-        <span class="script-icon" aria-hidden="true">□</span>
-        <h2>상담 스크립트</h2>
-      </div>
-      <div class="script-meta">
-        <span v-if="script?.triggerName" class="trigger-chip">
-          트리거: {{ script.triggerName }}
-        </span>
-        <span v-if="generatedAt">{{ generatedAt }}</span>
+        <span class="script-icon" aria-hidden="true">▣</span>
+        <h2>AI 상담 스크립트</h2>
       </div>
     </header>
 
-    <div v-if="isLoading" class="script-box script-box--state">상담 스크립트를 생성하는 중입니다.</div>
+    <div v-if="isLoading" class="script-box script-box--state">AI 상담 스크립트를 생성하는 중입니다.</div>
     <div v-else-if="!scriptLines.length" class="script-box script-box--state">
-      {{ errorMessage || '상담 스크립트가 아직 생성되지 않았습니다.' }}
+      <span class="empty-icon" aria-hidden="true">▣</span>
+      <span>{{ errorMessage || '상담 스크립트가 아직 생성되지 않았습니다.' }}</span>
     </div>
     <div v-else class="script-box">
       <p v-for="line in scriptLines" :key="line">{{ line }}</p>
@@ -87,8 +67,9 @@ const copyScript = async () => {
 <style scoped>
 .script-card {
   display: grid;
-  gap: 14px;
-  padding: 22px 24px;
+  gap: 26px;
+  border-radius: 18px;
+  padding: 28px 26px 24px;
 }
 
 .script-header {
@@ -98,8 +79,7 @@ const copyScript = async () => {
   gap: 16px;
 }
 
-.script-heading,
-.script-meta {
+.script-heading {
   display: flex;
   align-items: center;
   min-width: 0;
@@ -109,18 +89,15 @@ const copyScript = async () => {
   gap: 8px;
 }
 
-.script-meta {
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 10px;
-  color: var(--color-text-subtle);
-  font-size: 12px;
-  font-weight: 700;
-}
-
 .script-icon {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: 8px;
+  background: #eee7ff;
   color: #7c3cff;
-  font-size: 18px;
+  font-size: 13px;
   font-weight: 900;
 }
 
@@ -132,19 +109,12 @@ const copyScript = async () => {
   letter-spacing: 0;
 }
 
-.trigger-chip {
-  border-radius: var(--radius-pill);
-  background: #f4ecff;
-  color: #7c1dff;
-  padding: 4px 10px;
-}
-
 .script-box {
   position: relative;
-  min-height: 112px;
+  min-height: 194px;
   border: 1px solid #e7e2ff;
-  border-radius: 8px;
-  background: #f4f1ff;
+  border-radius: 14px;
+  background: #fbf9ff;
   padding: 18px 68px 18px 20px;
   color: #172033;
   font-size: 18px;
@@ -162,12 +132,25 @@ const copyScript = async () => {
 
 .script-box--state {
   display: grid;
-  place-items: center;
-  padding: 18px;
+  align-content: center;
+  justify-items: center;
+  gap: 12px;
+  padding: 24px;
   color: var(--color-text-muted);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 800;
   text-align: center;
+}
+
+.empty-icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border-radius: 999px;
+  background: #eee7ff;
+  color: #8b5cf6;
+  font-size: 18px;
 }
 
 .copy-button {
@@ -192,10 +175,6 @@ const copyScript = async () => {
   .script-header {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .script-meta {
-    justify-content: flex-start;
   }
 
   .script-box {

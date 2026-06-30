@@ -21,8 +21,6 @@ export const resolveDetailConversionStatusCode = (
   routeConversionStatusCode: string,
 ) => user?.conversionStatusCode ?? routeConversionStatusCode
 
-export const resolveReportUrl = (user: UserDetail | null) => user?.reportUrl ?? ''
-
 const formatLifeStage = (name?: string) => {
   if (!name) return '-'
   return name.replace(/(\d+)\s*-\s*(\d+)/, '$1~$2')
@@ -67,9 +65,9 @@ export const buildChildInfo = (
   if (!user) return []
 
   const items: DetailInfoItem[] = [
-    { label: '성별 / 나이', value: `${genderLabel(user.childGender)} / ${fallback(user.childAge)}세` },
+    { label: '성별', value: genderLabel(user.childGender) },
+    { label: '나이', value: `${fallback(user.childAge)}세` },
     { label: '생년월일', value: fallback(user.childBirthDate) },
-    { label: '연락처', value: fallback(user.guardianPhone) },
   ]
 
   if (isPotentialCustomer) {

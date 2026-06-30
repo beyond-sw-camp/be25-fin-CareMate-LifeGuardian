@@ -11,7 +11,6 @@ import SalesTable from '../../components/sales/SalesTable.vue'
 import {
   getSalesList,
   getSalesSummary,
-  sendCustomerReport,
   sendCustomerReportsInBulk,
   sendCustomerWebformsInBulk,
   type SalesCustomer,
@@ -32,7 +31,6 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 const reportMessage = ref('')
 const reportMessageType = ref<'success' | 'error'>('success')
-const sendingCustomerIds = ref<number[]>([])
 const isReportBulkSending = ref(false)
 const isWebformBulkSending = ref(false)
 const filters = ref<SalesSearchFilters>({})
@@ -179,38 +177,6 @@ const applyWebformSendResult = (result: WebformSendResult) => {
   targetCustomer.webformStatusName = result.webformStatusName
 }
 
-// 개별 리포트 발송/재발송 처리입니다. 중복 클릭 방지를 위해 고객 ID를 진행 목록에 넣습니다.
-const handleSendReport = async (customer: SalesCustomer) => {
-  if (sendingCustomerIds.value.includes(customer.customerId)) return
-
-  const isResend = customer.reportStatusCode === '02'
-  if (
-    !window.confirm(
-      `${customer.customerName} 고객의 리포트를 ${isResend ? '재발송' : '발송'}하시겠습니까?`,
-    )
-  ) {
-    return
-  }
-
-  sendingCustomerIds.value = [...sendingCustomerIds.value, customer.customerId]
-  reportMessage.value = ''
-
-  try {
-    const result = await sendCustomerReport(customer.customerId)
-    showReportMessage(
-      `${result.customerName} 고객 리포트가 ${isResend ? '재발송' : '발송'}되었습니다.`,
-      'success',
-    )
-    await loadSalesList()
-  } catch (error) {
-    showReportMessage(getErrorMessage(error, '리포트를 발송하지 못했습니다.'), 'error')
-  } finally {
-    sendingCustomerIds.value = sendingCustomerIds.value.filter(
-      (customerId) => customerId !== customer.customerId,
-    )
-  }
-}
-
 // 선택된 리포트가 있으면 선택 건만, 없으면 현재 검색 조건의 발송 가능 건을 일괄 발송합니다.
 const handleBulkSend = async () => {
   if (isReportBulkSending.value) return
@@ -324,8 +290,6 @@ onBeforeUnmount(() => {
           v-else
           v-model:selected-report-ids="selectedReportIds"
           :customers="displayedCustomers"
-          :sending-customer-ids="sendingCustomerIds"
-          :send-report="handleSendReport"
         />
         <div class="sales-list__footer">
           <div class="sales-list__bulk-actions">
@@ -534,7 +498,7 @@ onBeforeUnmount(() => {
   height: 24px;
   border: 0;
   border-radius: 5px;
-  background: #4e63e6;
+  background: var(--color-primary);
   color: #ffffff;
   padding: 0 10px;
   font-size: 10px;
@@ -555,7 +519,7 @@ onBeforeUnmount(() => {
 }
 
 .report-button:hover:not(:disabled) {
-  background: #4055d4;
+  background: color-mix(in srgb, var(--color-primary) 84%, black);
 }
 
 .report-button:disabled {
@@ -582,8 +546,8 @@ onBeforeUnmount(() => {
   flex: 0 0 auto;
   border-bottom: 1px solid #e8edf5;
   background:
-    radial-gradient(circle at 90% 10%, rgb(56 163 255 / 13%), transparent 40%),
-    linear-gradient(135deg, #f7faff 0%, #ffffff 70%);
+    radial-gradient(circle at 90% 10%, color-mix(in srgb, var(--color-primary) 14%, transparent), transparent 40%),
+    linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 7%, white) 0%, #ffffff 70%);
   padding: 24px 64px 22px 28px;
 }
 
@@ -644,8 +608,8 @@ onBeforeUnmount(() => {
   flex: 0 0 auto;
   place-items: center;
   border-radius: 9px;
-  background: #eaf3ff;
-  color: #3783e8;
+  background: color-mix(in srgb, var(--color-primary) 10%, white);
+  color: var(--color-primary);
   font-size: 10px;
   font-weight: 900;
 }

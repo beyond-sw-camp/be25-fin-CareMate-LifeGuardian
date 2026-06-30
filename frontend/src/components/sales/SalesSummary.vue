@@ -79,6 +79,6 @@ defineProps<{
   width: 78%;
   height: 100%;
   border-radius: inherit;
-  background: #4e63e6;
+  background: var(--color-primary);
 }
 </style>
