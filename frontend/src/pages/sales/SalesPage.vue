@@ -20,7 +20,7 @@ import {
 } from '@/api/sales'
 
 // 검색 결과, 선택 상태, 전송 진행 상태를 한 페이지에서 조율하는 영업현황 컨테이너 상태입니다.
-const selectedReportIds = ref<number[]>([])
+const selectedReportCustomerIds = ref<number[]>([])
 const isCriteriaModalOpen = ref(false)
 const summary = ref<SalesSummaryData | null>(null)
 const customers = ref<SalesCustomer[]>([])
@@ -162,7 +162,7 @@ const showReportMessage = (message: string, type: 'success' | 'error') => {
   reportMessageTimer = setTimeout(() => {
     reportMessage.value = ''
     reportMessageTimer = undefined
-  }, 7_000)
+  }, 5_000)
 }
 
 // 웹폼 발송 API 응답을 현재 목록의 고객 상태에 반영합니다.
@@ -177,15 +177,50 @@ const applyWebformSendResult = (result: WebformSendResult) => {
   targetCustomer.webformStatusName = result.webformStatusName
 }
 
+const SENDABLE_REPORT_STATUS_CODES = new Set(['01', '02', '03'])
+
+const isReportSendable = (customer: SalesCustomer) =>
+  !customer.graduated &&
+  typeof customer.reportId === 'number' &&
+  customer.reportId > 0 &&
+  customer.hasReport &&
+  Boolean(customer.reportStatusCode) &&
+  SENDABLE_REPORT_STATUS_CODES.has(customer.reportStatusCode!) &&
+  (customer.canSendReport || customer.reportStatusCode === '02')
+
 // 선택된 리포트가 있으면 선택 건만, 없으면 현재 검색 조건의 발송 가능 건을 일괄 발송합니다.
 const handleBulkSend = async () => {
   if (isReportBulkSending.value) return
 
-  const selectedCount = selectedReportIds.value.length
+  const targetCustomers = selectedReportCustomerIds.value.length
+    ? customers.value.filter((customer) => selectedReportCustomerIds.value.includes(customer.customerId))
+    : customers.value.filter(isReportSendable)
+  const graduatedCount = targetCustomers.filter((customer) => customer.graduated).length
+  const sendableCustomers = targetCustomers.filter(isReportSendable)
+  const unavailableCount = targetCustomers.length - graduatedCount - sendableCustomers.length
+
+  const reportIds = sendableCustomers
+    .map((customer) => customer.reportId)
+    .filter((reportId): reportId is number => typeof reportId === 'number')
+
+  if (reportIds.length === 0) {
+    const excludedMessage = [
+      graduatedCount > 0 ? `졸업 제외 ${graduatedCount}건` : '',
+      unavailableCount > 0 ? `발송 불가 제외 ${unavailableCount}건` : '',
+    ].filter(Boolean).join(', ')
+
+    showReportMessage(
+      `발송 가능한 리포트가 없습니다.${excludedMessage ? ` ${excludedMessage}` : ''}`,
+      'error',
+    )
+    return
+  }
+
+  const selectedCount = selectedReportCustomerIds.value.length
   if (
     !window.confirm(
       selectedCount > 0
-        ? `선택한 ${selectedCount}건의 리포트를 발송하시겠습니까?`
+        ? `선택한 ${selectedCount}건 중 발송 가능한 ${reportIds.length}건의 리포트를 발송하시겠습니까?`
         : '현재 조건의 발송 가능한 리포트를 전체 발송하시겠습니까?',
     )
   ) {
@@ -196,20 +231,40 @@ const handleBulkSend = async () => {
   reportMessage.value = ''
 
   try {
-    const result = await sendCustomerReportsInBulk(selectedReportIds.value)
+    const result = await sendCustomerReportsInBulk(
+      selectedReportCustomerIds.value.length ? reportIds : undefined,
+    )
+
+    const excludedMessage = [
+      graduatedCount > 0 ? `졸업 제외 ${graduatedCount}건` : '',
+      unavailableCount > 0 ? `발송 불가 제외 ${unavailableCount}건` : '',
+    ].filter(Boolean).join(', ')
 
     showReportMessage(
-      `리포트 일괄 발송 완료: 요청 ${result.requestedCount}건, 성공 ${result.successCount}건, 실패 ${result.failedCount}건`,
+      `리포트 일괄 발송 완료: 성공 ${result.successCount}건, 실패 ${result.failedCount}건${excludedMessage ? `, ${excludedMessage}` : ''}`,
       result.failedCount > 0 ? 'error' : 'success',
     )
 
-    selectedReportIds.value = []
+    selectedReportCustomerIds.value = []
     await loadSalesList()
   } catch (error) {
     showReportMessage(getErrorMessage(error, '리포트 일괄 발송에 실패했습니다.'), 'error')
   } finally {
     isReportBulkSending.value = false
   }
+}
+
+const isWebformSendFailed = (result: WebformSendResult) => {
+  const reportStatus = `${result.reportProcessStatus ?? result.reportProcessingStatus ?? ''}`
+
+  return (
+    result.success === false ||
+    result.failed === true ||
+    result.reportProcessFailed === true ||
+    result.reportProcessed === false ||
+    reportStatus.toLowerCase().includes('fail') ||
+    reportStatus.includes('실패')
+  )
 }
 
 // 서버 기준으로 웹폼 발송 대상 전체를 일괄 발송합니다.
@@ -224,10 +279,12 @@ const handleWebformBulkSend = async () => {
     const results = await sendCustomerWebformsInBulk()
 
     results.forEach(applyWebformSendResult)
+    const failedCount = results.filter(isWebformSendFailed).length
+    const successCount = results.length - failedCount
 
     showReportMessage(
-      `웹폼 일괄 발송 완료: 성공 ${results.length}건`,
-      'success',
+      `웹폼 일괄 발송 완료: 성공 ${successCount}건, 실패 ${failedCount}건`,
+      failedCount > 0 ? 'error' : 'success',
     )
   } catch (error) {
     showReportMessage(getErrorMessage(error, '웹폼 일괄 발송에 실패했습니다.'), 'error')
@@ -288,8 +345,9 @@ onBeforeUnmount(() => {
         <p v-else-if="isLoading" class="sales-list__message">불러오는 중...</p>
         <SalesTable
           v-else
-          v-model:selected-report-ids="selectedReportIds"
+          v-model:selected-report-customer-ids="selectedReportCustomerIds"
           :customers="displayedCustomers"
+          @send-result="showReportMessage"
         />
         <div class="sales-list__footer">
           <div class="sales-list__bulk-actions">
@@ -412,14 +470,14 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .sales-page__main {
-  padding: 14px 26px 8px 24px;
+  padding: 10px 22px 6px 20px;
   overflow-x: hidden;
 }
 
 .sales-list {
   border: 1px solid #e3e8f0;
   box-shadow: none;
-  padding: 11px 14px 8px;
+  padding: 8px 12px 6px;
 }
 
 .sales-list__header {
@@ -427,7 +485,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 9px;
+  margin-bottom: 6px;
 }
 
 .sales-section-title {
@@ -489,8 +547,8 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 32px;
-  margin-top: 8px;
+  min-height: 28px;
+  margin-top: 6px;
 }
 
 .report-button {
@@ -532,11 +590,11 @@ onBeforeUnmount(() => {
 
 .sales-criteria-modal__card {
   display: flex;
-  width: min(560px, 100%);
-  max-height: calc(100vh - 48px);
+  width: min(620px, 100%);
+  max-height: calc(100vh - 28px);
   overflow: hidden;
   border: 1px solid #e4e9f2;
-  border-radius: 20px;
+  border-radius: 14px;
   background: #ffffff;
   flex-direction: column;
 }
@@ -548,7 +606,7 @@ onBeforeUnmount(() => {
   background:
     radial-gradient(circle at 90% 10%, color-mix(in srgb, var(--color-primary) 14%, transparent), transparent 40%),
     linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 7%, white) 0%, #ffffff 70%);
-  padding: 24px 64px 22px 28px;
+  padding: 14px 56px 13px 20px;
 }
 
 .sales-criteria-modal__eyebrow {
@@ -561,18 +619,18 @@ onBeforeUnmount(() => {
 .sales-criteria-modal__header h3 {
   margin: 0;
   color: var(--color-text);
-  font-size: 19px;
+  font-size: 17px;
   font-weight: 900;
   letter-spacing: 0;
 }
 
 .sales-criteria-modal__close {
   position: absolute;
-  top: 22px;
-  right: 24px;
+  top: 13px;
+  right: 18px;
   display: grid;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   place-items: center;
   border: 1px solid #e0e6ef;
   border-radius: 10px;
@@ -587,9 +645,9 @@ onBeforeUnmount(() => {
   display: grid;
   min-height: 0;
   flex: 1 1 auto;
-  gap: 24px;
-  overflow-y: auto;
-  padding: 24px 28px;
+  gap: 14px;
+  overflow-y: visible;
+  padding: 14px 20px;
   color: #172033;
   font-size: 12px;
 }
@@ -597,8 +655,8 @@ onBeforeUnmount(() => {
 .criteria-section__title {
   display: flex;
   align-items: flex-start;
-  gap: 11px;
-  margin-bottom: 14px;
+  gap: 9px;
+  margin-bottom: 9px;
 }
 
 .criteria-section__title > span {
@@ -621,14 +679,14 @@ onBeforeUnmount(() => {
 }
 
 .criteria-section__title h4 {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 900;
 }
 
 .criteria-section__title p {
   margin-top: 2px;
   color: #8a93a3;
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .criteria-age-grid {
@@ -639,11 +697,11 @@ onBeforeUnmount(() => {
 
 .criteria-age-card {
   display: grid;
-  gap: 10px;
+  gap: 6px;
   border: 1px solid #edf0f5;
   border-radius: 12px;
   background: #fbfcfe;
-  padding: 13px;
+  padding: 9px 11px;
 }
 
 .criteria-age-card__preview {
@@ -680,19 +738,19 @@ onBeforeUnmount(() => {
 
 .criteria-section--steps {
   border-top: 1px solid #edf0f5;
-  padding-top: 22px;
+  padding-top: 12px;
 }
 
 .criteria-step {
   display: grid;
   grid-template-columns: 34px 1fr;
   align-items: center;
-  gap: 12px;
-  margin-top: 9px;
+  gap: 9px;
+  margin-top: 6px;
   border: 1px solid #edf0f5;
   border-radius: 12px;
   background: #fbfcfe;
-  padding: 12px 13px;
+  padding: 8px 10px;
 }
 
 .criteria-step__badge {
@@ -751,6 +809,6 @@ onBeforeUnmount(() => {
   justify-content: flex-end;
   border-top: 1px solid #edf0f5;
   background: #fbfcfe;
-  padding: 14px 28px 18px;
+  padding: 10px 20px 12px;
 }
 </style>

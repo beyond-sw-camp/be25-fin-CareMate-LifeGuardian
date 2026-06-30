@@ -190,9 +190,11 @@
                 pc.name AS customer_name,
                 pc.gender,
                 pc.birth_date,
+                pc.parent_customer_id AS parent_id,
                 pc.insurance_age_shift_date,
                 pc.sales_user_id,
                 pc.consult_status_code,
+                pc.is_active,
                 pc.created_at
         FROM potential_customer pc
         WHERE pc.conversion_status_code = '01'
@@ -206,9 +208,11 @@
             ic.name AS customer_name,
             ic.gender,
             ic.birth_date,
+            ic.parent_id,
             ic.insurance_age_shift_date,
             ic.sales_user_id,
             NULL AS consult_status_code,
+            NULL AS is_active,
             ic.created_at
             FROM integrated_customer ic
             WHERE ic.sales_user_id = #{currentUserId}
@@ -468,6 +472,10 @@
 
         ORDER BY
             CASE
+                WHEN ce.customer_type_code = '02' AND ce.parent_id IS NULL THEN 1
+                ELSE 0
+            END ASC,
+            CASE
                 WHEN ce.next_insurance_age_shift_date IS NULL THEN 1
                 ELSE 0
             END ASC,
@@ -481,6 +489,7 @@
 
         SELECT
             cp.customer_id AS customerId,
+            cp.parent_id AS parentId,
             cp.customer_name AS customerName,
             cp.gender AS gender,
             TIMESTAMPDIFF(YEAR, cp.birth_date, CURDATE()) AS age,
@@ -506,6 +515,13 @@
             WHEN '01' THEN '잠재 고객'
             WHEN '02' THEN '통합 고객'
         END AS customerStageName,
+
+        CASE
+            WHEN cp.customer_type_code = '01' AND cp.is_active = TRUE THEN TRUE
+            WHEN cp.customer_type_code = '02'
+                 AND cp.birth_date <![CDATA[<=]]> DATE_SUB(CURDATE(), INTERVAL 21 YEAR) THEN TRUE
+            ELSE FALSE
+        END AS graduated,
 
         cp.three_step_code AS threeStepCode,
         COALESCE(trigger_code.code_name, '-') AS threeStepName,
@@ -603,6 +619,10 @@
             ON send_code.group_code = 'SEND_STATUS' AND send_code.code_value = cp.send_status_code
 
         ORDER BY
+        CASE
+            WHEN cp.customer_type_code = '02' AND cp.parent_id IS NULL THEN 1
+            ELSE 0
+        END ASC,
         CASE
             WHEN cp.next_insurance_age_shift_date IS NULL THEN 1
             ELSE 0
