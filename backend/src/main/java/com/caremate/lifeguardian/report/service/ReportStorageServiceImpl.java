@@ -9,10 +9,16 @@ import org.springframework.util.StringUtils;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
+import java.net.URI;
+import java.time.Duration;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 /**
@@ -26,6 +32,7 @@ public class ReportStorageServiceImpl {
     private static final String PDF_CONTENT_TYPE = "application/pdf";
 
     private final S3Client s3Client;
+    private final S3Presigner s3Presigner;
     private final ReportStorageProperties properties;
 
     /**
@@ -43,7 +50,7 @@ public class ReportStorageServiceImpl {
                     .build();
 
             s3Client.putObject(request, RequestBody.fromBytes(pdfBytes));
-            return resolveReportUrl(objectKey);
+            return objectKey;
         } catch (S3Exception e) {
             String errorCode = e.awsErrorDetails() == null
                     ? "unknown"
@@ -76,11 +83,46 @@ public class ReportStorageServiceImpl {
         }
     }
 
-    private String resolveReportUrl(String objectKey) {
-        if (StringUtils.hasText(properties.getPublicBaseUrl())) {
-            return properties.getPublicBaseUrl().replaceAll("/+$", "") + "/" + objectKey;
+    public PresignedReportUrl createReadUrl(String storedReportLocation) {
+        String objectKey = resolveObjectKey(storedReportLocation);
+        Duration signatureDuration = Duration.ofMinutes(properties.getPresignedUrlExpirationMinutes());
+
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(properties.getBucket())
+                .key(objectKey)
+                .build();
+
+        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+                .signatureDuration(signatureDuration)
+                .getObjectRequest(getObjectRequest)
+                .build();
+
+        return new PresignedReportUrl(
+                s3Presigner.presignGetObject(presignRequest).url().toString(),
+                OffsetDateTime.now().plus(signatureDuration)
+        );
+    }
+
+    private String resolveObjectKey(String storedReportLocation) {
+        if (!StringUtils.hasText(storedReportLocation)) {
+            throw new BaseException(404, "리포트 파일 위치를 찾을 수 없습니다.");
         }
-        return "s3://" + properties.getBucket() + "/" + objectKey;
+
+        String trimmed = storedReportLocation.trim();
+        if (trimmed.startsWith("s3://")) {
+            String bucketPrefix = "s3://" + properties.getBucket() + "/";
+            if (trimmed.startsWith(bucketPrefix)) {
+                return trimmed.substring(bucketPrefix.length());
+            }
+            return trimmed.substring("s3://".length()).replaceFirst("^[^/]+/", "");
+        }
+
+        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+            String path = URI.create(trimmed).getPath();
+            return path == null ? trimmed : path.replaceFirst("^/+", "");
+        }
+
+        return trimmed.replaceFirst("^/+", "");
     }
 
     private String createObjectKey(Long customerId) {
@@ -92,5 +134,8 @@ public class ReportStorageServiceImpl {
                 today.getMonthValue(),
                 UUID.randomUUID()
         );
+    }
+
+    public record PresignedReportUrl(String url, OffsetDateTime expiresAt) {
     }
 }

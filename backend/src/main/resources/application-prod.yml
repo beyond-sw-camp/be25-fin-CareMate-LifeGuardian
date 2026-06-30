@@ -88,15 +88,15 @@ app:
       bucket: ${S3_BUCKET}
       region: ${S3_REGION:ap-northeast-2}
       key-prefix: ${S3_REPORT_KEY_PREFIX:reports}
-      public-base-url: ${S3_PUBLIC_BASE_URL:}
       path-style-access: false
+      presigned-url-expiration-minutes: ${REPORT_PRESIGNED_URL_EXPIRATION_MINUTES:10}
 
     pdf:
       font-location: ${REPORT_PDF_FONT_LOCATION:classpath:/fonts/Pretendard-Regular.ttf}
 
     batch:
       enabled: ${REPORT_BATCH_ENABLED:false}
-      cron: ${REPORT_BATCH_CRON:0 0 3 * * *}
+      cron: ${REPORT_BATCH_CRON:0 3 * * * *}
       zone: ${REPORT_BATCH_ZONE:Asia/Seoul}
 
   lifecycle:
