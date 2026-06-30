@@ -446,8 +446,8 @@ onBeforeUnmount(() => {
 }
 
 .dashboard-contact__bulk-button {
-  min-width: 64px;
-  height: 24px;
+  width: 83px;
+  height: 25px;
   border: 0;
   border-radius: 999px;
   background: var(--color-primary);
@@ -456,6 +456,7 @@ onBeforeUnmount(() => {
   font-size: 10px;
   font-weight: 800;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .dashboard-contact__bulk-button:hover {
