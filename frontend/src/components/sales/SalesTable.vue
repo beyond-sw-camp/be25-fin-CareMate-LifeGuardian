@@ -489,7 +489,7 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
   height: 24px;
   border: 0;
   border-radius: 5px;
-  background: #4e63e6;
+  background: var(--color-primary);
   color: #ffffff;
   padding: 0 10px;
   font-size: 10px;
@@ -507,8 +507,20 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
   min-width: 54px;
 }
 
+.report-button--resend {
+  border: 1px solid var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 8%, white);
+  color: var(--color-primary);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+.report-button--resend:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-primary) 14%, white);
+  color: var(--color-primary);
+}
+
 .report-button:hover:not(:disabled) {
-  background: #4055d4;
+  background: color-mix(in srgb, var(--color-primary) 84%, black);
 }
 
 .report-status {
