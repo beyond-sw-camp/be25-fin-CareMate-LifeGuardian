@@ -140,6 +140,11 @@ const normalizeSalesCustomer = (customer: RawSalesCustomer): SalesCustomer => {
     asString(customer.contractStatus) ??
     ''
   const graduated = asBoolean(customer.graduated)
+  const isGraduated = graduated === true
+  const reportUrl = asString(customer.reportUrl) ?? null
+  const rawReportStatusName = asString(customer.reportStatusName) ?? ''
+  const reportStatusName =
+    rawReportStatusName === '졸업' && !isGraduated ? '' : rawReportStatusName
 
   return {
     ...(customer as SalesCustomer),
@@ -150,9 +155,10 @@ const normalizeSalesCustomer = (customer: RawSalesCustomer): SalesCustomer => {
     contractStatusCode,
     contractStatusName,
     parentId: asNumber(customer.parentId) ?? null,
-    graduated: graduated ?? null,
-    reportStatusName: graduated ? '졸업' : (customer.reportUrl ? customer.reportStatusName ?? '' : '미생성'),
-    canSendReport: graduated ? false : Boolean(customer.canSendReport),
+    graduated: isGraduated,
+    reportUrl,
+    reportStatusName: isGraduated ? '졸업' : (reportUrl ? reportStatusName : '미생성'),
+    canSendReport: isGraduated ? false : Boolean(customer.canSendReport),
     webformStatusCode: asString(customer.webformStatusCode) ?? asString(customer.webFormStatusCode),
     webformStatusName: asString(customer.webformStatusName) ?? asString(customer.webFormStatusName),
   }
