@@ -8,6 +8,10 @@ const props = defineProps<{
   customer: SalesCustomer
 }>()
 
+const emit = defineEmits<{
+  'send-result': [message: string, type: 'success' | 'error']
+}>()
+
 const SENDABLE_REPORT_STATUS_CODES = new Set(['01', '02', '03'])
 const isSending = ref(false)
 
@@ -34,17 +38,17 @@ const send = async () => {
   if (isSending.value) return
 
   if (props.customer.graduated) {
-    window.alert('졸업 고객은 리포트를 발송할 수 없습니다.')
+    emit('send-result', '리포트 발송 실패: 졸업 고객은 발송할 수 없습니다.', 'error')
     return
   }
 
   if (!props.customer.reportId || !props.customer.hasReport) {
-    window.alert('리포트가 생성되지 않아 발송할 수 없습니다.')
+    emit('send-result', '리포트 발송 실패: 리포트가 생성되지 않았습니다.', 'error')
     return
   }
 
   if (!isSendable.value) {
-    window.alert('리포트 발송이 불가능한 상태입니다.')
+    emit('send-result', '리포트 발송 실패: 발송 불가 상태입니다.', 'error')
     return
   }
 
@@ -65,12 +69,13 @@ const send = async () => {
     props.customer.reportStatusName = result.sendStatusName
     props.customer.reportSentAt = result.sentAt
     props.customer.canSendReport = false
+    emit('send-result', `리포트 발송 성공: ${props.customer.customerName}`, 'success')
   } catch (error) {
     const message = axios.isAxiosError(error)
       ? `${error.response?.status ?? 'ERR'} ${error.response?.data?.message ?? error.message}`
       : undefined
 
-    window.alert(message ?? '리포트를 발송하지 못했습니다.')
+    emit('send-result', `리포트 발송 실패${message ? `: ${message}` : ''}`, 'error')
   } finally {
     isSending.value = false
   }
@@ -95,7 +100,7 @@ const send = async () => {
   height: 24px;
   border: 0;
   border-radius: 5px;
-  background: #4e63e6;
+  background: var(--color-primary);
   color: #ffffff;
   padding: 0 10px;
   font-size: 10px;
@@ -103,7 +108,7 @@ const send = async () => {
 }
 
 .report-send-button:hover:not(:disabled) {
-  background: #4055d4;
+  background: color-mix(in srgb, var(--color-primary) 84%, black);
 }
 
 .report-send-button:disabled {
@@ -111,14 +116,14 @@ const send = async () => {
 }
 
 .report-send-button--resend {
-  border: 1px solid #4e63e6;
-  background: #f2f5ff;
-  color: #3446c5;
-  box-shadow: inset 0 0 0 1px rgb(78 99 230 / 8%);
+  border: 1px solid var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 8%, white);
+  color: var(--color-primary);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
 
 .report-send-button--resend:hover:not(:disabled) {
-  background: #e7ecff;
-  color: #2638b8;
+  background: color-mix(in srgb, var(--color-primary) 14%, white);
+  color: var(--color-primary);
 }
 </style>

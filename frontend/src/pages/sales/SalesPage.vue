@@ -162,7 +162,7 @@ const showReportMessage = (message: string, type: 'success' | 'error') => {
   reportMessageTimer = setTimeout(() => {
     reportMessage.value = ''
     reportMessageTimer = undefined
-  }, 7_000)
+  }, 5_000)
 }
 
 // 웹폼 발송 API 응답을 현재 목록의 고객 상태에 반영합니다.
@@ -347,6 +347,7 @@ onBeforeUnmount(() => {
           v-else
           v-model:selected-report-customer-ids="selectedReportCustomerIds"
           :customers="displayedCustomers"
+          @send-result="showReportMessage"
         />
         <div class="sales-list__footer">
           <div class="sales-list__bulk-actions">
