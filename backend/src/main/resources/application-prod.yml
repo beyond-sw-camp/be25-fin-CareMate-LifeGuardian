@@ -64,7 +64,7 @@ jwt:
 
 aws:
   lambda:
-    recommend-url: ${AWS_LAMBDA_RECOMMEND_URL:http://localhost:8000/recommend}
+    recommend-url: ${AWS_LAMBDA_RECOMMEND_URL:http://172.17.0.1:8000/recommend}
   cloudwatch:
     region: ap-northeast-2
     access-key: ""     # ~/.aws/credentials 파일을 읽도록 빈 값 처리
