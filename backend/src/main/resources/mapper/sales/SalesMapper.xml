@@ -517,7 +517,9 @@
         END AS customerStageName,
 
         CASE
-            WHEN cp.customer_type_code = '01' AND cp.is_active = FALSE THEN TRUE
+            WHEN cp.customer_type_code = '01' AND cp.is_active = TRUE THEN TRUE
+            WHEN cp.customer_type_code = '02'
+                 AND cp.birth_date <![CDATA[<=]]> DATE_SUB(CURDATE(), INTERVAL 21 YEAR) THEN TRUE
             ELSE FALSE
         END AS graduated,
 
