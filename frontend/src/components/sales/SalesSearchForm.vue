@@ -330,10 +330,10 @@ const removeFilter = (remove: () => void) => {
 
 <style scoped>
 .sales-search {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   border: 1px solid #e3e8f0;
   box-shadow: none;
-  padding: 10px 14px 12px;
+  padding: 7px 12px 8px;
 }
 
 .sales-search__header {
@@ -341,7 +341,7 @@ const removeFilter = (remove: () => void) => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 9px;
+  margin-bottom: 6px;
 }
 
 .sales-section-title {
@@ -361,26 +361,26 @@ const removeFilter = (remove: () => void) => {
 }
 
 .sales-search__quick-button {
-  height: 24px;
+  height: 22px;
   border: 1px solid #dfe5ee;
   border-radius: 5px;
   background: #f7f9fc;
   color: #4f5d70;
-  padding: 0 9px;
+  padding: 0 8px;
   font-size: 10px;
   font-weight: 800;
 }
 
 .sales-search__quick-button:hover {
-  border-color: #cbd7ee;
-  background: #eef3ff;
-  color: #4055d4;
+  border-color: color-mix(in srgb, var(--color-primary) 34%, white);
+  background: color-mix(in srgb, var(--color-primary) 10%, white);
+  color: var(--color-primary);
 }
 
 .sales-search__row {
   display: grid;
   align-items: center;
-  min-height: 28px;
+  min-height: 24px;
   color: #394252;
   font-size: 11px;
   font-weight: 700;
@@ -389,7 +389,7 @@ const removeFilter = (remove: () => void) => {
 .sales-search__row--top {
   grid-template-columns: minmax(210px, 260px) minmax(150px, 180px) minmax(130px, 160px) minmax(190px, 240px);
   column-gap: 16px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .sales-search__field {
@@ -405,7 +405,7 @@ const removeFilter = (remove: () => void) => {
 
 .sales-search__input {
   width: 100%;
-  height: 26px;
+  height: 24px;
   border: 1px solid #d9e0ea;
   border-radius: 5px;
   background: #ffffff;
@@ -416,9 +416,9 @@ const removeFilter = (remove: () => void) => {
 }
 
 .sales-search__input:focus {
-  border-color: #8db5ff;
+  border-color: var(--color-primary);
   background: #ffffff;
-  box-shadow: 0 0 0 3px rgb(26 109 255 / 10%);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 14%, transparent);
 }
 
 .sales-search__input::placeholder {
@@ -456,7 +456,7 @@ const removeFilter = (remove: () => void) => {
   grid-template-columns: max-content auto max-content minmax(0, 1fr) auto;
   column-gap: 12px;
   border-top: 1px solid #edf1f6;
-  padding-top: 9px;
+  padding-top: 6px;
 }
 
 .sales-search__applied {
@@ -464,9 +464,9 @@ const removeFilter = (remove: () => void) => {
   align-items: center;
   flex-wrap: wrap;
   gap: 5px;
-  margin-top: 9px;
+  margin-top: 6px;
   border-top: 1px solid #edf1f6;
-  padding-top: 8px;
+  padding-top: 6px;
 }
 
 .sales-search__applied-label {
@@ -480,11 +480,11 @@ const removeFilter = (remove: () => void) => {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  height: 22px;
-  border: 1px solid #d6e0f7;
+  height: 20px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 26%, white);
   border-radius: 999px;
-  background: #f3f6ff;
-  color: #4055d4;
+  background: color-mix(in srgb, var(--color-primary) 8%, white);
+  color: var(--color-primary);
   padding: 0 8px;
   font-size: 10px;
   font-weight: 800;
@@ -537,12 +537,12 @@ const removeFilter = (remove: () => void) => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 24px;
+  height: 22px;
   border: 1px solid #dbe3ef;
   border-radius: 999px;
   background: #ffffff;
   color: #5d6878;
-  padding: 0 10px;
+  padding: 0 9px;
   font-size: 10px;
   font-weight: 850;
   line-height: 1;
@@ -566,10 +566,10 @@ const removeFilter = (remove: () => void) => {
 }
 
 .sales-search__toggle input:checked + span {
-  border-color: #b8c7ff;
-  background: #eef3ff;
-  color: #4055d4;
-  box-shadow: inset 0 0 0 1px rgb(78 99 230 / 10%);
+  border-color: color-mix(in srgb, var(--color-primary) 34%, white);
+  background: color-mix(in srgb, var(--color-primary) 10%, white);
+  color: var(--color-primary);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 12%, transparent);
 }
 
 .sales-search__toggle input:checked + span::before {
@@ -578,7 +578,7 @@ const removeFilter = (remove: () => void) => {
 }
 
 .sales-search__toggle input:focus-visible + span {
-  outline: 2px solid rgb(78 99 230 / 25%);
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 26%, transparent);
   outline-offset: 2px;
 }
 
@@ -590,7 +590,7 @@ const removeFilter = (remove: () => void) => {
 
 .sales-search__button {
   min-width: 52px;
-  min-height: 26px;
+  min-height: 24px;
   border-radius: 5px;
   padding: 0 10px;
   font-size: 11px;

@@ -27,20 +27,123 @@
             pc.is_active AS isActive,   -- 졸업 여부
             pc.created_at AS createdAt  -- 생성일시
         FROM potential_customer pc
-        -- 부모(통합고객) 테이블 조인
-        INNER JOIN integrated_customer ic
-            ON pc.parent_customer_id = ic.integrated_customer_id
-        -- 가족관계 메타코드 조인
-        INNER JOIN common_code cc
-            ON pc.relationship_code = cc.code_value
-            AND cc.group_code = 'RELATIONSHIP'
+                 -- 부모(통합고객) 테이블 조인
+                 INNER JOIN integrated_customer ic
+                            ON pc.parent_customer_id = ic.integrated_customer_id
+            -- 가족관계 메타코드 조인
+                 INNER JOIN common_code cc
+                            ON pc.relationship_code = cc.code_value
+                                AND cc.group_code = 'RELATIONSHIP'
         -- 로그인한 영업사원의 잠재고객만 조회
         WHERE pc.sales_user_id = #{salesUserId}
         -- 최신 등록순 정렬
         ORDER BY
             pc.is_active ASC,     -- 졸업 고객 맨 아래
             pc.created_at DESC    -- 최신 등록순
+    </select>
 
+    <!-- 잠재고객 상세 조회
+    조회 대상:
+    - 잠재고객 ID 기준 단건 조회
+    - 부모 통합고객 정보와 잠재고객 정보를 함께 조회
+    -->
+    <select id="findPotentialCustomerDetail"
+            resultType="com.caremate.lifeguardian.potential.dto.response.PotentialCustomerDetailResponse">
+
+        SELECT
+            pc.id AS potentialCustomerId,
+
+            ic.integrated_customer_id AS parentCustomerId,
+            ic.name AS parentName,
+            ic.birth_date AS parentBirthDate,
+            ic.phone AS parentPhone,
+            ic.address AS parentAddress,
+
+            pc.relationship_code AS relationshipCode,
+            relationship.code_name AS relationshipName,
+
+            pc.name AS name,
+            pc.gender AS gender,
+            pc.birth_date AS birthDate,
+            TIMESTAMPDIFF(YEAR, pc.birth_date, CURDATE()) AS age,
+
+            pc.consult_status_code AS consultStatusCode,
+            consult.code_name AS consultStatusName,
+            pc.conversion_status_code AS conversionStatusCode,
+            conversion.code_name AS conversionStatusName
+
+        FROM potential_customer pc
+
+                 INNER JOIN integrated_customer ic
+                            ON pc.parent_customer_id = ic.integrated_customer_id
+                 INNER JOIN common_code relationship
+                            ON relationship.group_code = 'RELATIONSHIP'
+                                AND relationship.code_value = pc.relationship_code
+                 INNER JOIN common_code consult
+                            ON consult.group_code = 'CONSULT_STATUS'
+                                AND consult.code_value = pc.consult_status_code
+                 INNER JOIN common_code conversion
+                            ON conversion.group_code = 'CONVERSION_STATUS'
+                                AND conversion.code_value = pc.conversion_status_code
+
+        WHERE pc.id = #{potentialCustomerId}
+    </select>
+
+    <!-- 잠재고객 수정 -->
+    <update id="updatePotentialCustomer">
+
+        UPDATE potential_customer
+        SET
+            name = #{request.name},
+            gender = #{request.gender},
+            birth_date = #{request.birthDate},
+            updated_at = NOW()
+
+        WHERE id = #{potentialCustomerId}
+    </update>
+
+    <!-- 부모 통합고객 목록 조회
+    조회 대상
+    - 로그인한 영업사원이 담당하는 부모 통합고객
+    - parent_id가 NULL인 고객만 조회
+    정렬
+    - 부모 이름 오름차순
+    - 생년월일 오름차순
+    -->
+    <select id="findParentCustomersBySalesUserId"
+            resultType="com.caremate.lifeguardian.potential.dto.response.ParentCustomerSearchResponse">
+
+        SELECT
+            ic.integrated_customer_id AS integratedCustomerId,
+            ic.name AS name,
+            ic.birth_date AS birthDate,
+
+            CASE
+                WHEN ic.gender = 'MALE' THEN '01'
+                WHEN ic.gender = 'FEMALE' THEN '02'
+                END AS relationshipCode,
+
+            cc.code_name AS relationshipName,
+
+            ic.phone AS phone,
+            ic.address AS address
+
+        FROM integrated_customer ic
+
+                 INNER JOIN common_code cc
+                            ON cc.group_code = 'RELATIONSHIP'
+                                AND cc.code_value =
+                                    CASE
+                                        WHEN ic.gender = 'MALE' THEN '01'
+                                        ELSE '02'
+                                        END
+
+        WHERE ic.sales_user_id = #{salesUserId}
+          AND ic.parent_id IS NULL
+
+        ORDER BY
+            ic.name ASC,
+            ic.birth_date ASC
     </select>
 
     <!-- 부모 통합고객 조회
@@ -72,19 +175,19 @@
             ic.phone AS phone,
             ic.address AS address
         FROM integrated_customer ic
-        -- relationshipCode의 코드명을 가져오기 위한 메타코드 조인
-        INNER JOIN common_code cc
-            ON cc.group_code = 'RELATIONSHIP'
-            AND cc.code_value = #{request.relationshipCode}
+                 -- relationshipCode의 코드명을 가져오기 위한 메타코드 조인
+                 INNER JOIN common_code cc
+                            ON cc.group_code = 'RELATIONSHIP'
+                                AND cc.code_value = #{request.relationshipCode}
         WHERE ic.name = #{request.name}
-            AND ic.birth_date = #{request.birthDate}
-            AND ic.gender = #{gender}
-            AND ic.phone = #{request.phone}
-            AND ic.rrn_encrypted = #{hashedRrn}
-            AND ic.address = #{request.address}
-            AND ic.sales_user_id = #{salesUserId}
+          AND ic.birth_date = #{request.birthDate}
+          AND ic.gender = #{gender}
+          AND ic.phone = #{request.phone}
+          AND ic.rrn_encrypted = #{hashedRrn}
+          AND ic.address = #{request.address}
+          AND ic.sales_user_id = #{salesUserId}
 
-        LIMIT 1
+            LIMIT 1
 
     </select>
 
@@ -101,9 +204,9 @@
         SELECT COUNT(*) > 0
         FROM potential_customer
         WHERE parent_customer_id = #{parentCustomerId}
-            AND name = #{name}
-            AND gender = #{gender}
-            AND birth_date = #{birthDate}
+          AND name = #{name}
+          AND gender = #{gender}
+          AND birth_date = #{birthDate}
     </select>
 
     <!-- 잠재고객 등록 -->
@@ -123,15 +226,15 @@
             conversion_status_code
         )
         VALUES (
-            #{parentCustomerId},
-            #{salesUserId},
-            #{relationshipCode},
-            #{name},
-            #{gender},
-            #{birthDate},
-            '01',
-            '01'
-        )
+                   #{parentCustomerId},
+                   #{salesUserId},
+                   #{relationshipCode},
+                   #{name},
+                   #{gender},
+                   #{birthDate},
+                   '01',
+                   '01'
+               )
     </insert>
 
     <!-- 등록 완료된 잠재고객 단건 조회 -->
@@ -152,15 +255,15 @@
             conversion.code_name AS conversionStatusName,
             pc.created_at AS createdAt
         FROM potential_customer pc
-        INNER JOIN common_code relationship
-            ON relationship.group_code = 'RELATIONSHIP'
-            AND relationship.code_value = pc.relationship_code
-        INNER JOIN common_code consult
-            ON consult.group_code = 'CONSULT_STATUS'
-            AND consult.code_value = pc.consult_status_code
-        INNER JOIN common_code conversion
-            ON conversion.group_code = 'CONVERSION_STATUS'
-            AND conversion.code_value = pc.conversion_status_code
+                 INNER JOIN common_code relationship
+                            ON relationship.group_code = 'RELATIONSHIP'
+                                AND relationship.code_value = pc.relationship_code
+                 INNER JOIN common_code consult
+                            ON consult.group_code = 'CONSULT_STATUS'
+                                AND consult.code_value = pc.consult_status_code
+                 INNER JOIN common_code conversion
+                            ON conversion.group_code = 'CONVERSION_STATUS'
+                                AND conversion.code_value = pc.conversion_status_code
         WHERE pc.id = #{potentialCustomerId}
 
     </select>
@@ -195,7 +298,7 @@
         SELECT COUNT(*) > 0
         FROM potential_customer
         WHERE id = #{potentialCustomerId}
-            AND sales_user_id = #{salesUserId}
+          AND sales_user_id = #{salesUserId}
 
     </select>
 
@@ -210,12 +313,12 @@
             snapshot_data
         )
         VALUES (
-            #{potentialCustomer.id},
-            #{potentialCustomer.parentCustomerId},
-            #{potentialCustomer.salesUserId},
-            #{actionTypeCode},
-            #{snapshotData}
-        )
+                   #{potentialCustomer.id},
+                   #{potentialCustomer.parentCustomerId},
+                   #{potentialCustomer.salesUserId},
+                   #{actionTypeCode},
+                   #{snapshotData}
+               )
 
     </insert>
 

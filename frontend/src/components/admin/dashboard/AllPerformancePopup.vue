@@ -349,7 +349,7 @@ const chartOptions = {
 }
 
 .badge-bottom {
-  border-left: 3px solid #3b82f6;
+  border-left: 3px solid var(--color-primary);
 }
 
 .text-right {

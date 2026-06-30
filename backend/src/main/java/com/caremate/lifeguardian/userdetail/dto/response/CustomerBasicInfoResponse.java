@@ -13,6 +13,7 @@ public class CustomerBasicInfoResponse {
     private Long customerId;
     private String conversionStatusCode;
     private String conversionStatusName;
+    private Long reportId;
     private String reportUrl;
 
     private String childName;

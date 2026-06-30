@@ -12,6 +12,8 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.S3Configuration;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner.Builder;
 
 import java.net.URI;
 
@@ -30,6 +32,22 @@ public class S3Config {
                 .serviceConfiguration(S3Configuration.builder()
                         .pathStyleAccessEnabled(properties.isPathStyleAccess())
                         .chunkedEncodingEnabled(false)
+                        .build());
+
+        if (StringUtils.hasText(properties.getEndpoint())) {
+            builder.endpointOverride(URI.create(properties.getEndpoint()));
+        }
+
+        return builder.build();
+    }
+
+    @Bean
+    public S3Presigner s3Presigner(ReportStorageProperties properties) {
+        Builder builder = S3Presigner.builder()
+                .region(Region.of(properties.getRegion()))
+                .credentialsProvider(credentialsProvider(properties))
+                .serviceConfiguration(S3Configuration.builder()
+                        .pathStyleAccessEnabled(properties.isPathStyleAccess())
                         .build());
 
         if (StringUtils.hasText(properties.getEndpoint())) {

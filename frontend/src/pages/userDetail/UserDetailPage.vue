@@ -2,9 +2,7 @@
 import axios from 'axios'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import AppHeader from '@/components/common/Header.vue'
 import AppSidebar from '@/components/common/Sidebar.vue'
-import UserInfoGrid from '@/components/userDetail/UserInfoGrid.vue'
 import UserProfileCard from '@/components/userDetail/UserProfileCard.vue'
 import UserRecommendationCard from '@/components/userDetail/UserRecommendationCard.vue'
 import UserScriptCard from '@/components/userDetail/UserScriptCard.vue'
@@ -12,6 +10,7 @@ import {
   getConsultationScript,
   getAiRagRecommendation,
   getRuleEngineRecommendation,
+  getReportPreviewUrl,
   getUserDetail,
   type ConsultationScript,
   type InsuranceRecommendation,
@@ -21,7 +20,6 @@ import {
   buildChildInfo,
   buildGuardianInfo,
   resolveDetailConversionStatusCode,
-  resolveReportUrl,
 } from '@/utils/userDetail'
 
 const route = useRoute()
@@ -32,11 +30,14 @@ const consultationScript = ref<ConsultationScript | null>(null)
 const ruleRecommendation = ref<InsuranceRecommendation | null>(null)
 const aiRecommendation = ref<InsuranceRecommendation | null>(null)
 const isLoading = ref(true)
-const isInsightLoading = ref(false)
+const isScriptLoading = ref(false)
+const isRecommendationLoading = ref(false)
 const errorMessage = ref('')
 const scriptErrorMessage = ref('')
 const ruleRecommendationErrorMessage = ref('')
 const aiRecommendationErrorMessage = ref('')
+const activeDetailPanel = ref<'script' | 'recommendation'>('script')
+const hasLoadedRecommendation = ref(false)
 let activeLoadId = 0
 
 const customerId = computed(() => Number(route.params.customerId))
@@ -48,10 +49,6 @@ const activeSidebarLabel = computed(() =>
   isFromDashboard.value ? '대시보드' : '영업현황',
 )
 
-const backButtonLabel = computed(() =>
-  isFromDashboard.value ? '← 대시보드' : '← 영업현황',
-)
-
 const backRoutePath = computed(() =>
   isFromDashboard.value ? '/sales/dashboard' : '/sales',
 )
@@ -60,7 +57,9 @@ const resolvedConversionStatusCode = computed(() =>
   resolveDetailConversionStatusCode(user.value, conversionStatusCode.value),
 )
 const isPotentialCustomer = computed(() => resolvedConversionStatusCode.value === '01')
-const reportUrl = computed(() => resolveReportUrl(user.value))
+const reportId = computed(() => user.value?.reportId)
+const reportUrl = computed(() => (reportId.value ? String(reportId.value) : ''))
+const isReportPreviewLoading = ref(false)
 const childInfo = computed(() => buildChildInfo(user.value, isPotentialCustomer.value))
 const guardianInfo = computed(() => buildGuardianInfo(user.value))
 
@@ -68,9 +67,27 @@ const goBackToOrigin = () => {
   void router.push(backRoutePath.value)
 }
 
-const openReport = () => {
-  if (!reportUrl.value) return
-  window.open(reportUrl.value, '_blank', 'noopener,noreferrer')
+const openReport = async () => {
+  if (!reportId.value || isReportPreviewLoading.value) return
+
+  isReportPreviewLoading.value = true
+
+  try {
+    const previewUrl = await getReportPreviewUrl(reportId.value)
+    window.open(previewUrl, '_blank', 'noopener,noreferrer')
+  } catch (error) {
+    window.alert(getErrorMessage(error, '리포트 미리보기 URL을 불러오지 못했습니다.'))
+  } finally {
+    isReportPreviewLoading.value = false
+  }
+}
+
+const handleDetailPanelChange = (panel: 'script' | 'recommendation') => {
+  activeDetailPanel.value = panel
+
+  if (panel === 'recommendation') {
+    void loadRecommendations(activeLoadId)
+  }
 }
 
 const buildFallbackConsultationScript = (targetUser: UserDetail): ConsultationScript => {
@@ -106,45 +123,70 @@ const getErrorMessage = (error: unknown, fallbackMessage = '고객 정보를 불
 }
 
 const resetCustomerInsights = () => {
-  isInsightLoading.value = false
+  isScriptLoading.value = false
+  isRecommendationLoading.value = false
   scriptErrorMessage.value = ''
   ruleRecommendationErrorMessage.value = ''
   aiRecommendationErrorMessage.value = ''
   consultationScript.value = null
   ruleRecommendation.value = null
   aiRecommendation.value = null
+  hasLoadedRecommendation.value = false
 }
 
-const loadCustomerInsights = async (loadId: number) => {
+const loadConsultationScript = async (loadId: number) => {
   if (!Number.isInteger(customerId.value) || customerId.value <= 0 || !conversionStatusCode.value) {
     return
   }
 
-  isInsightLoading.value = true
+  isScriptLoading.value = true
   scriptErrorMessage.value = ''
+
+  try {
+    const script = await getConsultationScript(customerId.value)
+    if (loadId !== activeLoadId) return
+    consultationScript.value = script
+  } catch (error) {
+    if (loadId !== activeLoadId) return
+
+    if (user.value) {
+      consultationScript.value = buildFallbackConsultationScript(user.value)
+    }
+
+    scriptErrorMessage.value = getErrorMessage(
+      error,
+      'AI 상담 스크립트를 불러오지 못했습니다.',
+    )
+  } finally {
+    if (loadId === activeLoadId) {
+      isScriptLoading.value = false
+    }
+  }
+}
+
+const loadRecommendations = async (loadId: number) => {
+  if (
+    hasLoadedRecommendation.value ||
+    isRecommendationLoading.value ||
+    !Number.isInteger(customerId.value) ||
+    customerId.value <= 0 ||
+    !conversionStatusCode.value
+  ) {
+    return
+  }
+
+  isRecommendationLoading.value = true
   ruleRecommendationErrorMessage.value = ''
   aiRecommendationErrorMessage.value = ''
 
-  const [scriptResult, ruleResult, aiResult] = await Promise.allSettled([
-    getConsultationScript(customerId.value),
+  const [ruleResult, aiResult] = await Promise.allSettled([
     getRuleEngineRecommendation(customerId.value),
     getAiRagRecommendation(customerId.value),
   ])
 
   if (loadId !== activeLoadId) return
 
-  if (scriptResult.status === 'fulfilled') {
-    consultationScript.value = scriptResult.value
-  } else {
-    if (user.value) {
-      consultationScript.value = buildFallbackConsultationScript(user.value)
-    }
-
-    scriptErrorMessage.value = getErrorMessage(
-      scriptResult.reason,
-      '상담 스크립트를 불러오지 못했습니다.',
-    )
-  }
+  hasLoadedRecommendation.value = true
 
   if (ruleResult.status === 'fulfilled') {
     ruleRecommendation.value = ruleResult.value
@@ -164,7 +206,9 @@ const loadCustomerInsights = async (loadId: number) => {
     )
   }
 
-  isInsightLoading.value = false
+  if (loadId === activeLoadId) {
+    isRecommendationLoading.value = false
+  }
 }
 
 const loadUser = async () => {
@@ -173,6 +217,7 @@ const loadUser = async () => {
   isLoading.value = true
   errorMessage.value = ''
   user.value = null
+  activeDetailPanel.value = 'script'
   resetCustomerInsights()
 
   if (!Number.isInteger(customerId.value) || customerId.value <= 0) {
@@ -193,7 +238,7 @@ const loadUser = async () => {
 
     user.value = nextUser
     isLoading.value = false
-    void loadCustomerInsights(loadId)
+    void loadConsultationScript(loadId)
   } catch (error) {
     if (loadId !== activeLoadId) return
     errorMessage.value = getErrorMessage(error)
@@ -218,16 +263,15 @@ watch(
     <AppSidebar :active-label="activeSidebarLabel" />
 
     <main class="app-main user-detail-page">
-      <AppHeader title="고객 상세" />
-
-      <div class="detail-toolbar">
-        <button class="back-button" type="button" @click="goBackToOrigin">
-          {{ backButtonLabel }}
-        </button>
-
-        <button class="report-button" type="button" :disabled="!reportUrl" @click="openReport">
-          생활주기 성장 리포트 보기
-        </button>
+      <div class="detail-topbar">
+        <nav class="detail-breadcrumb" aria-label="현재 위치">
+          <span aria-hidden="true">⌂</span>
+          <button type="button" @click="goBackToOrigin">
+            {{ isFromDashboard ? '대시보드' : '고객 관리' }}
+          </button>
+          <span aria-hidden="true">›</span>
+          <span>고객 상세</span>
+        </nav>
       </div>
 
       <section v-if="isLoading" class="detail-state card">고객 정보를 불러오는 중입니다.</section>
@@ -240,20 +284,49 @@ watch(
       </section>
 
       <div v-else-if="user" class="detail-content">
-        <UserProfileCard :user="user" :is-potential-customer="isPotentialCustomer" />
-        <UserInfoGrid :child-info="childInfo" :guardian-info="guardianInfo" />
-        <UserScriptCard
-          :script="consultationScript"
-          :is-loading="isInsightLoading"
-          :error-message="scriptErrorMessage"
+        <UserProfileCard
+          :user="user"
+          :child-info="childInfo"
+          :guardian-info="guardianInfo"
+          :report-url="reportUrl"
+          @view-report="openReport"
         />
-        <UserRecommendationCard
-          :rule-recommendation="ruleRecommendation"
-          :ai-recommendation="aiRecommendation"
-          :is-loading="isInsightLoading"
-          :rule-error-message="ruleRecommendationErrorMessage"
-          :ai-error-message="aiRecommendationErrorMessage"
-        />
+
+        <section class="detail-panel">
+          <nav class="detail-tabs" aria-label="고객 상세 정보 탭">
+            <button
+              class="detail-tab"
+              :class="{ 'detail-tab--active': activeDetailPanel === 'script' }"
+              type="button"
+              @click="handleDetailPanelChange('script')"
+            >
+              상담이력
+            </button>
+            <button
+              class="detail-tab"
+              :class="{ 'detail-tab--active': activeDetailPanel === 'recommendation' }"
+              type="button"
+              @click="handleDetailPanelChange('recommendation')"
+            >
+              보험 추천
+            </button>
+          </nav>
+
+          <UserScriptCard
+            v-if="activeDetailPanel === 'script'"
+            :script="consultationScript"
+            :is-loading="isScriptLoading"
+            :error-message="scriptErrorMessage"
+          />
+          <UserRecommendationCard
+            v-else
+            :rule-recommendation="ruleRecommendation"
+            :ai-recommendation="aiRecommendation"
+            :is-loading="isRecommendationLoading"
+            :rule-error-message="ruleRecommendationErrorMessage"
+            :ai-error-message="aiRecommendationErrorMessage"
+          />
+        </section>
       </div>
     </main>
   </div>
@@ -269,41 +342,79 @@ watch(
   overflow-x: hidden;
 }
 
-.detail-toolbar {
+.detail-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin: 6px 0 14px;
+  gap: 16px;
+  margin: -8px 0 14px;
 }
 
-.back-button {
+.detail-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.detail-breadcrumb button {
   border: 0;
   background: transparent;
-  color: var(--color-text-muted);
   padding: 0;
-  font-size: 12px;
+  color: inherit;
+  font-size: 14px;
   font-weight: 800;
-}
-
-.report-button {
-  min-height: 34px;
-  border: 0;
-  border-radius: 6px;
-  background: var(--color-primary);
-  color: #ffffff;
-  padding: 0 14px;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.report-button:disabled {
-  background: #b9c1cf;
 }
 
 .detail-content {
   display: grid;
   gap: 14px;
+}
+
+.detail-panel {
+  display: grid;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.detail-tabs {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  border-bottom: 1px solid #d8dde8;
+  padding: 0 22px;
+}
+
+.detail-tab {
+  position: relative;
+  min-height: 46px;
+  border: 0;
+  background: transparent;
+  color: #4b5563;
+  padding: 0;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.detail-tab::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.detail-tab--active {
+  color: #5138ff;
+}
+
+.detail-tab--active::after {
+  background: #5138ff;
 }
 
 .detail-state {
@@ -324,14 +435,11 @@ watch(
     padding: 16px;
   }
 
-  .detail-toolbar {
+  .detail-topbar {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .report-button {
-    width: 100%;
-  }
 }
 
 </style>
