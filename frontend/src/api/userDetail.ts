@@ -109,22 +109,30 @@ const firstNumber = (...values: unknown[]) => {
   return undefined
 }
 
-const INSURANCE_CATEGORY_NAMES: Record<string, string> = {
-  CAT_CRITICAL_BAL: '중증 질환 및 신생아/선천이상 집중 보장',
-  CAT_DENT_EYE: '치아 및 안과 성장기 치료 보장',
-  CAT_HOSP_SURG: '입원 및 수술 특화 보장',
-  CAT_INFECT_GROUP: '감염성 및 청소년 다빈도 질환 보장',
-  CAT_SH_INJURY: '상해 및 일상 사고 보장',
+export const INSURANCE_CATEGORY_NAMES: Record<string, string> = {
+  CAT_CRITICAL_BAL: '암, 뇌혈관, 심혈관 중증 질환 진단 보장',
+  CAT_DENT_EYE: '치아 보존/보철 치료 및 시력 교정/치료 보장',
+  CAT_HOSP_SURG: '입원 및 수술비 보장',
+  CAT_INFECT_GROUP: '어린이 다빈도 질환, 독감, 수족구, 응급실 보장',
+  CAT_SH_INJURY: '골절, 깁스, 화상 등 상해 치료 보장',
 }
 
+export const insuranceCategoryName = (categoryCode?: string) =>
+  categoryCode ? INSURANCE_CATEGORY_NAMES[categoryCode] ?? categoryCode : undefined
+
+const normalizeCategoryLabel = (value?: string) => {
+  if (!value) return undefined
+  return INSURANCE_CATEGORY_NAMES[value] ?? value
+}
+
+const normalizeCategoryLabels = (values?: string[]) =>
+  values?.map(normalizeCategoryLabel).filter((value): value is string => Boolean(value))
+
 const categoryTag = (coverage: AnyRecord) => {
-  const categoryName = firstString(coverage.categoryName)
+  const categoryName = firstString(coverage.categoryName, coverage.category_name)
   if (categoryName) return categoryName
 
-  const categoryCode = firstString(coverage.categoryCode)
-  if (!categoryCode) return undefined
-
-  return INSURANCE_CATEGORY_NAMES[categoryCode] ?? categoryCode
+  return insuranceCategoryName(firstString(coverage.categoryCode, coverage.category_code))
 }
 
 const normalizeScript = (script: unknown): ConsultationScript | null => {
@@ -212,11 +220,11 @@ const normalizeCoverage = (coverage: unknown, index: number): RecommendationCove
       firstNumber(coverage.rank, coverage.priority, coverage.sortOrder, coverage.orderNo, coverage.selectedOrder) ??
       index + 1,
     coverageName,
-    categoryCode: firstString(coverage.categoryCode),
+    categoryCode: firstString(coverage.categoryCode, coverage.category_code),
     tags:
-      asStringArray(coverage.tags) ??
-      asStringArray(coverage.categories) ??
-      asStringArray(coverage.categoryNames) ??
+      normalizeCategoryLabels(asStringArray(coverage.tags)) ??
+      normalizeCategoryLabels(asStringArray(coverage.categories)) ??
+      normalizeCategoryLabels(asStringArray(coverage.categoryNames ?? coverage.category_names)) ??
       asStringArray(categoryTag(coverage) ? [categoryTag(coverage)] : undefined),
     score,
     premium: firstNumber(

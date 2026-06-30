@@ -146,8 +146,8 @@ const carbonPineTrees = computed(() => {
 }
 
 .esg-badge-blue {
-  background-color: #eff6ff;
-  color: #2563eb;
+  background-color: color-mix(in srgb, var(--color-primary) 10%, white);
+  color: var(--color-primary);
 }
 
 .esg-badge-orange {
