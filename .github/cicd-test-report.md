@@ -31,7 +31,7 @@ flowchart TD
         trigger{변경 경로 감지}
         build_fe[프론트엔드 빌드\nNode 22 + Vue]
         build_be[백엔드 빌드\nJDK 21 + Maven]
-        ssm_ai[AI 배포 명령\nAWS SDK]
+        build_ai[AI 빌드\nDocker + Python]
     end
 
     subgraph AWS_클라우드 [AWS 클라우드 인프라]
@@ -48,15 +48,15 @@ flowchart TD
     code --> trigger
     trigger -- "/frontend/**" --> build_fe
     trigger -- "/backend/**" --> build_be
-    trigger -- "/ai/**" --> ssm_ai
+    trigger -- "/ai/**" --> build_ai
 
     build_fe -->|S3 동기화 및 캐시 갱신| s3
     build_be -->|도커 업로드 및 인스턴스 갱신| ecr --> asg_be
-    ssm_ai -->|도커 업로드 및 인스턴스 갱신| ecr --> asg_ai
+    build_ai -->|도커 업로드 및 인스턴스 갱신| ecr --> asg_ai
 
     build_fe -.->|성공/실패 웹훅| discord
     build_be -.->|성공/실패 웹훅| discord
-    ssm_ai -.->|성공/실패 웹훅| discord
+    build_ai -.->|성공/실패 웹훅| discord
 ```
 
 ### 2.2. CI/CD 워크플로우 설정 코드 (CI/CD Configuration Code)
@@ -383,10 +383,6 @@ jobs:
   deploy-ai:
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: ./ai
-
     steps:
       # 1. 소스 코드 가져오기
       - name: Checkout source code
@@ -396,7 +392,7 @@ jobs:
       - name: Generate Build Version
         id: versioning
         run: |
-          echo "build_version=1.0.${{ github.run_number }}" >> $GITHUB_OUTPUT
+          echo "build_version=ai-1.0.${{ github.run_number }}" >> $GITHUB_OUTPUT
 
       # 3. AWS 자격 증명 세팅 (GitHub Secrets 기반)
       - name: Configure AWS Credentials
@@ -412,13 +408,13 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       # 5. 도커 이미지 빌드 및 ECR 푸시 (고유 빌드 버전 태그와 ai-latest 태그 동시 적용)
-      - name: Build, tag, and push image to Amazon ECR
+      - name: Build, tag, and push AI image to Amazon ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: lifeguardian
-          IMAGE_TAG: ai-${{ steps.versioning.outputs.build_version }}
+          IMAGE_TAG: ${{ steps.versioning.outputs.build_version }}
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:ai-latest .
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:ai-latest -f ai/Dockerfile ai/
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:ai-latest
 
@@ -487,7 +483,6 @@ jobs:
               json.dump(payload, f)
           '
           curl -H "Content-Type: application/json" -X POST -d @payload.json "$DISCORD_WEBHOOK"
-
 
       # 8. Discord 배포 실패 알림
       - name: Notify Discord - Failure
@@ -600,12 +595,12 @@ CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
 
 ### 3.3. AI 서버 (AI) Pipeline
 * **트리거 조건:** `main` 브랜치 push 중 `ai/**` 경로 수정 시
-* **사용 기술:** GitHub Actions, AWS SSM (Systems Manager), Auto Scaling Group
+* **사용 기술:** GitHub Actions, Docker, AWS ECR, AWS Auto Scaling Group (ASG)
 * **배포 방식:**
-  1. AWS SSM Run Command를 통해 운영 서버 집군에 동시/순차 명령 전송 (`--max-concurrency 1`)
-  2. 각 인스턴스 내 `/home/ubuntu/recommend_lambda` 경로에서 `git pull` 수행
-  3. `deploy.sh`를 실행하여 서비스 백그라운드 재시작
-* **배포 전략:** **SSM 순차 실행을 통한 인플레이스 롤링 갱신**
+  1. 빌드 버전 생성 및 ECR 로그인
+  2. 도커 이미지 빌드 및 ECR Push (ai-latest 및 고유 빌드 버전 태그 적용)
+  3. AWS ASG **Instance Refresh** 기동
+* **배포 전략:** **ASG 기반 롤링 배포 (Rolling Deployment, 최소 가용 50% 보장)**
 
 ---
 
@@ -630,7 +625,7 @@ CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
 | :--- | :--- | :--- | :--- | :--- | :---: |
 | **TC-01** | 프론트엔드 배포 | `frontend` 소스 파일 수정 후 push | S3 파일 갱신 및 캐시 무효화 완료, 디스코드 성공 알림 수신 | 예상 결과와 일치 (디스코드 수신 성공) | **PASS** |
 | **TC-02** | 백엔드 배포 | `backend` 소스 파일 수정 후 push | 도커 빌드, ECR 업로드, ASG Instance Refresh 기동, 디스코드 성공 알림 수신 | 예상 결과와 일치 (디스코드 수신 성공) | **PASS** |
-| **TC-03** | AI 서버 배포 | `ai` 소스 파일 수정 후 push | SSM 명령을 통한 실서버 git pull 및 배포 완료, 디스코드 성공 알림 수신 | 예상 결과와 일치 (디스코드 수신 성공) | **PASS** |
+| **TC-03** | AI 서버 배포 | `ai` 소스 파일 수정 후 push | ECR 이미지 업로드 및 ASG Instance Refresh 완료, 디스코드 성공 알림 수신 | 예상 결과와 일치 (디스코드 수신 성공) | **PASS** |
 | **TC-04** | 예외: 빌드 실패 | 백엔드 빌드 오류 유도 후 push | 빌드 중단 처리, 디스코드 **빨간색 실패 Embed 알림** 수신 및 Actions 링크 제공 | 예상 결과와 일치 (디스코드 수신 성공) | **PASS** |
 
 ---
