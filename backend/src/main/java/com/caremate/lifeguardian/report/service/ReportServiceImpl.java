@@ -32,7 +32,6 @@ public class ReportServiceImpl implements ReportService {
     private static final String SEND_PENDING = "01";
     private static final String SEND_SUCCESS = "02";
     private static final String SEND_FAILED = "03";
-    private static final Long TEST_REPORT_SALES_USER_ID = 1000002L;
 
     private final ReportTransactionService reportTransactionService;
     private final ReportStorageServiceImpl reportStorageService;
@@ -194,10 +193,10 @@ public class ReportServiceImpl implements ReportService {
         int ownedCustomerCount = reportMapper.countReportTargetBySalesUser(
                 target.getCustomerId(),
                 target.getConversionStatusCode(),
-                TEST_REPORT_SALES_USER_ID
+                target.getCurrentUserId()
         );
         if (ownedCustomerCount < 1) {
-            throw new BaseException(403, "테스트 기간에는 보험 설계사 1000002의 고객만 리포트를 생성할 수 있습니다.");
+            throw new BaseException(403, "해당 고객의 리포트를 생성할 권한이 없습니다.");
         }
 
         if ("01".equals(target.getReportTypeCode())

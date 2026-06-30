@@ -95,12 +95,12 @@ app:
       font-location: ${REPORT_PDF_FONT_LOCATION:classpath:/fonts/Pretendard-Regular.ttf}
 
     batch:
-      enabled: ${REPORT_BATCH_ENABLED:false}
+      enabled: ${REPORT_BATCH_ENABLED:true}
       cron: ${REPORT_BATCH_CRON:0 3 * * * *}
       zone: ${REPORT_BATCH_ZONE:Asia/Seoul}
 
   lifecycle:
     batch:
-      enabled: ${LIFECYCLE_BATCH_ENABLED:false}
+      enabled: ${LIFECYCLE_BATCH_ENABLED:true}
       cron: ${LIFECYCLE_BATCH_CRON:0 1 * * * *}
       zone: ${LIFECYCLE_BATCH_ZONE:Asia/Seoul}
