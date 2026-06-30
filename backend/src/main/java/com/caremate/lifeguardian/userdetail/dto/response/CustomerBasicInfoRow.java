@@ -20,6 +20,7 @@ public class CustomerBasicInfoRow {
     private String consultStatusName;
     private String conversionStatusCode;
     private String conversionStatusName;
+    private Long reportId;
     private String reportUrl;
     private String lifeStageCode;
     private String lifeStageName;
