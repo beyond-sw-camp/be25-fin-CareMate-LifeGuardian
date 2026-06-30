@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   ACCESS_TOKEN_STORAGE_KEY,
   ADMIN_ROLE,
@@ -10,6 +11,7 @@ import {
   USER_ROLE_STORAGE_KEY,
   type UserRole,
 } from '../../constants/auth'
+import { logout as logoutApi } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 
 type SidebarItem = {
@@ -18,11 +20,13 @@ type SidebarItem = {
 }
 
 const authStore = useAuthStore()
+const router = useRouter()
 const role = computed(() => authStore.role ?? (sessionStorage.getItem(USER_ROLE_STORAGE_KEY) as UserRole | null))
 const isLoggedIn = computed(() => Boolean(authStore.accessToken || sessionStorage.getItem(ACCESS_TOKEN_STORAGE_KEY) || role.value))
 const isAdmin = computed(() => isLoggedIn.value && role.value === ADMIN_ROLE)
 const sidebarWidth = ref(208)
 const isResizing = ref(false)
+const isLoggingOut = ref(false)
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'lifeguardian.sidebar.collapsed'
 const isCollapsed = ref(localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === 'true')
 
@@ -101,6 +105,23 @@ const profileParts = computed(() =>
     },
 )
 const profileInitial = displayName.slice(0, 1)
+
+const logout = async () => {
+  if (isLoggingOut.value) return
+
+  isLoggingOut.value = true
+
+  try {
+    await logoutApi()
+  } catch {
+    // 서버 로그아웃 실패와 관계없이 프론트 세션은 종료한다.
+  } finally {
+    authStore.logout()
+    isLoggingOut.value = false
+    void router.push('/login')
+  }
+}
+
 const toggleSidebar = () => {
   isCollapsed.value = !isCollapsed.value
 }
@@ -168,12 +189,24 @@ const navIconClass = (label: string) => {
     </nav>
 
     <section class="sidebar__profile" aria-label="사용자 정보">
-      <span class="sidebar__profile-avatar" aria-hidden="true">{{ profileInitial }}</span>
-      <span class="sidebar__profile-copy">
-        <span class="sidebar__profile-label">{{ profileParts.meta }}</span>
-        <strong>{{ profileParts.primary }}</strong>
-        <span>{{ profileParts.secondary }}</span>
-      </span>
+      <div class="sidebar__profile-summary">
+        <span class="sidebar__profile-avatar" aria-hidden="true">{{ profileInitial }}</span>
+        <span class="sidebar__profile-copy">
+          <span class="sidebar__profile-label">{{ profileParts.meta }}</span>
+          <strong>{{ profileParts.primary }}</strong>
+          <span>{{ profileParts.secondary }}</span>
+        </span>
+      </div>
+
+      <button
+        class="sidebar__logout"
+        type="button"
+        :disabled="isLoggingOut"
+        @click="logout"
+      >
+        <span class="sidebar__logout-icon" aria-hidden="true"></span>
+        <span class="sidebar__logout-label">로그아웃</span>
+      </button>
     </section>
 
     <div
@@ -209,8 +242,8 @@ const navIconClass = (label: string) => {
 .sidebar--admin {
   border-right-color: #263141;
   background:
-    radial-gradient(circle at 0% 14%, rgb(59 130 246 / 16%) 0, transparent 36%),
-    radial-gradient(circle at 100% 88%, rgb(34 197 94 / 10%) 0, transparent 38%),
+    radial-gradient(circle at 0% 14%, color-mix(in srgb, var(--color-primary) 16%, transparent) 0, transparent 36%),
+    radial-gradient(circle at 100% 88%, color-mix(in srgb, var(--color-primary) 10%, transparent) 0, transparent 38%),
     linear-gradient(180deg, #151f32 0%, #111827 48%, #0f172a 100%);
 }
 
@@ -270,11 +303,11 @@ const navIconClass = (label: string) => {
 }
 
 .sidebar__logo-text strong span {
-  color: #38a3ff;
+  color: var(--color-primary);
 }
 
 .sidebar--admin .sidebar__logo-text strong span {
-  color: #93c5fd;
+  color: var(--color-primary);
 }
 
 .sidebar__logo-text small {
@@ -285,7 +318,7 @@ const navIconClass = (label: string) => {
 }
 
 .sidebar--admin .sidebar__logo-text small {
-  color: #8491a5;
+  color: color-mix(in srgb, var(--color-primary) 46%, #cbd5e1);
 }
 
 .sidebar__collapse-button {
@@ -304,7 +337,7 @@ const navIconClass = (label: string) => {
 }
 
 .sidebar--admin .sidebar__collapse-button {
-  color: #8a96a8;
+  color: color-mix(in srgb, var(--color-primary) 42%, #cbd5e1);
 }
 
 .sidebar__collapse-button:hover {
@@ -314,6 +347,7 @@ const navIconClass = (label: string) => {
 
 .sidebar--admin .sidebar__collapse-button:hover {
   background: rgb(255 255 255 / 8%);
+  color: var(--color-primary);
 }
 
 .sidebar__collapse-button::before {
@@ -370,7 +404,7 @@ const navIconClass = (label: string) => {
 }
 
 .sidebar--admin .sidebar__nav-icon {
-  color: #d7e0ec;
+  color: #e5e7eb;
 }
 
 .sidebar__nav-icon::before,
@@ -462,7 +496,7 @@ const navIconClass = (label: string) => {
 }
 
 .sidebar--admin .sidebar__nav-item {
-  color: #d7e0ec;
+  color: #e5e7eb;
 }
 
 .sidebar__nav-item:hover {
@@ -472,18 +506,18 @@ const navIconClass = (label: string) => {
 
 .sidebar--admin .sidebar__nav-item:hover {
   background: rgb(255 255 255 / 8%);
-  color: #ffffff;
+  color: var(--color-primary);
 }
 
 .sidebar__nav-item.is-active {
   background: transparent;
-  color: #38a3ff;
+  color: var(--color-primary);
   font-weight: 950;
 }
 
 .sidebar--admin .sidebar__nav-item.is-active {
   background: transparent;
-  color: #93c5fd;
+  color: var(--color-primary);
   font-weight: 950;
 }
 
@@ -506,21 +540,22 @@ const navIconClass = (label: string) => {
 }
 
 .sidebar__nav-item.is-active .sidebar__nav-label {
-  border-bottom-color: #38a3ff;
+  border-bottom-color: var(--color-primary);
 }
 
 .sidebar--admin .sidebar__nav-item.is-active .sidebar__nav-label {
-  border-bottom-color: #93c5fd;
+  border-bottom-color: var(--color-primary);
 }
 
 .sidebar__profile {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  display: grid;
+  gap: 12px;
   margin-top: auto;
-  border-radius: 14px;
-  background: rgb(255 255 255 / 48%);
-  padding: 12px 10px;
+  border: 1px solid rgb(226 232 240 / 72%);
+  border-radius: 12px;
+  background: rgb(255 255 255 / 72%);
+  box-shadow: 0 12px 26px rgb(15 23 42 / 4%);
+  padding: 14px 14px 12px;
   transition:
     background 160ms ease,
     padding 160ms ease,
@@ -528,7 +563,20 @@ const navIconClass = (label: string) => {
 }
 
 .sidebar--admin .sidebar__profile {
-  background: rgb(255 255 255 / 8%);
+  border-color: color-mix(in srgb, var(--color-primary) 42%, transparent);
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+
+.sidebar__profile-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid rgb(226 232 240 / 86%);
+  padding-bottom: 12px;
+}
+
+.sidebar--admin .sidebar__profile-summary {
+  border-bottom-color: rgb(148 163 184 / 18%);
 }
 
 .sidebar__profile-avatar {
@@ -538,15 +586,15 @@ const navIconClass = (label: string) => {
   flex: 0 0 auto;
   place-items: center;
   border-radius: 50%;
-  background: linear-gradient(135deg, #eef1ff 0%, #e6edf8 100%);
-  color: #5360a8;
+  background: color-mix(in srgb, var(--color-primary) 12%, white);
+  color: var(--color-primary);
   font-size: 14px;
   font-weight: 950;
 }
 
 .sidebar--admin .sidebar__profile-avatar {
-  background: rgb(255 255 255 / 14%);
-  color: #dbeafe;
+  background: var(--color-primary);
+  color: #ffffff;
 }
 
 .sidebar__profile-copy {
@@ -573,7 +621,7 @@ const navIconClass = (label: string) => {
 
 .sidebar--admin .sidebar__profile-label,
 .sidebar--admin .sidebar__profile-copy > span:last-child {
-  color: #cbd5e1;
+  color: color-mix(in srgb, var(--color-primary) 34%, #cbd5e1);
 }
 
 .sidebar__profile-copy strong {
@@ -588,6 +636,69 @@ const navIconClass = (label: string) => {
 
 .sidebar--admin .sidebar__profile-copy strong {
   color: #ffffff;
+}
+
+.sidebar__logout {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  border: 0;
+  background: transparent;
+  color: color-mix(in srgb, var(--color-primary) 32%, #334155);
+  padding: 0 2px;
+  font-size: 13px;
+  font-weight: 900;
+  text-align: left;
+}
+
+.sidebar__logout:hover {
+  color: var(--color-primary);
+}
+
+.sidebar__logout:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.sidebar--admin .sidebar__logout {
+  color: color-mix(in srgb, var(--color-primary) 30%, #d7e0ec);
+}
+
+.sidebar--admin .sidebar__logout:hover {
+  color: var(--color-primary);
+}
+
+.sidebar__logout-icon {
+  position: relative;
+  display: inline-grid;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  place-items: center;
+  color: currentColor;
+}
+
+.sidebar__logout-icon::before {
+  position: absolute;
+  left: 1px;
+  width: 9px;
+  height: 10px;
+  border: 1.8px solid currentColor;
+  border-right: 0;
+  border-radius: 3px 0 0 3px;
+  content: '';
+}
+
+.sidebar__logout-icon::after {
+  position: absolute;
+  right: 1px;
+  width: 9px;
+  height: 9px;
+  border-top: 1.8px solid currentColor;
+  border-right: 1.8px solid currentColor;
+  content: '';
+  transform: rotate(45deg);
 }
 
 .sidebar__resize-handle {
@@ -637,7 +748,8 @@ const navIconClass = (label: string) => {
 
 .sidebar--collapsed .sidebar__logo-text,
 .sidebar--collapsed .sidebar__nav-label,
-.sidebar--collapsed .sidebar__profile-copy {
+.sidebar--collapsed .sidebar__profile-copy,
+.sidebar--collapsed .sidebar__logout-label {
   width: 0;
   opacity: 0;
   overflow: hidden;
@@ -686,12 +798,25 @@ const navIconClass = (label: string) => {
 .sidebar--collapsed .sidebar__profile {
   justify-content: center;
   background: transparent;
+  border-color: transparent;
+  box-shadow: none;
   padding: 8px 0;
+}
+
+.sidebar--collapsed .sidebar__profile-summary {
+  justify-content: center;
+  border-bottom: 0;
+  padding-bottom: 0;
 }
 
 .sidebar--collapsed .sidebar__profile-avatar {
   width: 32px;
   height: 32px;
+}
+
+.sidebar--collapsed .sidebar__logout {
+  justify-content: center;
+  padding: 0;
 }
 
 .sidebar--collapsed .sidebar__resize-handle {

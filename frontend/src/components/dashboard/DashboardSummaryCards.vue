@@ -150,7 +150,7 @@ const moveSalesFilter = (filter: {
 }
 
 .summary-status-card span {
-  color: #515b88;
+  color: var(--color-primary);
   font-size: 15px;
   font-weight: 800;
 }
@@ -182,9 +182,9 @@ const moveSalesFilter = (filter: {
 
   background: linear-gradient(
     135deg,
-    #7c3cff,
-    #9b84ff,
-    #e7e2ff
+    var(--color-primary),
+    color-mix(in srgb, var(--color-primary) 58%, white),
+    color-mix(in srgb, var(--color-primary) 14%, white)
   );
 
   -webkit-mask:
@@ -208,7 +208,7 @@ const moveSalesFilter = (filter: {
 
 .summary-small-card:hover,
 .summary-status-card:hover {
-  border-color: #cbd7ee;
+  border-color: color-mix(in srgb, var(--color-primary) 34%, white);
   box-shadow: 0 8px 18px rgb(15 23 42 / 8%);
   transform: translateY(-2px);
 }

@@ -28,14 +28,7 @@ jobs:
           cache: 'npm' # npm 의존성 캐싱으로 빌드 속도 향상
           cache-dependency-path: 'frontend/package-lock.json'
 
-      # 3. 라이브러리 설치 및 Vue 정적 파일 컴파일 진행
-      # 이 단계를 거치면 frontend/dist/ 폴더 내부에 index.html과 js/css 자원들이 빌드됩니다.
-      - name: Install dependencies and Build Vue app
-        run: |
-          npm ci
-          npm run build
-
-      # 4. AWS 자격 증명 세팅 (깃허브 Secrets 기반)
+      # 3. AWS 자격 증명 세팅 (SSM 조회를 위해 빌드 단계 앞으로 이동)
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -43,14 +36,24 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # 5. S3 버킷으로 빌드된 Vue 정적 파일 동기화
-      # --delete 옵션 덕분에 이전 빌드 파일들은 완전히 제거되고 최신 파일만 깔끔하게 주입됩니다.
+      # 4. AWS SSM Parameter Store에서 환경 변수 조회하여 .env.production 파일 생성
+      - name: Fetch Environment Variables from SSM
+        run: |
+          VITE_FAVICON_URL=$(aws ssm get-parameter --name "/config/lifeguardian/prod/VITE_FAVICON_URL" --query "Parameter.Value" --output text)
+          echo "VITE_FAVICON_URL=$VITE_FAVICON_URL" > .env.production
+
+      # 5. 라이브러리 설치 및 Vue 정적 파일 컴파일 진행 (생성된 .env.production 적용)
+      - name: Install dependencies and Build Vue app
+        run: |
+          npm ci
+          npm run build
+
+      # 6. S3 버킷으로 빌드된 Vue 정적 파일 동기화
       - name: Deploy to Amazon S3
         run: |
           aws s3 sync dist/ s3://${{ secrets.AWS_S3_BUCKET_NAME }} --delete
 
-      # 6. CloudFront 캐시 무효화 (Invalidation)
-      # 브라우저가 예전 Vue 컴포넌트(js 파일)를 캐싱하고 있어서 화면이 안 바뀌는 현상을 방지합니다.
+      # 7. CloudFront 캐시 무효화 (Invalidation)
       - name: CloudFront Invalidation
         run: |
           aws cloudfront create-invalidation --distribution-id ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
