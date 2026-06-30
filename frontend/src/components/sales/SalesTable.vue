@@ -16,6 +16,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:selectedReportCustomerIds': [customerIds: number[]]
+  'send-result': [message: string, type: 'success' | 'error']
 }>()
 
 const SENDABLE_REPORT_STATUS_CODES = new Set(['01', '02', '03'])
@@ -38,7 +39,7 @@ const webformStatusName = (customer: SalesCustomer) =>
 const reportStatusName = (customer: SalesCustomer) => {
   if (customer.graduated) return '졸업'
   if (!customer.reportUrl) return '미생성'
-  return customer.reportStatusName
+  return customer.reportStatusName || '-'
 }
 
 const canOpenCustomerDetail = (customer: SalesCustomer) =>
@@ -68,6 +69,10 @@ const toggleReport = (customer: SalesCustomer) => {
     : [...selectedIds, customer.customerId]
 
   emit('update:selectedReportCustomerIds', nextIds)
+}
+
+const emitSendResult = (message: string, type: 'success' | 'error') => {
+  emit('send-result', message, type)
 }
 
 // 페이지/검색 조건 변경으로 화면에서 사라진 리포트는 선택 목록에서도 제거합니다.
@@ -268,21 +273,31 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
           <td>{{ customer.insuranceName }}</td>
           <td>{{ customer.insuredName }}</td>
           <td>{{ customer.webformReceivedAt }}</td>
-          <td class="report-status">{{ webformStatusName(customer) }}</td>
-          <td
-            class="report-status"
-            :class="{ 'report-status--graduated': customer.graduated }"
-          >
-            {{ reportStatusName(customer) }}
+          <td class="report-status">
+            <span class="report-status__badge">{{ webformStatusName(customer) }}</span>
+          </td>
+          <td class="report-status">
+            <span
+              class="report-status__badge"
+              :class="{ 'report-status__badge--graduated': customer.graduated }"
+            >
+              {{ reportStatusName(customer) }}
+            </span>
           </td>
           <td>
             <div class="sales-table__actions">
-              <SalesWebformSendButton :customer="customer" />
+              <SalesWebformSendButton
+                :customer="customer"
+                @send-result="emitSendResult"
+              />
             </div>
           </td>
           <td>
             <div class="sales-table__actions">
-              <SalesReportSendButton :customer="customer" />
+              <SalesReportSendButton
+                :customer="customer"
+                @send-result="emitSendResult"
+              />
             </div>
           </td>
         </tr>
@@ -328,6 +343,10 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
 
 .sales-table tr:last-child td {
   border-bottom: 0;
+}
+
+.sales-table tbody tr:hover {
+  background: #fbfcff;
 }
 
 .sales-table .sales-table__empty {
@@ -535,8 +554,23 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
   font-weight: 400;
 }
 
-.report-status--graduated {
-  color: #8a6412;
+.report-status__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 20px;
+  border-radius: 999px;
+  background: #f1f4f8;
+  color: #5f6b7a;
+  padding: 0 8px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.report-status__badge--graduated {
+  background: #fff4d7;
+  color: #b45309;
   font-weight: 800;
 }
 </style>
