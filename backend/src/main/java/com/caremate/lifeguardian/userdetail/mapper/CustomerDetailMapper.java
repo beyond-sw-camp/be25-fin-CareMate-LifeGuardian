@@ -25,7 +25,7 @@ public interface CustomerDetailMapper {
             @Param("currentUserId") Long currentUserId
     );
 
-    String selectLatestReportUrl(
+    CustomerBasicInfoRow selectLatestReport(
             @Param("customerId") Long customerId,
             @Param("conversionStatusCode") String conversionStatusCode
     );

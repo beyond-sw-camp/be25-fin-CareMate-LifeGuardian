@@ -18,6 +18,6 @@ public class ReportStorageProperties {
     private String endpoint;
     private String accessKey;
     private String secretKey;
-    private String publicBaseUrl;
     private boolean pathStyleAccess;
+    private long presignedUrlExpirationMinutes = 10;
 }

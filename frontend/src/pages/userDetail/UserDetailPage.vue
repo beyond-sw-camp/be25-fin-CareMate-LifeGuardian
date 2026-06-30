@@ -58,6 +58,8 @@ const resolvedConversionStatusCode = computed(() =>
 )
 const isPotentialCustomer = computed(() => resolvedConversionStatusCode.value === '01')
 const reportId = computed(() => user.value?.reportId)
+const reportUrl = computed(() => (reportId.value ? String(reportId.value) : ''))
+const isReportPreviewLoading = ref(false)
 const childInfo = computed(() => buildChildInfo(user.value, isPotentialCustomer.value))
 const guardianInfo = computed(() => buildGuardianInfo(user.value))
 
