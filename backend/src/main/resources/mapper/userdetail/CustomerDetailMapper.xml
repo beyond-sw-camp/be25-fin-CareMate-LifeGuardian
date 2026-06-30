@@ -182,8 +182,10 @@
           AND child.sales_user_id = #{currentUserId}
     </select>
 
-    <select id="selectLatestReportUrl" resultType="string">
-        SELECT cr.report_url
+    <select id="selectLatestReport" resultType="BasicInfo">
+        SELECT
+            cr.id AS reportId,
+            cr.report_url AS reportUrl
         FROM customer_report cr
         WHERE cr.customer_id = #{customerId}
           AND cr.conversion_status_code = #{conversionStatusCode}
