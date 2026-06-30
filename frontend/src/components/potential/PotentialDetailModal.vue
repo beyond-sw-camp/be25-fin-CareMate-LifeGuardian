@@ -263,8 +263,8 @@ const handleSave = async () => {
   flex: 0 0 auto;
   border-bottom: 1px solid #e8edf5;
   background:
-    radial-gradient(circle at 90% 10%, rgb(56 163 255 / 13%), transparent 40%),
-    linear-gradient(135deg, #f7faff 0%, #ffffff 70%);
+    radial-gradient(circle at 90% 10%, color-mix(in srgb, var(--color-primary) 14%, transparent), transparent 40%),
+    linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 7%, white) 0%, #ffffff 70%);
   padding: 22px 60px 20px 26px;
 }
 

@@ -71,8 +71,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="modal-backdrop">
-    <section class="parent-select-modal">
+  <div class="modal-backdrop parent-select-modal-wrap" role="presentation">
+    <section 
+        class="modal-card parent-select-modal"
+        role="dialog"
+        aria-modal="true"
+    >
       <header class="parent-select-modal__header">
         <div>
           <h2>부모 고객 선택</h2>
@@ -173,11 +177,20 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.parent-select-modal-wrap {
+    z-index: 30;
+}
+
 .parent-select-modal {
+  display: flex;
   width: min(500px, 100%);
-  border-radius: 14px;
+  max-height: calc(100vh - 48px);
+  overflow: hidden;
+  border: 1px solid #e4e9f2;
+  border-radius: 18px;
   background: #ffffff;
   box-shadow: 0 18px 60px rgb(15 23 42 / 24%);
+  flex-direction: column;
 }
 
 .parent-select-modal__header {
@@ -185,8 +198,12 @@ onMounted(() => {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  border-bottom: 1px solid #e5eaf2;
-  padding: 20px 22px 16px;
+  border-bottom: 1px solid #e8edf5;
+  background:
+    radial-gradient(circle at 90% 10%, color-mix(in srgb, var(--color-primary) 14%, transparent), transparent 40%),
+    linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 7%, white) 0%, #ffffff 70%);
+  padding: 22px 60px 20px 26px;
+  position: relative;
 }
 
 .parent-select-modal__header h2 {
@@ -204,6 +221,9 @@ onMounted(() => {
 }
 
 .parent-select-modal__close {
+  position: absolute;
+  top: 20px;
+  right: 22px;
   width: 30px;
   height: 30px;
   border: 0;
@@ -212,6 +232,7 @@ onMounted(() => {
   color: #7f8999;
   font-size: 22px;
   line-height: 1;
+  cursor: pointer;
 }
 
 .parent-select-modal__close:hover {
@@ -248,8 +269,8 @@ onMounted(() => {
 }
 
 .parent-select-modal__search-field input:focus {
-  border-color: #5468ff;
-  box-shadow: 0 0 0 3px rgb(84 104 255 / 10%);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
 
 .parent-select-modal__message {
@@ -283,6 +304,8 @@ onMounted(() => {
   background: #ffffff;
   padding: 12px;
   text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .parent-select-modal__item + .parent-select-modal__item {
@@ -290,13 +313,18 @@ onMounted(() => {
 }
 
 .parent-select-modal__item:hover {
-  border-color: #cbd7ee;
-  background: #f8fafc;
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 4%, white);
 }
 
 .parent-select-modal__item--selected {
-  border-color: #5468ff;
-  background: #f5f7ff;
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 7%, white);
+}
+
+.parent-select-modal__item--selected:hover {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 4%, white);
 }
 
 .parent-select-modal__radio {
@@ -308,7 +336,7 @@ onMounted(() => {
 }
 
 .parent-select-modal__item--selected .parent-select-modal__radio {
-  border: 4px solid #5468ff;
+  border: 4px solid var(--color-primary);
 }
 
 .parent-select-modal__info {
@@ -381,8 +409,8 @@ onMounted(() => {
 }
 
 .parent-select-modal__button--primary {
-  border: 1px solid #5468ff;
-  background: #5468ff;
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary);
   color: #ffffff;
 }
 
