@@ -64,9 +64,9 @@ const move = (page: number) => {
 }
 
 .sales-pagination button.is-active {
-  border-color: #c7d5f8;
-  background: #eef3ff;
-  color: #4055d4;
+  border-color: color-mix(in srgb, var(--color-primary) 34%, white);
+  background: color-mix(in srgb, var(--color-primary) 10%, white);
+  color: var(--color-primary);
 }
 
 .sales-pagination button:disabled {

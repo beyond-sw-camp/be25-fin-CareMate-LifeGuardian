@@ -20,6 +20,11 @@ const props = defineProps<{
   achievement: DashboardAchievement | null
 }>()
 
+const primaryColor = () => {
+  if (typeof window === 'undefined') return '#F37021'
+  return getComputedStyle(document.documentElement).getPropertyValue('--color-primary').trim() || '#F37021'
+}
+
 const chartData = computed(() => {
   const completed = props.achievement?.completedContractCount ?? 0
   const target = props.achievement?.targetContractCount ?? 0
@@ -33,7 +38,7 @@ const chartData = computed(() => {
       {
         data: hasChartValue ? [completed, remaining] : [0, 1],
         backgroundColor: hasChartValue
-          ? ['#886adc', '#eceef3']
+          ? [primaryColor(), '#eceef3']
           : ['#eceef3', '#eceef3'],
         borderWidth: 0,
       },
@@ -156,7 +161,7 @@ const chartOptions = {
 }
 
 .achievement-card__legend-dot--completed {
-  background: #886adc;
+  background: var(--color-primary);
 }
 
 .achievement-card__chart {

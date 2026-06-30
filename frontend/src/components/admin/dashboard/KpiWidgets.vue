@@ -157,7 +157,7 @@ const formatNumber = (num: number | undefined) => {
 }
 
 .yoy-down {
-  color: #3b82f6;
+  color: var(--color-primary);
 }
 
 @media (max-width: 768px) {

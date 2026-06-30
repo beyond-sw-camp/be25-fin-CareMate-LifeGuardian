@@ -277,7 +277,7 @@ watch(keywordInput, (newVal) => {
 }
 
 .diff-down {
-  color: #3b82f6; /* blue-500 */
+  color: var(--color-primary);
 }
 
 .diff-zero {

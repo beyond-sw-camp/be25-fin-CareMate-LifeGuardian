@@ -53,6 +53,12 @@ const registeredCredentials = ref({
 const isTransferModalOpen = ref(false)
 const transferUserCount = ref(0)
 
+// 퇴사 확인/성공 모달 상태
+const showRetireConfirmModal = ref(false)
+const showRetireSuccessModal = ref(false)
+const isRetiring = ref(false)
+const retiredUserName = ref('')
+
 
 
 // 코드 매핑 정보
@@ -222,19 +228,26 @@ const handleRetireClick = async () => {
     return
   }
 
-  if (!confirm(`${selectedUser.value.name} 사원을 최종 퇴사 처리하시겠습니까?\n퇴사 시 모든 세션이 강제 종료되며 복구가 불가합니다.`)) {
-    return
-  }
+  showRetireConfirmModal.value = true
+}
 
+// 퇴사 최종 API 승인 및 실행
+const confirmRetire = async () => {
+  if (!selectedUser.value) return
+  isRetiring.value = true
   try {
+    retiredUserName.value = selectedUser.value.name
     const result = await retireSalesUser(selectedUser.value.id)
     selectedUser.value.statusCode = result.data.statusCode
-    selectedUser.value.statusName = result.data.statusName
+    selectedUser.value.statusName = result.data.statusName || '퇴사'
+    showRetireConfirmModal.value = false
+    showRetireSuccessModal.value = true
     loadSalesUsers()
-    alert('퇴사 처리가 완료되었습니다.')
   } catch (error: any) {
     console.error('Failed to retire sales user:', error)
     alert(error.response?.data?.message ?? '퇴사 처리에 실패했습니다.')
+  } finally {
+    isRetiring.value = false
   }
 }
 
@@ -341,7 +354,7 @@ const handlePhoneInput = (event: Event) => {
                   <td class="font-bold">{{ user.name }}</td>
                   <td>
                       <span class="badge" :class="user.statusCode === '01' ? 'badge-active' : 'badge-retired'">
-                        {{ user.statusName }}
+                        {{ user.statusName || (user.statusCode === '02' ? '퇴사' : '재직') }}
                       </span>
                   </td>
                   <td class="text-right font-bold">{{ user.customerCount }}명</td>
@@ -524,7 +537,7 @@ const handlePhoneInput = (event: Event) => {
                     <span class="info-label">재직 상태</span>
                     <span class="info-value">
                       <span class="badge" :class="selectedUser.statusCode === '01' ? 'badge-active' : 'badge-retired'">
-                        {{ selectedUser.statusName }}
+                        {{ selectedUser.statusName || (selectedUser.statusCode === '02' ? '퇴사' : '재직') }}
                       </span>
                     </span>
                   </div>
@@ -622,14 +635,109 @@ const handlePhoneInput = (event: Event) => {
         @close="isTransferModalOpen = false"
         @success="handleTransferSuccess"
     />
+
+    <!-- 퇴사 확인 모달 (이관 모달과 디자인 통일) -->
+    <div v-if="showRetireConfirmModal" class="modal-backdrop" @click="showRetireConfirmModal = false">
+      <div class="modal-card" @click.stop>
+        <div class="modal-header">
+          <div class="modal-title-wrapper">
+            <span class="warning-icon" style="margin-right: 8px;">⚠️</span>
+            <h2 class="modal-title" style="display: inline-block;">퇴사 처리 확인</h2>
+          </div>
+          <button class="close-button" type="button" @click="showRetireConfirmModal = false">
+            &times;
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="alert-banner alert-banner--danger" style="margin-bottom: 12px; padding: 12px; background: #ffebeb; color: #d32f2f; border-radius: 6px;">
+            <strong>⚠️ 정말 {{ selectedUser?.name }} 사원을 최종 퇴사 처리하시겠습니까?</strong>
+          </div>
+          <div class="confirm-message" style="font-size: 13px; line-height: 1.6; color: #4a5568;">
+            <p>퇴사 시 해당 사원의 계정 접속 권한 및 모든 기기 로그인 세션이 즉시 만료되며 <strong>복구가 불가능</strong>합니다.</p>
+            <p style="margin-top: 8px;">개인식별정보(PII)는 법정 보존 기간 동안 안전한 격리 보관 테이블로 자동 이전됩니다.</p>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="gap: 8px; justify-content: flex-end; display: flex;">
+          <button class="button button-secondary" type="button" @click="showRetireConfirmModal = false" :disabled="isRetiring">
+            취소
+          </button>
+          <button
+            class="button button-danger"
+            type="button"
+            @click="confirmRetire"
+            :disabled="isRetiring"
+          >
+            {{ isRetiring ? '처리 중...' : '최종 퇴사 처리' }}
+          </button>
+
+
+        </div>
+      </div>
+    </div>
+
+    <!-- 퇴사 완료 모달 -->
+    <div v-if="showRetireSuccessModal" class="modal-backdrop" @click="showRetireSuccessModal = false">
+      <div class="modal-card" @click.stop>
+        <div class="modal-header">
+          <div class="modal-title-wrapper">
+            <span class="success-icon" style="margin-right: 8px;">🎉</span>
+            <h2 class="modal-title" style="display: inline-block;">퇴사 처리 완료</h2>
+          </div>
+          <button class="close-button" type="button" @click="showRetireSuccessModal = false">
+            &times;
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <p class="success-desc" style="font-size: 14px; color: #2d3748; margin-bottom: 12px;">
+            <strong>{{ retiredUserName }}</strong> 사원의 퇴사 처리가 정상적으로 완료되었습니다.
+          </p>
+          <ul class="execution-list" style="margin: 0; padding-left: 20px; font-size: 13px; color: #718096; line-height: 1.8;">
+            <li>원본 영업사원 PII 개인정보 소프트 마스킹 완료</li>
+            <li>퇴사자 PII 보안 테이블 격리 보관 및 이관 완료</li>
+            <li>보유 Refresh Token 블랙리스트 처리 및 기기 세션 만료 완료</li>
+          </ul>
+        </div>
+
+        <div class="modal-footer">
+          <button class="button button-primary" type="button" @click="showRetireSuccessModal = false">
+            확인
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
+.button-danger {
+  background-color: #e53e3e;
+  color: #ffffff;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.button-danger:hover:not(:disabled) {
+  background-color: #c53030;
+}
+
+.button-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .app-main {
   flex: 1;
   min-width: 0;
   padding: 24px 28px;
+
   background-color: #f8fafc;
   display: flex;
   flex-direction: column;
