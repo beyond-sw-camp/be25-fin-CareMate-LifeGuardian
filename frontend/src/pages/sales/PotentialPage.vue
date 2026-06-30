@@ -5,7 +5,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import AppHeader from '../../components/common/Header.vue'
 import AppSidebar from '../../components/common/Sidebar.vue'
 import ChildRegisterModal from '../../components/potential/ChildRegisterModal.vue'
-import ParentSearchModal from '../../components/potential/ParentSearchModal.vue'
+import ParentSelectModal from '../../components/potential/ParentSelectModal.vue'
 import PotentialTable from '../../components/potential/PotentialTable.vue'
 import SalesPagination from '../../components/sales/SalesPagination.vue'
 import {
@@ -24,7 +24,7 @@ const noticeMessage = ref('')
 const noticeMessageType = ref<'success' | 'error'>('success')
 const isDeleting = ref(false)
 
-const isParentSearchModalOpen = ref(false)
+const isParentSelectModalOpen = ref(false)
 const isChildRegisterModalOpen = ref(false)
 const selectedParent = ref<ParentCustomerSearchResponse | null>(null)
 
@@ -93,10 +93,6 @@ const loadPotentialCustomers = async () => {
   }
 }
 
-const clearSelection = () => {
-  selectedCustomerIds.value = []
-}
-
 const handleDeleteSelectedCustomers = async () => {
   if (selectedCustomerIds.value.length === 0 || isDeleting.value) return
 
@@ -130,16 +126,16 @@ const handleDeleteSelectedCustomers = async () => {
 const handleOpenRegisterModal = () => {
   selectedParent.value = null
   isChildRegisterModalOpen.value = false
-  isParentSearchModalOpen.value = true
+  isParentSelectModalOpen.value = true
 }
 
-const handleCloseParentSearchModal = () => {
-  isParentSearchModalOpen.value = false
+const handleCloseParentSelectModal = () => {
+  isParentSelectModalOpen.value = false
 }
 
-const handleParentSearchNext = (parent: ParentCustomerSearchResponse) => {
+const handleParentSelectNext = (parent: ParentCustomerSearchResponse) => {
   selectedParent.value = parent
-  isParentSearchModalOpen.value = false
+  isParentSelectModalOpen.value = false
   isChildRegisterModalOpen.value = true
 }
 
@@ -147,9 +143,9 @@ const handleCloseChildRegisterModal = () => {
   isChildRegisterModalOpen.value = false
 }
 
-const handleBackToParentSearchModal = () => {
+const handleBackToParentSelectModal = () => {
   isChildRegisterModalOpen.value = false
-  isParentSearchModalOpen.value = true
+  isParentSelectModalOpen.value = true
 }
 
 const handleChildRegistered = async (
@@ -242,14 +238,6 @@ onBeforeUnmount(() => {
               >
                 {{ isDeleting ? '삭제 중' : '삭제' }}
               </button>
-              <button
-                class="potential-button potential-button--secondary"
-                type="button"
-                :disabled="isDeleting"
-                @click="clearSelection"
-              >
-                취소
-              </button>
             </div>
           </div>
         </div>
@@ -286,17 +274,17 @@ onBeforeUnmount(() => {
       </section>
     </main>
 
-    <ParentSearchModal
-      v-if="isParentSearchModalOpen"
-      @close="handleCloseParentSearchModal"
-      @next="handleParentSearchNext"
+    <ParentSelectModal
+      v-if="isParentSelectModalOpen"
+      @close="handleCloseParentSelectModal"
+      @next="handleParentSelectNext"
     />
 
     <ChildRegisterModal
       v-if="isChildRegisterModalOpen && selectedParent"
       :parent="selectedParent"
       @close="handleCloseChildRegisterModal"
-      @back="handleBackToParentSearchModal"
+      @back="handleBackToParentSelectModal"
       @registered="handleChildRegistered"
     />
   </div>
@@ -408,12 +396,6 @@ onBeforeUnmount(() => {
   border: 1px solid #d85a65;
   background: #d85a65;
   color: #ffffff;
-}
-
-.potential-button--secondary {
-  border: 1px solid #d7dde7;
-  background: #ffffff;
-  color: #4c586b;
 }
 
 .potential-button:disabled {

@@ -73,6 +73,15 @@ export async function getPotentialCustomers() {
     return response.data.data
 }
 
+export async function getParentCustomers() {
+    const response = await
+api.get<ApiResponse<ParentCustomerSearchResponse[]>>(
+        '/v1/potential-customers/parents',
+    )
+
+    return response.data.data    
+}
+
 export async function searchParentCustomer(data: ParentCustomerSearchRequest) {
     const response = await api.post<ApiResponse<ParentCustomerSearchResponse>>(
         '/v1/potential-customers/parent/search',

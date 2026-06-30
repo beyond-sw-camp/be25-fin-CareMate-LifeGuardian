@@ -123,6 +123,13 @@ const isReportSent = (customer: ContactCustomer) => {
 const webFormButtonLabel = (customer: ContactCustomer) => {
   if (isWebFormSending(customer)) return '발송 중'
 
+  if (
+    !customer.webFormSendEnabled &&
+    customer.webFormStatusName === '미발송'
+  ) {
+    return '비대상'
+  }
+  
   if (customer.webFormStatusName === '미발송') {
     return '발송'
   }

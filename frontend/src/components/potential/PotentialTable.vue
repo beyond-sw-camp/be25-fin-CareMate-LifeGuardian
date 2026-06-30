@@ -113,7 +113,6 @@ const genderLabel = (gender: string) => {
           :class="{
             'potential-table__row--selected':
               selectedCustomerIds?.includes(customer.potentialCustomerId),
-            'potential-table__row--graduated': customer.isActive,
           }"
         >
           <td>
@@ -196,15 +195,6 @@ const genderLabel = (gender: string) => {
 
 .potential-table__row--selected {
   background: color-mix(in srgb, var(--color-primary) 10%, white);
-}
-
-.potential-table__row--graduated {
-  background: #f1f3f7;
-  color: #7f8999;
-}
-
-.potential-table__row--selected.potential-table__row--graduated {
-  background: color-mix(in srgb, var(--color-primary) 14%, white);
 }
 
 .potential-table__customer-name {
