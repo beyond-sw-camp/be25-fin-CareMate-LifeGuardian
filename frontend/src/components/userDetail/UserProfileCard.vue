@@ -105,12 +105,10 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
         <div class="profile-summary">
           <div class="profile-title">
             <h1>{{ fallback(user.childName) }}</h1>
-            <div class="profile-title__badges">
-              <span v-for="badge in visibleBadges" :key="badge.code" class="profile-badge">
-                {{ badge.name }}
-              </span>
-              <span class="profile-status-badge">{{ fallback(user.conversionStatusName) }}</span>
-            </div>
+            <span v-for="badge in visibleBadges" :key="badge.code" class="profile-badge">
+              {{ badge.name }}
+            </span>
+            <span class="profile-status-badge">{{ fallback(user.conversionStatusName) }}</span>
           </div>
 
           <div class="profile-inline-info">
@@ -221,18 +219,18 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
 
 .profile-summary {
   display: grid;
-  grid-template-columns: clamp(140px, 16%, 170px) minmax(0, 1fr);
-  align-items: center;
+  grid-template-columns: minmax(120px, auto) minmax(0, 1fr);
+  align-items: start;
   width: 100%;
   min-width: 0;
   gap: 14px;
 }
 
 .profile-title {
-  display: grid;
-  justify-items: center;
-  gap: 12px;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .profile-title h1 {
@@ -244,14 +242,6 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
   line-height: 1.12;
 }
 
-.profile-title__badges {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
 .profile-summary p {
   margin: 0;
   color: var(--color-text-muted);
@@ -261,8 +251,8 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
 
 .profile-inline-info {
   display: grid;
-  grid-template-columns: minmax(132px, 0.85fr) minmax(200px, 1.15fr);
-  gap: 14px;
+  grid-template-columns: minmax(140px, 0.7fr) minmax(220px, 1.3fr);
+  gap: 18px;
   min-width: 0;
   margin-top: 0;
 }
@@ -295,7 +285,10 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
 
 .profile-compact-info,
 .profile-compact-guardian {
+  display: flex;
+  align-items: center;
   min-width: 0;
+  min-height: 130px;
   border-left: 1px solid #e5e7eb;
   padding-left: 18px;
 }
@@ -305,6 +298,10 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
   display: grid;
   gap: 10px;
   margin: 0;
+}
+
+.profile-compact-info dl {
+  gap: 15px;
 }
 
 .profile-compact-info div {
@@ -775,4 +772,5 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
     flex-wrap: wrap;
   }
 }
+
 </style>
