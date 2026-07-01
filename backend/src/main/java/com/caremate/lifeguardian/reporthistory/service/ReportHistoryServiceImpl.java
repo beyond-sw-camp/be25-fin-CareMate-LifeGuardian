@@ -21,6 +21,7 @@ public class ReportHistoryServiceImpl implements ReportHistoryService {
     private static final Set<String> SEND_TYPES = Set.of("all", "report", "webform");
     private static final Set<String> SEND_ITEM_TYPES = Set.of("all", "report_lifecycle", "report_disease", "webform");
     private static final Set<String> SEND_STATUSES = Set.of("all", "pending", "success", "failed", "collected");
+    private static final Set<String> CUSTOMER_STAGE_CODES = Set.of("all", "01", "02");
 
     private final ReportHistoryMapper reportHistoryMapper;
 
@@ -76,7 +77,16 @@ public class ReportHistoryServiceImpl implements ReportHistoryService {
             throw new BaseException(400, "발송 상태는 all, pending, success, failed, collected 중 하나여야 합니다.");
         }
 
+        String customerStageCode = normalizeOrDefault(request.getCustomerStageCode(), "all");
+
+        if (!CUSTOMER_STAGE_CODES.contains(customerStageCode)) {
+            throw new BaseException(400, "고객 유형은 all, 01, 02 중 하나여야 합니다.");
+        }
+
         String keyword = request.getKeyword() == null ? null : request.getKeyword().trim();
+        if (keyword != null && keyword.matches(".*\\s+.*")) {
+            throw new BaseException(400, "고객명 검색어 중간에는 공백을 입력할 수 없습니다.");
+        }
 
         if (request.getPage() < 1) {
             throw new BaseException(400, "페이지 번호는 1 이상이어야 합니다.");
@@ -94,6 +104,7 @@ public class ReportHistoryServiceImpl implements ReportHistoryService {
                 .sendType(sendType)
                 .sendItemType(sendItemType)
                 .sendStatus(sendStatus)
+                .customerStageCode(customerStageCode)
                 .keyword(keyword)
                 .page(request.getPage())
                 .size(request.getSize())

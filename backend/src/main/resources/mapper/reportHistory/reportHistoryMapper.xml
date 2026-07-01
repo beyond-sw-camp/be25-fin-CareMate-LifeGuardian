@@ -136,13 +136,11 @@
                 AND history.sendStatusCode = '04'
             </when>
         </choose>
+        <if test="request.customerStageCode != null and request.customerStageCode != '' and request.customerStageCode != 'all'">
+            AND history.customerStageCode = #{request.customerStageCode}
+        </if>
         <if test="request.keyword != null and request.keyword != ''">
-            AND (
-                LOWER(history.customerName) LIKE CONCAT('%', LOWER(#{request.keyword}), '%')
-                OR LOWER(history.customerStageName) LIKE CONCAT('%', LOWER(#{request.keyword}), '%')
-                OR LOWER(history.sendItemName) LIKE CONCAT('%', LOWER(#{request.keyword}), '%')
-                OR LOWER(history.sendStatusName) LIKE CONCAT('%', LOWER(#{request.keyword}), '%')
-            )
+            AND LOWER(history.customerName) LIKE CONCAT('%', LOWER(#{request.keyword}), '%')
         </if>
     </sql>
 

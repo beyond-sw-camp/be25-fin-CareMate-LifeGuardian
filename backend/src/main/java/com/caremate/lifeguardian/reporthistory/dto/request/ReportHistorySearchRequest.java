@@ -13,6 +13,8 @@ public class ReportHistorySearchRequest {
 
     private String sendStatus;
 
+    private String customerStageCode;
+
     private String keyword;
 
     private int page;
