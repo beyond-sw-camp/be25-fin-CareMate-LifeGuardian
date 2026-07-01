@@ -295,7 +295,7 @@ onMounted(() => {
 
 .send-history-tabs__button {
   min-width: 58px;
-  height: 28px;
+  height: 26px;
   border: 0;
   border-radius: 5px;
   background: transparent;
@@ -346,7 +346,7 @@ onMounted(() => {
 .send-history-filters select,
 .send-history-search input {
   min-width: 0;
-  height: 31px;
+  height: 30px;
   border: 1px solid #d9e0ea;
   border-radius: 5px;
   background: #ffffff;
@@ -358,7 +358,7 @@ onMounted(() => {
 
 .send-history-search button {
   width: 54px;
-  height: 31px;
+  height: 30px;
   border: 0;
   border-radius: 5px;
   background: var(--color-primary);
@@ -377,12 +377,10 @@ onMounted(() => {
 
 .send-history-list {
   display: flex;
-  min-height: 0;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   flex-direction: column;
   border: 1px solid #e3e8f0;
   box-shadow: none;
-  overflow: hidden;
   padding: 8px 11px 6px;
 }
 
@@ -408,7 +406,6 @@ onMounted(() => {
 
 .send-history-message {
   display: flex;
-  flex: 1 1 auto;
   min-height: 112px;
   align-items: center;
   justify-content: center;
@@ -422,11 +419,6 @@ onMounted(() => {
 }
 
 .send-history-table {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
   overflow-x: auto;
   overflow-y: visible;
   border: 1px solid #e1e7f0;
@@ -435,7 +427,6 @@ onMounted(() => {
 
 .send-history-table table {
   width: 100%;
-  height: 100%;
   min-width: 760px;
   table-layout: fixed;
   border-collapse: collapse;
@@ -443,16 +434,16 @@ onMounted(() => {
 
 .send-history-table th,
 .send-history-table td {
-  height: 33px;
+  height: 38px;
   border-bottom: 1px solid #edf1f6;
-  padding: 0 8px;
+  padding: 0 10px;
   text-align: center;
   font-size: 11px;
   white-space: nowrap;
 }
 
 .send-history-table th {
-  height: 29px;
+  height: 34px;
   background: #f6f8fb;
   color: #4c586b;
   font-weight: 800;
@@ -506,14 +497,14 @@ onMounted(() => {
 }
 
 .send-history-table__empty {
-  height: 72px;
+  height: 96px;
   color: var(--color-text-muted);
 }
 
 .send-history-list :deep(.sales-pagination) {
   flex: 0 0 auto;
-  margin-top: 5px;
-  padding-top: 5px;
+  margin-top: 2px;
+  padding-top: 0;
 }
 
 @media (max-width: 1120px) {

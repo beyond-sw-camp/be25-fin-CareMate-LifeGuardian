@@ -43,7 +43,7 @@ const route = useRoute()
 let reportMessageTimer: ReturnType<typeof setTimeout> | undefined
 let bulkConfirmResolver: ((confirmed: boolean) => void) | undefined
 
-const SALES_PAGE_SIZE = 8
+const SALES_PAGE_SIZE = 10
 
 // 현재는 서버 페이지네이션 결과를 그대로 노출하지만, 템플릿 의존성을 줄이기 위해 computed로 감쌉니다.
 const displayedCustomers = computed(() => customers.value)
@@ -597,12 +597,10 @@ onBeforeUnmount(() => {
 
 .sales-list {
   display: flex;
-  min-height: 0;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   flex-direction: column;
   border: 1px solid #e3e8f0;
   box-shadow: none;
-  overflow: hidden;
   padding: 7px 11px 6px;
 }
 
@@ -631,7 +629,6 @@ onBeforeUnmount(() => {
 }
 
 .sales-list__message {
-  flex: 1 1 auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -678,23 +675,19 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   min-height: 26px;
-  margin-top: 5px;
+  margin-top: 2px;
 }
 
 .sales-list :deep(.sales-table) {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
+  height: auto;
 }
 
 .sales-list :deep(.sales-table table) {
-  height: 100%;
+  height: auto;
 }
 
 .sales-list :deep(.sales-pagination) {
-  margin-top: 4px;
+  margin-top: 0;
 }
 
 .report-button {

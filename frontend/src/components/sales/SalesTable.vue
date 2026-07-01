@@ -334,16 +334,16 @@ const stepClass = (threeStepCode?: string) => {
 
 .sales-table th,
 .sales-table td {
-  height: 30px;
+  height: 32px;
   border-bottom: 1px solid #edf1f6;
-  padding: 0 6px;
+  padding: 0 8px;
   text-align: center;
   font-size: 11px;
   white-space: nowrap;
 }
 
 .sales-table th {
-  height: 28px;
+  height: 30px;
   background: #f6f8fb;
   color: #4c586b;
   font-weight: 800;
@@ -358,7 +358,7 @@ const stepClass = (threeStepCode?: string) => {
 }
 
 .sales-table .sales-table__empty {
-  height: 64px;
+  height: 80px;
   color: var(--color-text-muted);
 }
 
@@ -486,7 +486,7 @@ const stepClass = (threeStepCode?: string) => {
   align-items: center;
   justify-content: center;
   min-width: 46px;
-  height: 19px;
+  height: 20px;
   border-radius: 5px;
   padding: 0 8px;
   font-size: 10px;
@@ -525,7 +525,7 @@ const stepClass = (threeStepCode?: string) => {
 
 .report-button {
   min-width: 54px;
-  height: 23px;
+  height: 24px;
   border: 0;
   border-radius: 5px;
   background: var(--color-primary);
@@ -571,7 +571,7 @@ const stepClass = (threeStepCode?: string) => {
   align-items: center;
   justify-content: center;
   min-width: 44px;
-  height: 19px;
+  height: 20px;
   border-radius: 999px;
   background: #f1f4f8;
   color: #5f6b7a;
