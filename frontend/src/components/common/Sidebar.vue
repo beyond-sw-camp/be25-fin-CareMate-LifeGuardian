@@ -67,7 +67,7 @@ onBeforeUnmount(() => {
   stopResize()
 })
 
-const displayName = localStorage.getItem(USER_NAME_STORAGE_KEY) ?? (isAdmin.value ? '홍길동' : '김설계')
+const displayName = localStorage.getItem(USER_NAME_STORAGE_KEY) ?? (isAdmin.value ? '유재석' : '김설계')
 const branch = localStorage.getItem(USER_BRANCH_STORAGE_KEY) ?? '강남지점'
 const region = localStorage.getItem(USER_REGION_STORAGE_KEY)
 const branchName = region ? `${region} ${branch}` : branch
@@ -94,9 +94,9 @@ const logoTo = computed(() => {
 const profileParts = computed(() =>
   isAdmin.value
     ? {
-      primary: branchName,
-      secondary: `${displayName} 지점장`,
-      meta: '관리자 계정',
+      primary: displayName,
+      secondary: branchName,
+      meta: '지점장',
     }
     : {
       primary: displayName,
@@ -192,8 +192,8 @@ const navIconClass = (label: string) => {
       <div class="sidebar__profile-summary">
         <span class="sidebar__profile-avatar" aria-hidden="true">{{ profileInitial }}</span>
         <span class="sidebar__profile-copy">
-          <span class="sidebar__profile-label">{{ profileParts.meta }}</span>
           <strong>{{ profileParts.primary }}</strong>
+          <span class="sidebar__profile-label">{{ profileParts.meta }}</span>
           <span>{{ profileParts.secondary }}</span>
         </span>
       </div>
