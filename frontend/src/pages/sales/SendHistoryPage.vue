@@ -35,8 +35,9 @@ const totalPages = ref(0)
 const totalCount = ref(0)
 const isLoading = ref(false)
 const errorMessage = ref('')
+const HISTORY_PAGE_SIZE = 12
 
-const HISTORY_PAGE_SIZE = 9
+
 
 const typeTabs = [
   { label: '전체', value: 'all' },
@@ -208,7 +209,7 @@ onMounted(() => {
               <tr>
                 <th>유형</th>
                 <th>고객명</th>
-                <th>고객 구분</th>
+                <th>고객 유형</th>
                 <th>발송 항목</th>
                 <th>발송 여부</th>
                 <th>발송 일시</th>
@@ -250,19 +251,36 @@ onMounted(() => {
 
 <style scoped>
 .send-history-page__main {
-  padding: 18px 28px 40px 24px;
-  overflow-x: hidden;
+  display: flex;
+  height: 100vh;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 8px 20px 7px 20px;
+}
+
+.send-history-page__main :deep(.app-header) {
+  min-height: 46px;
+  margin-bottom: 7px;
+}
+
+.send-history-page__main :deep(.app-header__title) {
+  padding-top: 2px;
+}
+
+.send-history-page__main :deep(.page-title) {
+  font-size: 22px;
 }
 
 .send-history-toolbar {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  margin: 8px 0 14px;
+  margin: 0 0 8px;
   border: 1px solid #e3e8f0;
   box-shadow: none;
-  padding: 12px 14px;
+  padding: 9px 12px;
 }
 
 .send-history-tabs {
@@ -358,20 +376,25 @@ onMounted(() => {
 }
 
 .send-history-list {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
   border: 1px solid #e3e8f0;
   box-shadow: none;
-  padding: 12px 14px 14px;
+  padding: 8px 11px 6px;
 }
 
 .send-history-list__header {
-  margin-bottom: 10px;
+  flex: 0 0 auto;
+  margin-bottom: 5px;
 }
 
 .send-history-list h2 {
   margin: 0;
-  color: var(--color-text);
+  color: #263142;
   font-size: 14px;
   font-weight: 900;
+  letter-spacing: 0;
 }
 
 .send-history-list h2 span {
@@ -476,6 +499,12 @@ onMounted(() => {
 .send-history-table__empty {
   height: 96px;
   color: var(--color-text-muted);
+}
+
+.send-history-list :deep(.sales-pagination) {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  padding-top: 0;
 }
 
 @media (max-width: 1120px) {
