@@ -162,7 +162,15 @@ const ageShiftGuide = (customer: SalesCustomer) => {
   return dDay <= 7 ? `보험 나이 변경 임박 D-${dDay}` : `보험 나이 변경 예정 D-${dDay}`
 }
 
-const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
+const stepClass = (threeStepCode?: string) => {
+  const classMap: Record<string, string> = {
+    '06': 'danger',
+    '07': 'orange',
+    '08': 'warning',
+  }
+
+  return threeStepCode ? classMap[threeStepCode] ?? 'warning' : 'warning'
+}
 </script>
 
 <template>
@@ -259,7 +267,7 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
             <span
               v-if="customer.threeStepCode || customer.sortRank === 1"
               class="step-dot"
-              :class="`step-dot--${stepClass(customer.sortRank)}`"
+              :class="`step-dot--${stepClass(customer.threeStepCode)}`"
               :title="customer.threeStepName"
             ></span>
             <span v-else>-</span>
@@ -463,6 +471,10 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
 
 .step-dot--danger {
   background: #e22b2f;
+}
+
+.step-dot--orange {
+  background: #f59e0b;
 }
 
 .step-dot--warning {

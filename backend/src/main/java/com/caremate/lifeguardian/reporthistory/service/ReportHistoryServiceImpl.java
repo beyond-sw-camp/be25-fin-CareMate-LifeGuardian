@@ -10,6 +10,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -77,6 +78,34 @@ public class ReportHistoryServiceImpl implements ReportHistoryService {
         }
 
         String keyword = request.getKeyword() == null ? null : request.getKeyword().trim();
+        String customerStageCode = null;
+        List<String> keywordTerms = new ArrayList<>();
+
+        if (keyword != null && !keyword.isBlank()) {
+            for (String token : keyword.split("\\s+")) {
+                String compactToken = token.replaceAll("\\s+", "");
+
+                if (compactToken.isBlank()) {
+                    continue;
+                }
+
+                if ("잠재".equals(compactToken) || "잠재고객".equals(compactToken)) {
+                    customerStageCode = "01";
+                    continue;
+                }
+
+                if ("통합".equals(compactToken) || "통합고객".equals(compactToken)) {
+                    customerStageCode = "02";
+                    continue;
+                }
+
+                keywordTerms.add(compactToken);
+            }
+
+            if (customerStageCode != null) {
+                keywordTerms.removeIf("고객"::equals);
+            }
+        }
 
         if (request.getPage() < 1) {
             throw new BaseException(400, "페이지 번호는 1 이상이어야 합니다.");
@@ -95,6 +124,8 @@ public class ReportHistoryServiceImpl implements ReportHistoryService {
                 .sendItemType(sendItemType)
                 .sendStatus(sendStatus)
                 .keyword(keyword)
+                .keywordTerms(keywordTerms)
+                .customerStageCode(customerStageCode)
                 .page(request.getPage())
                 .size(request.getSize())
                 .build();

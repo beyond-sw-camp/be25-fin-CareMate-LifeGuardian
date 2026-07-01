@@ -11,6 +11,7 @@ import SalesTable from '../../components/sales/SalesTable.vue'
 import {
   getSalesList,
   getSalesSummary,
+  sendCustomerWebform,
   sendCustomerReportsInBulk,
   sendCustomerWebformsInBulk,
   type SalesCustomer,
@@ -268,24 +269,69 @@ const isWebformSendFailed = (result: WebformSendResult) => {
 }
 
 // 서버 기준으로 웹폼 발송 대상 전체를 일괄 발송합니다.
+const sendSelectedCustomerWebforms = async (targetCustomers: SalesCustomer[]) => {
+  const settledResults = await Promise.allSettled(
+    targetCustomers.map((customer) =>
+      sendCustomerWebform(
+        'sales-status',
+        customer.conversionStatusCode ?? customer.customerStageCode,
+        customer.customerId,
+      ),
+    ),
+  )
+
+  return settledResults.reduce(
+    (summary, result) => {
+      if (result.status === 'fulfilled') {
+        summary.results.push(result.value)
+        return summary
+      }
+
+      summary.failedCount += 1
+      return summary
+    },
+    { results: [] as WebformSendResult[], failedCount: 0 },
+  )
+}
+
 const handleWebformBulkSend = async () => {
   if (isWebformBulkSending.value) return
-  if (!window.confirm('웹폼을 일괄 발송하시겠습니까?')) return
+
+  const targetCustomers = selectedReportCustomerIds.value.length
+    ? customers.value.filter((customer) => selectedReportCustomerIds.value.includes(customer.customerId))
+    : []
+  const selectedCount = targetCustomers.length
+
+  if (
+    !window.confirm(
+      selectedCount > 0
+        ? `선택한 ${selectedCount}건의 웹폼을 발송하시겠습니까?`
+        : '웹폼을 일괄 발송하시겠습니까?',
+    )
+  ) {
+    return
+  }
 
   isWebformBulkSending.value = true
   reportMessage.value = ''
 
   try {
-    const results = await sendCustomerWebformsInBulk()
+    const { results, failedCount: requestFailedCount } = selectedCount > 0
+      ? await sendSelectedCustomerWebforms(targetCustomers)
+      : { results: await sendCustomerWebformsInBulk(), failedCount: 0 }
 
     results.forEach(applyWebformSendResult)
-    const failedCount = results.filter(isWebformSendFailed).length
-    const successCount = results.length - failedCount
+    const failedCount = requestFailedCount + results.filter(isWebformSendFailed).length
+    const successCount = selectedCount > 0
+      ? selectedCount - failedCount
+      : results.length - failedCount
 
     showReportMessage(
       `웹폼 일괄 발송 완료: 성공 ${successCount}건, 실패 ${failedCount}건`,
       failedCount > 0 ? 'error' : 'success',
     )
+
+    if (selectedCount > 0) selectedReportCustomerIds.value = []
   } catch (error) {
     showReportMessage(getErrorMessage(error, '웹폼 일괄 발송에 실패했습니다.'), 'error')
   } finally {
