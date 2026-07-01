@@ -298,6 +298,12 @@ LifeGuardianCICD/
 ## <a id="14-CI/CD-테스트-보고서"></a> 14. CI/CD 테스트 보고서
 
 <details>
+ <summary><b>🧾 CI/CD 테스트 계획서</b></summary>
+
+- [🧾 CI/CD 테스트 계획서 (링크)](.github/cicd-plan.md)
+</details>
+
+<details>
  <summary><b>🧾 CI/CD 테스트 보고서</b></summary>
 
 - [🧾 CI/CD 테스트 보고서 (링크)](.github/cicd-test-report.md)
