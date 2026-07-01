@@ -16,7 +16,7 @@ public interface BranchStatisticsService {
     SalesUserPersonalPerformanceResponse getSalesUserPersonalPerformance(Long branchId, Long targetUserId);
 
     // 지점 전체 영업사원 판매 성과 상세 조회
-    BranchPerformanceDetailsResponse getSalesPerformanceDetails(Long branchId);
+    BranchPerformanceDetailsResponse getSalesPerformanceDetails(Long branchId, String targetYearMonth);
 
     // 대시보드용 영업사원 목록을 조회합니다.
     DashboardSalesUsersResponse getDashboardSalesUsers(Long branchId, String keyword);

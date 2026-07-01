@@ -38,8 +38,10 @@ public class DashboardSummaryResponse {
     @Schema(description = "청약완료 고객 수", example = "20")
     private Integer subscriptionCompletedCount;
 
+    /*
     @Schema(description = "수납완료 고객 수", example = "13")
     private Integer paymentCompletedCount;
+    */
 
     @Schema(description = "계약완료 고객 수", example = "105")
     private Integer contractCompletedCount;

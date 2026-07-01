@@ -93,7 +93,7 @@
                 AND su.status_code = #{statusCode}
             </if>
         </where>
-        ORDER BY su.id DESC
+        ORDER BY CASE WHEN su.status_code = '01' THEN 0 ELSE 1 END ASC, su.id DESC
         LIMIT #{safeSize} OFFSET #{offset}
     </select>
 

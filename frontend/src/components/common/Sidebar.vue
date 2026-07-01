@@ -255,13 +255,7 @@ const navIconClass = (label: string) => {
   margin: -4px -18px 28px;
   border-bottom: 1px solid rgb(211 220 234 / 74%);
   background: rgb(255 255 255 / 34%);
-  padding: 0 26px 8px;
-  transition:
-    min-height 160ms ease,
-    margin 160ms ease,
-    padding 160ms ease,
-    background 160ms ease,
-    border-color 160ms ease;
+  padding: 0 52px 8px 26px;
 }
 
 .sidebar--admin .sidebar__brand {
@@ -272,6 +266,7 @@ const navIconClass = (label: string) => {
 .sidebar__logo {
   display: flex;
   min-width: 0;
+  max-width: 100%;
   align-items: center;
   gap: 10px;
   color: #151924;
@@ -738,12 +733,13 @@ const navIconClass = (label: string) => {
 }
 
 .sidebar--collapsed .sidebar__brand {
-  justify-content: flex-start;
+  justify-content: space-between;
+  align-items: center;
   min-height: 38px;
   margin: 0 -6px 12px;
   border-bottom: 0;
   background: transparent;
-  padding: 0 4px;
+  padding: 0 8px;
 }
 
 .sidebar--collapsed .sidebar__logo-text,
@@ -770,6 +766,8 @@ const navIconClass = (label: string) => {
   background: transparent;
   box-shadow: none;
   color: #9aa3af;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .sidebar--collapsed .sidebar__collapse-button::after {

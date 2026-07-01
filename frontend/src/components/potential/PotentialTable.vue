@@ -10,6 +10,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:selectedCustomerIds': [customerIds: number[]]
+  selectCustomer: [customer: PotentialCustomerListItem]
 }>()
 
 const selectAllCheckbox = ref<HTMLInputElement | null>(null)
@@ -113,7 +114,6 @@ const genderLabel = (gender: string) => {
           :class="{
             'potential-table__row--selected':
               selectedCustomerIds?.includes(customer.potentialCustomerId),
-            'potential-table__row--graduated': customer.isActive,
           }"
         >
           <td>
@@ -124,8 +124,14 @@ const genderLabel = (gender: string) => {
               @change="toggleCustomer(customer)"
             />
           </td>
-          <td class="potential-table__customer-name">
-            {{ customer.customerName }}
+          <td>
+            <button
+              class="potential-table__customer-name"
+              type="button"
+              @click="emit('selectCustomer', customer)"
+            >
+              {{ customer.customerName }}
+            </button>
           </td>
           <td>{{ genderLabel(customer.gender) }}</td>
           <td>{{ customer.age }}</td>
@@ -198,17 +204,19 @@ const genderLabel = (gender: string) => {
   background: color-mix(in srgb, var(--color-primary) 10%, white);
 }
 
-.potential-table__row--graduated {
-  background: #f1f3f7;
-  color: #7f8999;
-}
-
-.potential-table__row--selected.potential-table__row--graduated {
-  background: color-mix(in srgb, var(--color-primary) 14%, white);
-}
-
 .potential-table__customer-name {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
   font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.potential-table__customer-name:hover {
+  color: var(--color-primary);
 }
 
 .potential-table__empty {

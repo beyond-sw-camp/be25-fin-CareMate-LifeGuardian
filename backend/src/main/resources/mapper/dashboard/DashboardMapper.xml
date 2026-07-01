@@ -18,14 +18,46 @@
     <select id="findDashboardSummary"
             resultType="com.caremate.lifeguardian.dashboard.dto.response.DashboardSummaryResponse">
 
+        <!-- 영업현황 목록과 동일하게 고객별 대표 계약 1건만 추출 -->
+        WITH customer_base AS (
+            SELECT
+                ic.integrated_customer_id AS customer_id
+            FROM integrated_customer ic
+            WHERE ic.sales_user_id = #{salesUserId}
+        ),
+        representative_contract AS (
+            SELECT *
+            FROM (
+                SELECT
+                    c.*,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY c.integrated_customer_id
+                        ORDER BY
+                            CASE c.contract_result_status_code
+                                WHEN '01' THEN 1
+                                WHEN '02' THEN 2
+                                WHEN '03' THEN 3
+                                ELSE 9
+                            END,
+                            c.updated_at DESC,
+                            c.id DESC
+                    ) AS rn
+                FROM contract c
+                INNER JOIN customer_base cb
+                    ON cb.customer_id = c.integrated_customer_id
+            ) x
+            WHERE x.rn = 1
+        )
+
         SELECT
             /* 잠재고객 미상담 고객 수 */
             (
                 SELECT COUNT(*)
                 FROM potential_customer pc
                 WHERE pc.sales_user_id = #{salesUserId}
+                    AND pc.conversion_status_code = '01'
                     AND pc.consult_status_code = '01'
-                    AND pc.is_active = FALSE               /* 졸업 고객 제외 */
+                 /* AND pc.is_active = FALSE               졸업 고객 제외 */
             ) AS uncontactedCustomerCount,
 
             /* 잠재고객 상담중 고객 수 */
@@ -33,56 +65,44 @@
                 SELECT COUNT(*)
                 FROM potential_customer pc
                 WHERE pc.sales_user_id = #{salesUserId}
+                    AND pc.conversion_status_code = '01'
                     AND pc.consult_status_code = '02'
-                    AND pc.is_active = FALSE              /* 졸업 고객 제외 */
+                 /* AND pc.is_active = FALSE               졸업 고객 제외 */
             ) AS consultingCustomerCount,
 
             /* 설계중 고객 수 */
             (
                 SELECT COUNT(*)
-                FROM contract c
-                WHERE c.sales_user_id = #{salesUserId}
-                    AND c.contract_status_code = '01'
+                FROM representative_contract rc
+                WHERE rc.contract_status_code = '01'
             ) AS designingContractCount,
 
             /* 설계완료 고객 수 */
             (
                 SELECT COUNT(*)
-                FROM contract c
-                WHERE c.sales_user_id = #{salesUserId}
-                    AND c.contract_status_code = '02'
+                FROM representative_contract rc
+                WHERE rc.contract_status_code = '02'
             ) AS designedContractCount,
 
             /* 청약중 고객 수 */
             (
                 SELECT COUNT(*)
-                FROM contract c
-                WHERE c.sales_user_id = #{salesUserId}
-                    AND c.contract_status_code = '03'
+                FROM representative_contract rc
+                WHERE rc.contract_status_code = '03'
             ) AS subscriptionInProgressCount,
 
             /* 청약완료 고객 수 */
             (
                 SELECT COUNT(*)
-                FROM contract c
-                WHERE c.sales_user_id = #{salesUserId}
-                    AND c.contract_status_code = '04'
+                FROM representative_contract rc
+                WHERE rc.contract_status_code = '04'
             ) AS subscriptionCompletedCount,
-
-            /* 수납완료 고객 수 */
-            (
-                SELECT COUNT(*)
-                FROM contract c
-                WHERE c.sales_user_id = #{salesUserId}
-                    AND c.contract_status_code = '06'
-            ) AS paymentCompletedCount,
 
             /*계약완료 고객 수 */
             (
                 SELECT COUNT(*)
-                FROM contract c
-                WHERE c.sales_user_id = #{salesUserId}
-                    AND c.contract_result_status_code = '02'
+                FROM representative_contract rc
+                WHERE rc.contract_status_code = '06'
             ) AS contractCompletedCount
     </select>
 
