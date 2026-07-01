@@ -21,6 +21,8 @@ import com.caremate.lifeguardian.member.domain.SalesUserPiiSecure;
 import com.caremate.lifeguardian.member.dto.request.SalesUserCustomerTransferRequest;
 import com.caremate.lifeguardian.member.dto.request.SalesUserPiiSecureSearchRequest;
 import com.caremate.lifeguardian.member.dto.request.SalesUserRegisterRequest;
+import com.caremate.lifeguardian.member.dto.request.SalesUserMonthlyTargetUpdateRequest;
+import com.caremate.lifeguardian.member.dto.request.SalesUserUpdateRequest;
 import com.caremate.lifeguardian.member.dto.request.SalesUserSearchRequest;
 import com.caremate.lifeguardian.member.dto.request.SalesUserStatusUpdateRequest;
 import com.caremate.lifeguardian.member.dto.response.SalesUserCustomerTransferResponse;
@@ -36,6 +38,7 @@ import com.caremate.lifeguardian.member.mapper.SalesUserMapper;
 import com.caremate.lifeguardian.member.mapper.SalesUserPiiSecureMapper;
 import com.caremate.lifeguardian.member.mapper.TokenManagementMapper;
 import com.caremate.lifeguardian.member.service.SalesUserService;
+import com.caremate.lifeguardian.common.security.SecurityUtil;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -125,6 +128,13 @@ public class SalesUserServiceImpl implements SalesUserService {
         salesUserMapper.updateEmployeeId(generatedId, finalEmployeeId); // DB 상태 동기화
         log.info("영업사원 사번 동기화 완료 - 사번: {}", finalEmployeeId);
 
+        // 8-1. 월간 목표 계약 건수가 제공된 경우 함께 등록 (가입월 기준)
+        if (request.getMonthlyTarget() != null && request.getMonthlyTarget() > 0) {
+            String targetYearMonth = request.getJoinedAt().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMM"));
+            salesUserMapper.upsertSalesMonthlyTarget(generatedId, targetYearMonth, request.getMonthlyTarget());
+            log.info("영업사원 입사월 목표 등록 완료 - 사번: {}, 목표: {}건, 대상월: {}", finalEmployeeId, request.getMonthlyTarget(), targetYearMonth);
+        }
+
         // 9. 불변 객체 Response 조립하여 반환
         return SalesUserRegisterResponse.builder()
                 .id(generatedId)
@@ -168,9 +178,15 @@ public class SalesUserServiceImpl implements SalesUserService {
     @Override
     @Transactional(readOnly = true)
     public SalesUserListResponse getSalesUserList(SalesUserSearchRequest searchRequest) {
-        log.info("영업사원 목록 조회 요청 - keyword: {}, statusCode: {}, page: {}, size: {}",
-                searchRequest.getKeyword(), searchRequest.getStatusCode(), searchRequest.getPage(),
-                searchRequest.getSize());
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+        SalesUser currentUser = salesUserMapper.findById(currentUserId);
+        if (currentUser != null) {
+            searchRequest.setBranchId(currentUser.getBranchId());
+        }
+
+        log.info("영업사원 목록 조회 요청 - keyword: {}, statusCode: {}, branchId: {}, page: {}, size: {}",
+                searchRequest.getKeyword(), searchRequest.getStatusCode(), searchRequest.getBranchId(),
+                searchRequest.getPage(), searchRequest.getSize());
 
         // 1. 전체 데이터 개수 카운트
         long totalElements = salesUserMapper.countSalesUsers(searchRequest);
@@ -449,5 +465,71 @@ public class SalesUserServiceImpl implements SalesUserService {
                 .totalPages(totalPages)
                 .content(content)
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public void updateMonthlyTarget(Long userId, SalesUserMonthlyTargetUpdateRequest request) {
+        log.info("영업사원 월간 목표 업데이트 시작 - userId: {}, targetYearMonth: {}, targetCount: {}",
+                userId, request.getTargetYearMonth(), request.getTargetContractCount());
+
+        // 대상 영업사원 존재 검증
+        if (salesUserMapper.findById(userId) == null) {
+            throw new BaseException(404, "요청하신 영업사원 정보를 찾을 수 없습니다.");
+        }
+
+        // YYYY-MM 형식을 YYYYMM 형식으로 변환
+        String targetYearMonth = request.getTargetYearMonth().replace("-", "");
+
+        // 목표 추가/수정 (UPSERT)
+        salesUserMapper.upsertSalesMonthlyTarget(userId, targetYearMonth, request.getTargetContractCount());
+        log.info("영업사원 월간 목표 업데이트 완료");
+    }
+
+    @Override
+    @Transactional
+    public void updateSalesUser(Long userId, SalesUserUpdateRequest request) {
+        log.info("영업사원 정보 수정 프로세스 시작 - userId: {}, 이름: {}", userId, request.getName());
+
+        // 1. 대상 영업사원 존재 검증
+        SalesUser salesUser = salesUserMapper.findById(userId);
+        if (salesUser == null) {
+            throw new BaseException(404, "요청하신 영업사원 정보를 찾을 수 없습니다.");
+        }
+
+        // 2. 소속 지점 존재 여부 검증
+        if (!branchMapper.existsById(request.getBranchId())) {
+            throw new BaseException(404, "요청하신 지점 정보를 찾을 수 없습니다.");
+        }
+
+        // 3. 이메일 중복 검증 (자신의 기존 이메일인 경우는 통과)
+        if (!salesUser.getEmail().equals(request.getEmail()) && salesUserMapper.existsByEmail(request.getEmail())) {
+            throw new BaseException(409, "이미 존재하는 이메일입니다.");
+        }
+
+        // 4. 휴대폰 번호 중복 검증 (자신의 기존 연락처인 경우는 통과)
+        if (!salesUser.getPhone().equals(request.getPhone()) && salesUserMapper.existsByPhone(request.getPhone())) {
+            throw new BaseException(409, "이미 존재하는 휴대폰 번호입니다.");
+        }
+
+        // 5. 도메인 객체 정보 업데이트
+        salesUser.updateInfo(
+                request.getName(),
+                request.getBirthDate(),
+                request.getBranchId(),
+                request.getRankCode(),
+                request.getPhone(),
+                request.getEmail(),
+                request.getJoinedAt()
+        );
+
+        // 6. DB Update 실행
+        salesUserMapper.updateSalesUser(salesUser);
+
+        // 7. 당월 계약 목표 건수 수정/추가 (수정 작업 실행 시점의 당월 연월 형식: YYYYMM)
+        String currentYearMonth = java.time.YearMonth.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMM"));
+        salesUserMapper.upsertSalesMonthlyTarget(userId, currentYearMonth, request.getMonthlyTarget());
+
+        log.info("영업사원 정보 및 당월 계약 목표 수정 완료 - userId: {}", userId);
     }
 }

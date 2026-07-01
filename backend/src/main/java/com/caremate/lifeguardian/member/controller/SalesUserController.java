@@ -113,4 +113,36 @@ public class SalesUserController {
                 .ok(ApiResponse.success(200, "퇴사자 PII 분리 보관 현황 조회가 완료되었습니다.", response));
     }
 
+    @Operation(summary = "영업사원 월간 목표 등록 및 수정 (인사 관리용)", description = "관리자가 특정 영업사원의 특정 연월 계약 목표를 등록하거나 수정합니다.")
+    @PutMapping("/{userId}/monthly-target")
+    public ResponseEntity<ApiResponse<Void>> updateMonthlyTarget(
+            @PathVariable Long userId,
+            @Valid @RequestBody SalesUserMonthlyTargetUpdateRequest request) {
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+        log.info("영업사원 월간 목표 등록/수정 API 요청 수신 - 대상 userId: {}, targetYearMonth: {}, targetCount: {}, 요청 관리자 ID: {}",
+                userId, request.getTargetYearMonth(), request.getTargetContractCount(), currentUserId);
+
+        salesUserService.updateMonthlyTarget(userId, request);
+        log.info("영업사원 월간 목표 등록/수정 API 처리 성공 - 대상 userId: {}, 요청 관리자 ID: {}", userId, currentUserId);
+
+        return ResponseEntity
+                .ok(ApiResponse.success(200, "월간 목표가 정상적으로 저장되었습니다.", null));
+    }
+
+    @Operation(summary = "영업사원 정보 및 당월 계약 목표 수정 (인사 관리용)", description = "관리자가 특정 영업사원의 기본 정보(이름, 이메일 등)와 당월의 계약 목표를 수정합니다.")
+    @PutMapping("/{userId}")
+    public ResponseEntity<ApiResponse<Void>> updateSalesUser(
+            @PathVariable Long userId,
+            @Valid @RequestBody SalesUserUpdateRequest request) {
+        Long currentUserId = SecurityUtil.getCurrentUserId();
+        log.info("영업사원 정보 및 당월 목표 수정 API 요청 수신 - 대상 userId: {}, 이름: {}, 요청 관리자 ID: {}",
+                userId, request.getName(), currentUserId);
+
+        salesUserService.updateSalesUser(userId, request);
+        log.info("영업사원 정보 및 당월 목표 수정 API 처리 성공 - 대상 userId: {}, 요청 관리자 ID: {}", userId, currentUserId);
+
+        return ResponseEntity
+                .ok(ApiResponse.success(200, "영업사원 정보가 성공적으로 수정되었습니다.", null));
+    }
+
 }

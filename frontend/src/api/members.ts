@@ -15,6 +15,15 @@ export interface SalesUserSummary {
   statusCode: string
   statusName: string
   customerCount: number
+  birthDate: string
+  branchId: number
+  branchName: string
+  rankCode: string
+  positionName: string
+  phone: string
+  email: string
+  joinedAt: string
+  monthlyTarget: number
 }
 
 export interface SalesUserListResponse {
@@ -32,12 +41,24 @@ export interface SalesUserRegisterRequest {
   email: string
   joinedAt: string
   roleCode?: string
+  monthlyTarget?: number
 }
 
 export interface SalesUserRegisterResponse {
   id: number
   employeeId: string
   temporaryPassword: string
+}
+
+export interface SalesUserUpdateRequest {
+  name: string
+  birthDate: string
+  branchId: number
+  rankCode: string
+  phone: string
+  email: string
+  joinedAt: string
+  monthlyTarget: number
 }
 
 export interface SalesUserStatusUpdateResponse {
@@ -109,4 +130,16 @@ export async function transferCustomers(userId: number, toUserId: number) {
 export async function getPiiSecureList(params: { page?: number; size?: number }) {
   const response = await api.get<ApiResponse<SalesUserPiiSecureListResponse>>('/v1/sales-users/pii-secure', { params })
   return response.data.data
+}
+
+// 7. 영업사원 월간 목표 등록 및 수정
+export async function updateMonthlyTarget(userId: number, data: { targetYearMonth: string; targetContractCount: number }) {
+  const response = await api.put<ApiResponse<void>>(`/v1/sales-users/${userId}/monthly-target`, data)
+  return response.data
+}
+
+// 8. 영업사원 정보 및 당월 계약 목표 수정
+export async function updateSalesUser(userId: number, data: SalesUserUpdateRequest) {
+  const response = await api.put<ApiResponse<void>>(`/v1/sales-users/${userId}`, data)
+  return response.data
 }
