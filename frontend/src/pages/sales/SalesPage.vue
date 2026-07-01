@@ -37,7 +37,7 @@ const filters = ref<SalesSearchFilters>({})
 const route = useRoute()
 let reportMessageTimer: ReturnType<typeof setTimeout> | undefined
 
-const SALES_PAGE_SIZE = 10
+const SALES_PAGE_SIZE = 9
 
 // 현재는 서버 페이지네이션 결과를 그대로 노출하지만, 템플릿 의존성을 줄이기 위해 computed로 감쌉니다.
 const displayedCustomers = computed(() => customers.value)
@@ -343,12 +343,14 @@ onBeforeUnmount(() => {
         </p>
         <p v-if="errorMessage" class="sales-list__message sales-list__message--error">{{ errorMessage }}</p>
         <p v-else-if="isLoading" class="sales-list__message">불러오는 중...</p>
-        <SalesTable
-          v-else
-          v-model:selected-report-customer-ids="selectedReportCustomerIds"
-          :customers="displayedCustomers"
-          @send-result="showReportMessage"
-        />
+        
+        <div v-else class="sales-list__table-area">
+          <SalesTable
+            v-model:selected-report-customer-ids="selectedReportCustomerIds"
+            :customers="displayedCustomers"
+            @send-result="showReportMessage"
+          />
+        </div>
         <div class="sales-list__footer">
           <div class="sales-list__bulk-actions">
             <button
@@ -477,7 +479,7 @@ onBeforeUnmount(() => {
 .sales-list {
   display: flex;
   flex-direction: column;
-  min-height: 435px;
+  min-height: 410px;
   border: 1px solid #e3e8f0;
   box-shadow: none;
   padding: 8px 12px 6px;
@@ -550,8 +552,12 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 28px;
-  margin-top: 5px;
+  margin-top: 8px;
+  padding-top: 0;
+}
+
+.sales-list__table-area {
+  min-height: 320px;
 }
 
 .report-button {
