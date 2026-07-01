@@ -217,7 +217,7 @@
         WHERE su.branch_id = #{branchId}
         AND su.status_code = '01'
         <if test="keyword != null and keyword != ''">
-            AND (dpu.pin_id IS NOT NULL OR su.name LIKE CONCAT('%', #{keyword}, '%'))
+            AND su.name LIKE CONCAT('%', #{keyword}, '%')
         </if>
         ORDER BY isPinned DESC, dpu.created_at ASC, thisMonthCount DESC, employeeName ASC
     </select>
