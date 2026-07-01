@@ -2,17 +2,23 @@ package com.caremate.lifeguardian.report.service;
 
 import com.caremate.lifeguardian.common.exception.BaseException;
 import com.caremate.lifeguardian.report.dto.internal.data.GrowthStandardDto;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.FontFormatException;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.geom.Path2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.Base64;
 import java.util.List;
@@ -34,6 +40,14 @@ public class GrowthChartService {
     private static final int RIGHT = 64;
     private static final int TOP = 58;
     private static final int BOTTOM = 82;
+    private final Font chartFont;
+
+    public GrowthChartService(
+            ResourceLoader resourceLoader,
+            @Value("${app.report.pdf.font-location:classpath:/fonts/Pretendard-Regular.ttf}") String fontLocation
+    ) {
+        this.chartFont = loadChartFont(resourceLoader, fontLocation);
+    }
 
     /**
      * 키와 몸무게 백분위 곡선을 하나의 이미지로 구성해 Base64 데이터 URI로 반환한다.
@@ -50,7 +64,7 @@ public class GrowthChartService {
             graphics.setColor(Color.WHITE);
             graphics.fillRect(0, 0, WIDTH, COMBINED_HEIGHT);
 
-            graphics.setFont(new Font("SansSerif", Font.BOLD, 24));
+            graphics.setFont(font(Font.BOLD, 24));
             graphics.setColor(new Color(37, 48, 71));
             graphics.drawString("월령별 성장 백분위 곡선", LEFT, 32);
 
@@ -114,10 +128,10 @@ public class GrowthChartService {
         graphics.setColor(new Color(248, 250, 253));
         graphics.fillRoundRect(LEFT, top, chartWidth, panelHeight, 14, 14);
 
-        graphics.setFont(new Font("SansSerif", Font.BOLD, 19));
+        graphics.setFont(font(Font.BOLD, 19));
         graphics.setColor(new Color(44, 61, 89));
         graphics.drawString(label, 22, top + panelHeight / 2);
-        graphics.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        graphics.setFont(font(Font.PLAIN, 14));
         graphics.drawString(unit, 24, top + panelHeight / 2 + 21);
 
         for (int index = 0; index <= 4; index++) {
@@ -232,7 +246,7 @@ public class GrowthChartService {
             graphics.fillRect(pointX - 1, top, 3, panelHeight);
             graphics.setColor(new Color(225, 72, 77));
             graphics.fillOval(pointX - 7, pointY - 7, 14, 14);
-            graphics.setFont(new Font("SansSerif", Font.BOLD, 14));
+            graphics.setFont(font(Font.BOLD, 14));
             graphics.drawString(child.stripTrailingZeros().toPlainString() + unit,
                     Math.min(pointX + 9, WIDTH - RIGHT - 65), Math.max(top + 17, pointY - 9));
         }
@@ -242,7 +256,7 @@ public class GrowthChartService {
             Graphics2D graphics,
             List<GrowthStandardDto> standards
     ) {
-        graphics.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        graphics.setFont(font(Font.PLAIN, 13));
         graphics.setColor(new Color(92, 101, 118));
         for (int index = 0; index < standards.size(); index++) {
             if (shouldShowAgeTick(standards, index)) {
@@ -254,7 +268,7 @@ public class GrowthChartService {
                         COMBINED_X_AXIS_Y + 22);
             }
         }
-        graphics.setFont(new Font("SansSerif", Font.BOLD, 14));
+        graphics.setFont(font(Font.BOLD, 14));
         String axisTitle = "월령";
         graphics.drawString(
                 axisTitle,
@@ -290,7 +304,7 @@ public class GrowthChartService {
     }
 
     private void drawLegendAt(Graphics2D graphics) {
-        graphics.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        graphics.setFont(font(Font.PLAIN, 13));
         drawLegendItem(graphics, 285, COMBINED_LEGEND_Y, new Color(65, 177, 132), "95백분위");
         drawLegendItem(graphics, 430, COMBINED_LEGEND_Y, new Color(82, 113, 225), "50백분위");
         drawLegendItem(graphics, 575, COMBINED_LEGEND_Y, new Color(236, 167, 50), "5백분위");
@@ -421,7 +435,7 @@ public class GrowthChartService {
     private void configure(Graphics2D graphics) {
         graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        graphics.setFont(new Font("SansSerif", Font.PLAIN, 18));
+        graphics.setFont(font(Font.PLAIN, 18));
     }
 
     private void drawTitleAndAxes(
@@ -435,17 +449,17 @@ public class GrowthChartService {
         int chartWidth = WIDTH - LEFT - RIGHT;
         int chartHeight = HEIGHT - TOP - BOTTOM;
 
-        graphics.setFont(new Font("SansSerif", Font.BOLD, 23));
+        graphics.setFont(font(Font.BOLD, 23));
         graphics.setColor(new Color(37, 48, 71));
         graphics.drawString(title, LEFT, 31);
 
         graphics.setColor(new Color(239, 246, 255));
         graphics.fillRoundRect(WIDTH - RIGHT - 58, 10, 58, 30, 14, 14);
-        graphics.setFont(new Font("SansSerif", Font.BOLD, 15));
+        graphics.setFont(font(Font.BOLD, 15));
         graphics.setColor(new Color(49, 86, 152));
         graphics.drawString(unit, WIDTH - RIGHT - 39, 31);
 
-        graphics.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        graphics.setFont(font(Font.PLAIN, 14));
         graphics.setColor(new Color(105, 114, 132));
         graphics.drawString("연령", WIDTH - RIGHT - 2, HEIGHT - 42);
 
@@ -550,7 +564,7 @@ public class GrowthChartService {
     ) {
         GrowthStandardDto last = standards.getLast();
         int labelX = WIDTH - RIGHT + 9;
-        graphics.setFont(new Font("SansSerif", Font.BOLD, 13));
+        graphics.setFont(font(Font.BOLD, 13));
         drawCurveLabel(graphics, "P95", labelX,
                 y(p95Value.apply(last).doubleValue(), minValue, maxValue) + 4,
                 new Color(54, 164, 120));
@@ -591,7 +605,7 @@ public class GrowthChartService {
             graphics.fillOval(pointX - 8, pointY - 8, 16, 16);
 
             String label = child.stripTrailingZeros().toPlainString() + unit;
-            graphics.setFont(new Font("SansSerif", Font.BOLD, 15));
+            graphics.setFont(font(Font.BOLD, 15));
             int labelWidth = graphics.getFontMetrics().stringWidth(label);
             int boxX = Math.min(pointX + 12, WIDTH - RIGHT - labelWidth - 18);
             int boxY = Math.max(TOP + 5, pointY - 31);
@@ -603,7 +617,7 @@ public class GrowthChartService {
     }
 
     private void drawLegend(Graphics2D graphics) {
-        graphics.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        graphics.setFont(font(Font.PLAIN, 14));
         int y = HEIGHT - 12;
         drawLegendItem(graphics, 265, y, new Color(78, 190, 145), "95백분위");
         drawLegendItem(graphics, 415, y, new Color(93, 123, 239), "50백분위");
@@ -657,5 +671,23 @@ public class GrowthChartService {
                 new float[]{8f, 6f},
                 0f
         );
+    }
+
+    private Font font(int style, float size) {
+        return chartFont.deriveFont(style, size);
+    }
+
+    private Font loadChartFont(ResourceLoader resourceLoader, String fontLocation) {
+        try {
+            Resource fontResource = resourceLoader.getResource(fontLocation);
+            if (!fontResource.exists()) {
+                return new Font("SansSerif", Font.PLAIN, 18);
+            }
+            try (InputStream inputStream = fontResource.getInputStream()) {
+                return Font.createFont(Font.TRUETYPE_FONT, inputStream);
+            }
+        } catch (FontFormatException | IOException e) {
+            return new Font("SansSerif", Font.PLAIN, 18);
+        }
     }
 }
