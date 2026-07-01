@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axios from 'axios'
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   ADMIN_ROLE,
@@ -20,11 +20,8 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 const isFirstLoginModalOpen = ref(false)
 const pendingLoginRole = ref<UserRole | null>(null)
-const demoAccountPasswords = ref<Record<string, string>>({})
-const DEMO_ACCOUNT_PASSWORD_STORAGE_KEY = 'demoAccountPasswords'
-const LEGACY_DEMO_SALES_PASSWORD_STORAGE_KEY = 'demoSalesPasswords'
 
-const defaultDemoAccountGroups = [
+const demoAccountGroups = [
   {
     title: '데모 계정1',
     accounts: [
@@ -55,44 +52,13 @@ const defaultDemoAccountGroups = [
         role: '영업사원',
         type: 'sales',
         loginId: '1000004',
-        password: 'byoned1234!',
+        password: 'beyond1234!',
       },
     ],
   },
 ]
 
-const getStoredDemoAccountPasswords = () => {
-  try {
-    const storedPasswords =
-      localStorage.getItem(DEMO_ACCOUNT_PASSWORD_STORAGE_KEY) ??
-      localStorage.getItem(LEGACY_DEMO_SALES_PASSWORD_STORAGE_KEY)
-
-    return storedPasswords ? JSON.parse(storedPasswords) as Record<string, string> : {}
-  } catch {
-    return {}
-  }
-}
-
-const saveDemoAccountPasswords = () => {
-  localStorage.setItem(DEMO_ACCOUNT_PASSWORD_STORAGE_KEY, JSON.stringify(demoAccountPasswords.value))
-}
-
-const demoAccountGroups = computed(() =>
-  defaultDemoAccountGroups.map((group) => ({
-    ...group,
-    accounts: group.accounts.map((account) => ({
-      ...account,
-      password: demoAccountPasswords.value[account.loginId] ?? account.password,
-    })),
-  })),
-)
-
-const isDemoAccount = (loginIdValue: string) =>
-  defaultDemoAccountGroups.some((group) =>
-    group.accounts.some((account) => account.loginId === loginIdValue),
-  )
-
-const applyDemoAccount = (account: (typeof demoAccountGroups.value)[number]['accounts'][number]) => {
+const applyDemoAccount = (account: (typeof demoAccountGroups)[number]['accounts'][number]) => {
   loginId.value = account.loginId
   password.value = account.password
   errorMessage.value = ''
@@ -102,8 +68,6 @@ const moveToRoleHome = (role: UserRole) =>
   router.push(role === ADMIN_ROLE ? '/admin/dashboard' : '/sales/dashboard')
 
 onMounted(() => {
-  demoAccountPasswords.value = getStoredDemoAccountPasswords()
-
   if (authStore.role && authStore.isFirstLogin) {
     pendingLoginRole.value = authStore.role
     isFirstLoginModalOpen.value = true
@@ -203,15 +167,7 @@ const submitLogin = async () => {
   }
 }
 
-const completeFirstLogin = async (newPassword: string) => {
-  if (isDemoAccount(loginId.value)) {
-    demoAccountPasswords.value = {
-      ...demoAccountPasswords.value,
-      [loginId.value]: newPassword,
-    }
-    saveDemoAccountPasswords()
-  }
-
+const completeFirstLogin = async () => {
   isFirstLoginModalOpen.value = false
   const completedLoginRole = pendingLoginRole.value
   pendingLoginRole.value = null
