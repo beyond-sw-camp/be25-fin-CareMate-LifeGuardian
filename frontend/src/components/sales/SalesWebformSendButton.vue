@@ -34,7 +34,7 @@ const statusName = computed(() => props.customer.webformStatusName ?? '-')
 const buttonLabel = computed(() => {
   if (isSending.value) return '발송 중'
   if (isSent.value) return '재발송'
-  return statusName.value === '-' ? '발송' : statusName.value
+  return '발송'
 })
 
 const send = async () => {
