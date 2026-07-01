@@ -36,7 +36,7 @@ const totalCount = ref(0)
 const isLoading = ref(false)
 const errorMessage = ref('')
 
-const HISTORY_PAGE_SIZE = 10
+const HISTORY_PAGE_SIZE = 12
 
 const typeTabs = [
   { label: '전체', value: 'all' },
@@ -208,7 +208,7 @@ onMounted(() => {
               <tr>
                 <th>유형</th>
                 <th>고객명</th>
-                <th>고객 구분</th>
+                <th>고객 유형</th>
                 <th>발송 항목</th>
                 <th>발송 여부</th>
                 <th>발송 일시</th>
@@ -250,19 +250,36 @@ onMounted(() => {
 
 <style scoped>
 .send-history-page__main {
-  padding: 18px 28px 40px 24px;
-  overflow-x: hidden;
+  display: flex;
+  height: 100vh;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 8px 20px 7px 20px;
+}
+
+.send-history-page__main :deep(.app-header) {
+  min-height: 46px;
+  margin-bottom: 7px;
+}
+
+.send-history-page__main :deep(.app-header__title) {
+  padding-top: 2px;
+}
+
+.send-history-page__main :deep(.page-title) {
+  font-size: 22px;
 }
 
 .send-history-toolbar {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  margin: 8px 0 14px;
+  margin: 0 0 8px;
   border: 1px solid #e3e8f0;
   box-shadow: none;
-  padding: 12px 14px;
+  padding: 9px 12px;
 }
 
 .send-history-tabs {
@@ -277,7 +294,7 @@ onMounted(() => {
 
 .send-history-tabs__button {
   min-width: 58px;
-  height: 26px;
+  height: 28px;
   border: 0;
   border-radius: 5px;
   background: transparent;
@@ -328,7 +345,7 @@ onMounted(() => {
 .send-history-filters select,
 .send-history-search input {
   min-width: 0;
-  height: 30px;
+  height: 31px;
   border: 1px solid #d9e0ea;
   border-radius: 5px;
   background: #ffffff;
@@ -340,7 +357,7 @@ onMounted(() => {
 
 .send-history-search button {
   width: 54px;
-  height: 30px;
+  height: 31px;
   border: 0;
   border-radius: 5px;
   background: var(--color-primary);
@@ -358,20 +375,27 @@ onMounted(() => {
 }
 
 .send-history-list {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
   border: 1px solid #e3e8f0;
   box-shadow: none;
-  padding: 12px 14px 14px;
+  overflow: hidden;
+  padding: 8px 11px 6px;
 }
 
 .send-history-list__header {
-  margin-bottom: 10px;
+  flex: 0 0 auto;
+  margin-bottom: 5px;
 }
 
 .send-history-list h2 {
   margin: 0;
-  color: var(--color-text);
+  color: #263142;
   font-size: 14px;
   font-weight: 900;
+  letter-spacing: 0;
 }
 
 .send-history-list h2 span {
@@ -383,6 +407,7 @@ onMounted(() => {
 
 .send-history-message {
   display: flex;
+  flex: 1 1 auto;
   min-height: 112px;
   align-items: center;
   justify-content: center;
@@ -396,6 +421,11 @@ onMounted(() => {
 }
 
 .send-history-table {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
   overflow-x: auto;
   overflow-y: visible;
   border: 1px solid #e1e7f0;
@@ -404,6 +434,7 @@ onMounted(() => {
 
 .send-history-table table {
   width: 100%;
+  height: 100%;
   min-width: 760px;
   table-layout: fixed;
   border-collapse: collapse;
@@ -411,16 +442,16 @@ onMounted(() => {
 
 .send-history-table th,
 .send-history-table td {
-  height: 38px;
+  height: 33px;
   border-bottom: 1px solid #edf1f6;
-  padding: 0 10px;
+  padding: 0 8px;
   text-align: center;
   font-size: 11px;
   white-space: nowrap;
 }
 
 .send-history-table th {
-  height: 34px;
+  height: 29px;
   background: #f6f8fb;
   color: #4c586b;
   font-weight: 800;
@@ -474,8 +505,14 @@ onMounted(() => {
 }
 
 .send-history-table__empty {
-  height: 96px;
+  height: 72px;
   color: var(--color-text-muted);
+}
+
+.send-history-list :deep(.sales-pagination) {
+  flex: 0 0 auto;
+  margin-top: 5px;
+  padding-top: 5px;
 }
 
 @media (max-width: 1120px) {

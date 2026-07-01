@@ -375,10 +375,10 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .sales-search {
-  margin-bottom: 8px;
+  margin-bottom: 7px;
   border: 1px solid #e3e8f0;
   box-shadow: none;
-  padding: 7px 12px 8px;
+  padding: 6px 11px 7px;
 }
 
 .sales-search__header {
@@ -386,7 +386,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .sales-section-title {
@@ -406,7 +406,7 @@ onBeforeUnmount(() => {
 }
 
 .sales-search__quick-button {
-  height: 22px;
+  height: 21px;
   border: 1px solid #dfe5ee;
   border-radius: 5px;
   background: #f7f9fc;
@@ -434,12 +434,12 @@ onBeforeUnmount(() => {
 .sales-search__row--top {
   grid-template-columns: minmax(210px, 260px) minmax(150px, 180px) minmax(130px, 160px) minmax(190px, 240px);
   column-gap: 16px;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .sales-search__input {
   width: 100%;
-  height: 24px;
+  height: 23px;
   border: 1px solid #d9e0ea;
   border-radius: 5px;
   background: #ffffff;
@@ -505,7 +505,7 @@ onBeforeUnmount(() => {
   grid-template-columns: max-content auto max-content minmax(0, 1fr) auto;
   column-gap: 12px;
   border-top: 1px solid #edf1f6;
-  padding-top: 6px;
+  padding-top: 5px;
 }
 
 .sales-search__applied {
@@ -513,9 +513,9 @@ onBeforeUnmount(() => {
   align-items: center;
   flex-wrap: wrap;
   gap: 5px;
-  margin-top: 6px;
+  margin-top: 5px;
   border-top: 1px solid #edf1f6;
-  padding-top: 6px;
+  padding-top: 5px;
 }
 
 .sales-search__applied-label {
@@ -602,7 +602,7 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 22px;
+  height: 21px;
   border: 1px solid #dbe3ef;
   border-radius: 999px;
   background: #ffffff;
@@ -655,7 +655,7 @@ onBeforeUnmount(() => {
 
 .sales-search__button {
   min-width: 52px;
-  min-height: 24px;
+  min-height: 23px;
   border-radius: 5px;
   padding: 0 10px;
   font-size: 11px;
