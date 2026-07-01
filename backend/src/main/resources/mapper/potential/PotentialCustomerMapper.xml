@@ -97,6 +97,10 @@
             name = #{request.name},
             gender = #{request.gender},
             birth_date = #{request.birthDate},
+            is_active = CASE
+                WHEN #{request.birthDate} <![CDATA[<=]]> DATE_SUB(CURDATE(), INTERVAL 21 YEAR) THEN TRUE
+                ELSE FALSE
+            END,
             updated_at = NOW()
 
         WHERE id = #{potentialCustomerId}
@@ -222,6 +226,7 @@
             name,
             gender,
             birth_date,
+            is_active,
             consult_status_code,
             conversion_status_code
         )
@@ -232,6 +237,10 @@
                    #{name},
                    #{gender},
                    #{birthDate},
+                   CASE
+                       WHEN #{birthDate} <![CDATA[<=]]> DATE_SUB(CURDATE(), INTERVAL 21 YEAR) THEN TRUE
+                       ELSE FALSE
+                   END,
                    '01',
                    '01'
                )
