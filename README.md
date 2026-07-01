@@ -91,6 +91,41 @@ LifeGuardian은 보험사가 보유한 0~20세 자녀 가망고객 데이터를 
 
 ## <a id="4-기술-스택"></a> 4. 기술 스택
 
+### FRONTEND
+![HTML5](https://img.shields.io/badge/html5-%23E34F26.svg?style=for-the-badge&logo=html5&logoColor=white)
+![CSS3](https://img.shields.io/badge/css3-%231572B6.svg?style=for-the-badge&logo=css3&logoColor=white)
+![JavaScript](https://img.shields.io/badge/javascript-%23323330.svg?style=for-the-badge&logo=javascript&logoColor=%23F7DF1E)
+![Vue.js](https://img.shields.io/badge/vuejs-%2335495e.svg?style=for-the-badge&logo=vuedotjs&logoColor=%234FC08D)
+
+### BACKEND
+![Java](https://img.shields.io/badge/java-%23ED8B00.svg?style=for-the-badge&logo=openjdk&logoColor=white)
+![Spring](https://img.shields.io/badge/spring-%236DB33F.svg?style=for-the-badge&logo=spring&logoColor=white)
+<img src="https://img.shields.io/badge/SpringBoot-10B146?style=for-the-badge&logo=SpringBoot&logoColor=white">
+
+### DATABASE
+![mariadb](https://github.com/user-attachments/assets/19a0ad09-804d-4303-80bd-32cafdae0e6f)
+![PostgreSQL](https://img.shields.io/badge/postgres-%23316192.svg?style=for-the-badge&logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/redis-%23DD0031.svg?style=for-the-badge&logo=redis&logoColor=white)
+![ElastiCache](https://img.shields.io/badge/Amazon%20ElastiCache-FF9900?style=for-the-badge)
+
+### DEPLOYMENT
+![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?style=for-the-badge&logo=amazon-aws&logoColor=white)
+
+![Route53](https://img.shields.io/badge/Route%2053-7046E5?style=for-the-badge)
+![CloudFront](https://img.shields.io/badge/CloudFront-7046E5?style=for-the-badge)
+![S3](https://img.shields.io/badge/S3-FF9900?style=for-the-badge)
+
+![ALB](https://img.shields.io/badge/Application%20Load%20Balancer-7046E5?style=for-the-badge)
+![EC2](https://img.shields.io/badge/EC2-FF9900?style=for-the-badge)
+![ASG](https://img.shields.io/badge/Auto%20Scaling%20Group-FF9900?style=for-the-badge)
+![RDS](https://img.shields.io/badge/RDS-0073BB?style=for-the-badge)
+![ECR](https://img.shields.io/badge/Amazon%20ECR-FF9900?style=for-the-badge)
+
+![CloudWatch](https://img.shields.io/badge/AWS%20CloudWatch-C925D1?style=for-the-badge)
+
+### CI/CD
+![GitHub Actions](https://img.shields.io/badge/github%20actions-%232088FF.svg?style=for-the-badge&logo=githubactions&logoColor=white)
+
 
 
 <br>
