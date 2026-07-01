@@ -49,8 +49,15 @@ const branchName = computed(() => {
   return r ? `${r} ${b}` : b
 })
 
+const getLocalYearMonth = () => {
+  const d = new Date()
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  return `${year}-${month}`
+}
+
 // 조회 날짜 관리 (현재 연도 및 연월 기본값 설정)
-const targetYearMonth = ref('2026-06')
+const targetYearMonth = ref(getLocalYearMonth())
 const targetYear = computed(() => Number(targetYearMonth.value.split('-')[0]))
 
 // API 데이터 수신 상태
@@ -259,6 +266,7 @@ const sortedSalesUsers = computed(() => {
     <AllPerformancePopup 
       :is-open="isAllPerformanceOpen" 
       :branch-id="branchId" 
+      :default-year-month="targetYearMonth"
       @close="isAllPerformanceOpen = false"
     />
 
