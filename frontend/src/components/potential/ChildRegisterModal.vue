@@ -87,7 +87,7 @@ const handleRegister = async () => {
           aria-label="닫기"
           @click="emit('close')"
         >
-          x
+          ×
         </button>
       </header>
 
@@ -196,18 +196,22 @@ const handleRegister = async () => {
 
 .child-modal__close {
   position: absolute;
-  top: 18px;
-  right: 18px;
-  display: grid;
-  width: 28px;
-  height: 28px;
-  place-items: center;
-  border: 1px solid #e0e6ef;
-  border-radius: 9px;
-  background: #ffffff;
-  color: #667085;
-  font-size: 18px;
+  top: 20px;
+  right: 22px;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #7f8999;
+  font-size: 22px;
   line-height: 1;
+  cursor: pointer;
+}
+
+.child-modal__close:hover {
+  background: #f3f5f8;
+  color: #263142;
 }
 
 .child-modal__body {

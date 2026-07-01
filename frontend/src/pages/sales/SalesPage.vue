@@ -811,4 +811,24 @@ onBeforeUnmount(() => {
   background: #fbfcfe;
   padding: 10px 20px 12px;
 }
+
+@media (max-width: 900px) {
+  .sales-list__footer {
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+    min-height: 0;
+    margin-top: 10px;
+  }
+
+  .sales-list__bulk-actions {
+    position: static;
+    order: 2;
+    justify-content: center;
+  }
+
+  .sales-list__footer .sales-pagination {
+    order: 1;
+  }
+}
 </style>

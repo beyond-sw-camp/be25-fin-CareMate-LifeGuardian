@@ -18,6 +18,7 @@ ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 const props = defineProps<{
   isOpen: boolean
   branchId: number
+  defaultYearMonth?: string
 }>()
 
 const emit = defineEmits<{
@@ -29,11 +30,20 @@ const isLoading = ref(false)
 const sortKey = ref<string>('rank')
 const sortDesc = ref<boolean>(false)
 
+const getLocalYearMonth = () => {
+  const d = new Date()
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  return `${year}-${month}`
+}
+
+const selectedMonth = ref(props.defaultYearMonth || getLocalYearMonth())
+
 const loadData = async () => {
   if (!props.isOpen) return
   isLoading.value = true
   try {
-    const data = await getSalesPerformanceDetails(props.branchId)
+    const data = await getSalesPerformanceDetails(props.branchId, selectedMonth.value)
     performances.value = data.performances || []
   } catch (error) {
     console.error('Failed to load performance details:', error)
@@ -46,9 +56,19 @@ watch(() => props.isOpen, (newVal) => {
   if (newVal) {
     sortKey.value = 'rank'
     sortDesc.value = false
+    selectedMonth.value = props.defaultYearMonth || getLocalYearMonth()
     loadData()
   }
 })
+
+const handleSearch = () => {
+  loadData()
+}
+
+const handleReset = () => {
+  selectedMonth.value = props.defaultYearMonth || getLocalYearMonth()
+  loadData()
+}
 
 // 로컬 테이블 정렬 로직
 const sortedPerformances = computed(() => {
@@ -153,6 +173,27 @@ const chartOptions = {
         </div>
 
         <div v-else class="modal-content">
+          <!-- 기간 검색 및 초기화 필터 영역 -->
+          <div class="search-filter-section card">
+            <div class="card-body filter-card-body">
+              <form class="filter-form" @submit.prevent="handleSearch">
+                <div class="filter-group">
+                  <label for="popup-month" class="filter-label">조회 기준월:</label>
+                  <input
+                    id="popup-month"
+                    v-model="selectedMonth"
+                    type="month"
+                    class="input month-input"
+                  />
+                </div>
+                <div class="filter-buttons">
+                  <button class="button button-primary search-btn" type="submit">조회</button>
+                  <button class="button button-secondary reset-btn" type="button" @click="handleReset">초기화</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
           <!-- 상단 전체 막대 그래프 -->
           <div class="chart-section card">
             <div class="card-body">
@@ -349,7 +390,67 @@ const chartOptions = {
 }
 
 .badge-bottom {
-  border-left: 3px solid var(--color-primary);
+  border-left: 3px solid #3b82f6;
+}
+
+.search-filter-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.filter-card-body {
+  padding: 12px 20px;
+}
+
+.filter-form {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filter-label {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.month-input {
+  width: 150px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid var(--color-border);
+  background-color: #ffffff;
+  padding: 0 10px;
+  height: 32px;
+}
+
+.month-input:focus {
+  border-color: var(--color-primary);
+}
+
+.search-btn,
+.reset-btn {
+  font-size: 13px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 12px;
+  white-space: nowrap;
 }
 
 .text-right {
