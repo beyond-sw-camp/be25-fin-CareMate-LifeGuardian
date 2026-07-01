@@ -31,16 +31,16 @@ defineProps<{
 .sales-summary {
   display: grid;
   grid-template-columns: 118px 1fr;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 9px;
+  margin-bottom: 8px;
 }
 
 .sales-summary__count-card,
 .sales-summary__target-card {
-  min-height: 64px;
+  min-height: 58px;
   border: 1px solid #e3e8f0;
   box-shadow: none;
-  padding: 8px 12px;
+  padding: 7px 11px;
 }
 
 .sales-summary__label,
@@ -57,7 +57,7 @@ defineProps<{
   justify-content: center;
   gap: 3px;
   color: #1d2738;
-  font-size: 32px;
+  font-size: 30px;
   font-weight: 800;
   line-height: 1.08;
 }
@@ -68,8 +68,8 @@ defineProps<{
 }
 
 .sales-summary__progress-track {
-  height: 10px;
-  margin: 10px 20px 7px 0;
+  height: 9px;
+  margin: 8px 20px 6px 0;
   overflow: hidden;
   border-radius: var(--radius-pill);
   background: #e9eef5;

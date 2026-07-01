@@ -137,12 +137,18 @@
             </when>
         </choose>
         <if test="request.keyword != null and request.keyword != ''">
-            AND (
-                LOWER(history.customerName) LIKE CONCAT('%', LOWER(#{request.keyword}), '%')
-                OR LOWER(history.customerStageName) LIKE CONCAT('%', LOWER(#{request.keyword}), '%')
-                OR LOWER(history.sendItemName) LIKE CONCAT('%', LOWER(#{request.keyword}), '%')
-                OR LOWER(history.sendStatusName) LIKE CONCAT('%', LOWER(#{request.keyword}), '%')
-            )
+            <if test="request.customerStageCode != null and request.customerStageCode != ''">
+                AND history.customerStageCode = #{request.customerStageCode}
+            </if>
+            <if test="request.keywordTerms != null and request.keywordTerms.size() > 0">
+                <foreach collection="request.keywordTerms" item="term">
+                    AND (
+                        LOWER(REPLACE(history.customerName, ' ', '')) LIKE CONCAT('%', LOWER(REPLACE(#{term}, ' ', '')), '%')
+                        OR LOWER(REPLACE(history.sendItemName, ' ', '')) LIKE CONCAT('%', LOWER(REPLACE(#{term}, ' ', '')), '%')
+                        OR LOWER(REPLACE(history.sendStatusName, ' ', '')) LIKE CONCAT('%', LOWER(REPLACE(#{term}, ' ', '')), '%')
+                    )
+                </foreach>
+            </if>
         </if>
     </sql>
 

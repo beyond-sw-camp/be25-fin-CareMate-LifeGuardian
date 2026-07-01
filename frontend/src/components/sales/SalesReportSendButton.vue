@@ -14,8 +14,10 @@ const emit = defineEmits<{
 
 const SENDABLE_REPORT_STATUS_CODES = new Set(['01', '02', '03'])
 const isSending = ref(false)
+const isConfirmOpen = ref(false)
 
 const isResend = computed(() => props.customer.reportStatusCode === '02')
+const sendActionLabel = computed(() => (isResend.value ? '재발송' : '발송'))
 
 const isSendable = computed(
   () =>
@@ -31,7 +33,7 @@ const isSendable = computed(
 const buttonLabel = computed(() => {
   if (isSending.value) return '발송 중'
   if (!isSendable.value) return '발송 불가'
-  return isResend.value ? '재발송' : '발송'
+  return sendActionLabel.value
 })
 
 const send = async () => {
@@ -52,14 +54,13 @@ const send = async () => {
     return
   }
 
-  if (
-    !window.confirm(
-      `${props.customer.customerName} 고객의 리포트를 ${isResend.value ? '재발송' : '발송'}하시겠습니까?`,
-    )
-  ) {
-    return
-  }
+  isConfirmOpen.value = true
+}
 
+const confirmSend = async () => {
+  if (isSending.value) return
+
+  isConfirmOpen.value = false
   isSending.value = true
 
   try {
@@ -69,16 +70,20 @@ const send = async () => {
     props.customer.reportStatusName = result.sendStatusName
     props.customer.reportSentAt = result.sentAt
     props.customer.canSendReport = false
-    emit('send-result', `리포트 발송 성공: ${props.customer.customerName}`, 'success')
+    emit('send-result', `${props.customer.customerName}님 리포트 발송을 성공하였습니다.`, 'success')
   } catch (error) {
     const message = axios.isAxiosError(error)
       ? `${error.response?.status ?? 'ERR'} ${error.response?.data?.message ?? error.message}`
       : undefined
 
-    emit('send-result', `리포트 발송 실패${message ? `: ${message}` : ''}`, 'error')
+    emit('send-result', `${props.customer.customerName}님 리포트 발송을 실패하였습니다.${message ? ` ${message}` : ''}`, 'error')
   } finally {
     isSending.value = false
   }
+}
+
+const cancelSend = () => {
+  isConfirmOpen.value = false
 }
 </script>
 
@@ -92,6 +97,26 @@ const send = async () => {
   >
     {{ buttonLabel }}
   </button>
+
+  <div
+    v-if="isConfirmOpen"
+    class="modal-backdrop send-confirm-modal"
+    role="presentation"
+    @click.self="cancelSend"
+  >
+    <section class="modal-card send-confirm-modal__card" role="dialog" aria-modal="true" aria-labelledby="report-send-confirm-title">
+      <div class="send-confirm-modal__body">
+        <div class="send-confirm-modal__icon" aria-hidden="true">!</div>
+        <h3 id="report-send-confirm-title">{{ props.customer.customerName }}님 리포트를 {{ sendActionLabel }}하시겠습니까?</h3>
+        <p>{{ sendActionLabel }} 후 발송 상태가 변경됩니다.</p>
+      </div>
+
+      <footer class="send-confirm-modal__footer">
+        <button class="send-confirm-modal__button send-confirm-modal__button--cancel" type="button" @click="cancelSend">취소</button>
+        <button class="send-confirm-modal__button send-confirm-modal__button--confirm" type="button" @click="confirmSend">{{ sendActionLabel }}</button>
+      </footer>
+    </section>
+  </div>
 </template>
 
 <style scoped>
@@ -125,5 +150,96 @@ const send = async () => {
 .report-send-button--resend:hover:not(:disabled) {
   background: color-mix(in srgb, var(--color-primary) 14%, white);
   color: var(--color-primary);
+}
+
+.send-confirm-modal {
+  z-index: 35;
+  background: rgb(15 23 42 / 42%);
+  backdrop-filter: blur(2px);
+}
+
+.send-confirm-modal__card {
+  display: flex;
+  width: min(360px, calc(100vw - 32px));
+  overflow: hidden;
+  border: 0;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 18px 50px rgb(15 23 42 / 20%);
+  flex-direction: column;
+}
+
+.send-confirm-modal__body {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 26px 24px 20px;
+  text-align: center;
+}
+
+.send-confirm-modal__icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 50%;
+  background: #ffedd5;
+  color: #f97316;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.send-confirm-modal__body h3,
+.send-confirm-modal__body p {
+  margin: 0;
+}
+
+.send-confirm-modal__body h3 {
+  max-width: 280px;
+  color: #172033;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.45;
+}
+
+.send-confirm-modal__body p {
+  max-width: 280px;
+  color: #8a93a3;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.send-confirm-modal__footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 0 18px 18px;
+}
+
+.send-confirm-modal__button {
+  height: 40px;
+  border: 0;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.send-confirm-modal__button--cancel {
+  background: #eef2f7;
+  color: #475467;
+}
+
+.send-confirm-modal__button--confirm {
+  background: #f97316;
+  color: #ffffff;
+}
+
+.send-confirm-modal__button--cancel:hover {
+  background: #e2e8f0;
+}
+
+.send-confirm-modal__button--confirm:hover {
+  background: #ea580c;
 }
 </style>

@@ -308,6 +308,12 @@
         ROW_NUMBER() OVER (
         PARTITION BY dai.conversion_status_code, dai.customer_id
         ORDER BY
+        CASE dai.trigger_type_code
+            WHEN '06' THEN 1
+            WHEN '07' THEN 2
+            WHEN '08' THEN 3
+            ELSE 9
+        END ASC,
         dai.target_date DESC,
         dai.id DESC
         ) AS rn
@@ -471,6 +477,14 @@
         </if>
 
         ORDER BY
+            <if test="request.hasThreeStep != null and request.hasThreeStep == true">
+            CASE ce.three_step_code
+                WHEN '06' THEN 1
+                WHEN '07' THEN 2
+                WHEN '08' THEN 3
+                ELSE 9
+            END ASC,
+            </if>
             CASE
                 WHEN ce.customer_type_code = '02' AND ce.parent_id IS NULL THEN 1
                 ELSE 0
@@ -517,8 +531,7 @@
         END AS customerStageName,
 
         CASE
-            WHEN cp.customer_type_code = '01' AND cp.is_active = TRUE THEN TRUE
-            WHEN cp.customer_type_code = '02'
+            WHEN cp.birth_date IS NOT NULL
                  AND cp.birth_date <![CDATA[<=]]> DATE_SUB(CURDATE(), INTERVAL 21 YEAR) THEN TRUE
             ELSE FALSE
         END AS graduated,
@@ -619,6 +632,14 @@
             ON send_code.group_code = 'SEND_STATUS' AND send_code.code_value = cp.send_status_code
 
         ORDER BY
+        <if test="request.hasThreeStep != null and request.hasThreeStep == true">
+        CASE cp.three_step_code
+            WHEN '06' THEN 1
+            WHEN '07' THEN 2
+            WHEN '08' THEN 3
+            ELSE 9
+        END ASC,
+        </if>
         CASE
             WHEN cp.customer_type_code = '02' AND cp.parent_id IS NULL THEN 1
             ELSE 0

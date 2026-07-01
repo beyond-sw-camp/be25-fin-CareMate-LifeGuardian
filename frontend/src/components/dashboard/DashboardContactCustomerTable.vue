@@ -123,6 +123,13 @@ const isReportSent = (customer: ContactCustomer) => {
 const webFormButtonLabel = (customer: ContactCustomer) => {
   if (isWebFormSending(customer)) return '발송 중'
 
+  if (
+    !customer.webFormSendEnabled &&
+    customer.webFormStatusName === '미발송'
+  ) {
+    return '비대상'
+  }
+  
   if (customer.webFormStatusName === '미발송') {
     return '발송'
   }
@@ -135,31 +142,24 @@ const webFormButtonLabel = (customer: ContactCustomer) => {
 }
 
 const reportButtonLabel = (customer: ContactCustomer) => {
-  if (isReportSending(customer)) return '발송 중'
-  return customer.reportSendStatusName || '발송'
+  if (isReportSending(customer)) {
+    return '발송 중'
+  }
+
+  if (isReportSent(customer)) {
+    return customer.reportSendStatusName
+  }
+  
+  if (customer.reportSendEnabled) {
+    return '발송'
+  }
+
+  return '발송대기'
 }
 </script>
 
 <template>
   <div class="contact-table-wrapper">
-    <div class="contact-table-wrapper__actions">
-      <button
-        class="contact-table__bulk-button"
-        type="button"
-        @click="emit('sendBulkWebForm')"
-      >
-        웹폼 발송
-      </button>
-
-      <button
-        class="contact-table__bulk-button"
-        type="button"
-        @click="emit('sendBulkReport')"
-      >
-        리포트 발송
-      </button>
-    </div>
-
     <div class="contact-table">
       <table>
         <thead>
@@ -317,31 +317,6 @@ const reportButtonLabel = (customer: ContactCustomer) => {
   position: relative;
 }
 
-.contact-table-wrapper__actions {
-  position: absolute;
-  top: -34px;
-  right: 12px;
-  display: flex;
-  gap: 8px;
-}
-
-.contact-table__bulk-button {
-  min-width: 64px;
-  height: 24px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--color-primary);
-  color: #ffffff;
-  padding: 0 10px;
-  font-size: 10px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.contact-table__bulk-button:hover {
-  background: color-mix(in srgb, var(--color-primary) 84%, black);
-}
-
 .contact-table {
   overflow-x: auto;
   overflow-y: visible;
@@ -401,13 +376,21 @@ const reportButtonLabel = (customer: ContactCustomer) => {
 }
 
 .contact-table__customer-name {
+  display: inline-block;
   color: inherit;
   font-weight: 700;
+  
+  text-decoration-line: underline;
+  text-decoration-skip-ink: none;
+  text-decoration-thickness: 0.62em;
+  text-underline-offset: -0.3em;
+  text-decoration-color: rgb(239 68 68 / 45%);
+
+  transition: color 120ms ease;
 }
 
 .contact-table__customer-name:hover {
   color: var(--color-primary);
-  text-decoration: underline;
 }
 
 .contact-table__reason-tooltip {
