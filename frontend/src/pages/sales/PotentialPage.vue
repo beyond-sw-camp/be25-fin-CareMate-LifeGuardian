@@ -36,7 +36,7 @@ const isDetailModalOpen = ref(false)
 const selectedPotentialCustomer = ref<PotentialCustomerDetailResponse | null>(null)
 const isDetailLoading = ref(false)
 
-const POTENTIAL_PAGE_SIZE = 11
+const POTENTIAL_PAGE_SIZE = 10
 const currentPage = ref(1)
 
 const searchKeyword = ref('')
