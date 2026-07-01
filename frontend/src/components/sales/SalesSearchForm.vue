@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, reactive, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
 
 import type { SalesSearchFilters } from '@/api/sales'
 
@@ -26,6 +26,8 @@ type SalesSearchFormFilters = Partial<SalesSearchFormState>
 
 // 화면 입력값은 문자열/배열 중심으로 관리하고, submit 시 API 검색 조건으로 변환
 const form = reactive(initialForm())
+const customerNameSpacingError = ref('')
+let customerNameSpacingErrorTimer: ReturnType<typeof setTimeout> | undefined
 
 watch(
   () => props.filters,
@@ -179,8 +181,35 @@ const appliedFilterChips = computed(() => {
 })
 
 // 빈 입력값은 쿼리 파라미터에서 제외해 백엔드 기본 조건을 사용
+const isEnglishNameSearch = (value: string) => /^[A-Za-z]+(?:\s+[A-Za-z]+)*$/.test(value.trim())
+const isEnglishNameInput = (value: string) => /^[A-Za-z\s]*$/.test(value)
+const hasInnerWhitespace = (value: string) => /\S\s+\S/.test(value.trim())
+const hasAnyWhitespace = (value: string) => /\s/.test(value)
+const customerNameError = computed(() => {
+  if (customerNameSpacingError.value) return customerNameSpacingError.value
+  if (!form.customerName) return ''
+  if (hasInnerWhitespace(form.customerName) && !isEnglishNameSearch(form.customerName)) {
+    return '한글 이름 검색어에는 공백을 입력할 수 없습니다.'
+  }
+  return ''
+})
+const normalizeCustomerNameInput = () => {
+  if (!hasAnyWhitespace(form.customerName) || isEnglishNameInput(form.customerName)) return
+
+  form.customerName = form.customerName.replace(/\s+/g, '')
+  customerNameSpacingError.value = '공백은 입력할 수 없습니다.'
+
+  if (customerNameSpacingErrorTimer) clearTimeout(customerNameSpacingErrorTimer)
+  customerNameSpacingErrorTimer = setTimeout(() => {
+    customerNameSpacingError.value = ''
+    customerNameSpacingErrorTimer = undefined
+  }, 2_000)
+}
+
 const submit = async () => {
   await nextTick()
+
+  if (customerNameError.value) return
 
   emit('search', {
     customerName: form.customerName || undefined,
@@ -211,6 +240,10 @@ const removeFilter = (remove: () => void) => {
   submit()
 }
 
+onBeforeUnmount(() => {
+  if (customerNameSpacingErrorTimer) clearTimeout(customerNameSpacingErrorTimer)
+})
+
 </script>
 
 <template>
@@ -233,13 +266,25 @@ const removeFilter = (remove: () => void) => {
     </div>
 
     <div class="sales-search__row sales-search__row--top">
-      <label class="sales-search__field">
+      <label class="sales-search__field" :class="{ 'sales-search__field--invalid': customerNameError }">
         <span>고객 이름</span>
         <input
           v-model="form.customerName"
           class="sales-search__input"
+          :class="{ 'sales-search__input--invalid': customerNameError }"
+          :aria-invalid="Boolean(customerNameError)"
+          aria-describedby="sales-customer-name-error"
           placeholder="이름을 입력하세요."
+          @input="normalizeCustomerNameInput"
         />
+        <p
+          v-if="customerNameError"
+          id="sales-customer-name-error"
+          class="sales-search__field-error"
+          role="alert"
+        >
+          {{ customerNameError }}
+        </p>
       </label>
 
       <label class="sales-search__field sales-search__field--age">
@@ -330,10 +375,10 @@ const removeFilter = (remove: () => void) => {
 
 <style scoped>
 .sales-search {
-  margin-bottom: 8px;
+  margin-bottom: 7px;
   border: 1px solid #e3e8f0;
   box-shadow: none;
-  padding: 7px 12px 8px;
+  padding: 6px 11px 7px;
 }
 
 .sales-search__header {
@@ -341,7 +386,7 @@ const removeFilter = (remove: () => void) => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .sales-section-title {
@@ -361,7 +406,7 @@ const removeFilter = (remove: () => void) => {
 }
 
 .sales-search__quick-button {
-  height: 22px;
+  height: 21px;
   border: 1px solid #dfe5ee;
   border-radius: 5px;
   background: #f7f9fc;
@@ -389,23 +434,12 @@ const removeFilter = (remove: () => void) => {
 .sales-search__row--top {
   grid-template-columns: minmax(210px, 260px) minmax(150px, 180px) minmax(130px, 160px) minmax(190px, 240px);
   column-gap: 16px;
-  margin-bottom: 6px;
-}
-
-.sales-search__field {
-  display: grid;
-  grid-template-columns: 50px minmax(0, 1fr);
-  align-items: center;
-  gap: 6px;
-}
-
-.sales-search__field--age {
-  margin-left: 0;
+  margin-bottom: 4px;
 }
 
 .sales-search__input {
   width: 100%;
-  height: 24px;
+  height: 23px;
   border: 1px solid #d9e0ea;
   border-radius: 5px;
   background: #ffffff;
@@ -421,8 +455,23 @@ const removeFilter = (remove: () => void) => {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 14%, transparent);
 }
 
+.sales-search__input--invalid,
+.sales-search__input--invalid:focus {
+  border-color: #d85a65;
+  box-shadow: 0 0 0 3px rgb(216 90 101 / 14%);
+}
+
 .sales-search__input::placeholder {
   color: #a6afbd;
+}
+
+.sales-search__field-error {
+  grid-column: 2;
+  margin: -3px 0 0;
+  color: #d85a65;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.2;
 }
 
 .sales-search__gender,
@@ -456,7 +505,7 @@ const removeFilter = (remove: () => void) => {
   grid-template-columns: max-content auto max-content minmax(0, 1fr) auto;
   column-gap: 12px;
   border-top: 1px solid #edf1f6;
-  padding-top: 6px;
+  padding-top: 5px;
 }
 
 .sales-search__applied {
@@ -464,9 +513,9 @@ const removeFilter = (remove: () => void) => {
   align-items: center;
   flex-wrap: wrap;
   gap: 5px;
-  margin-top: 6px;
+  margin-top: 5px;
   border-top: 1px solid #edf1f6;
-  padding-top: 6px;
+  padding-top: 5px;
 }
 
 .sales-search__applied-label {
@@ -503,6 +552,22 @@ const removeFilter = (remove: () => void) => {
   white-space: nowrap;
 }
 
+.sales-search .sales-search__field {
+  display: grid;
+  grid-template-columns: 50px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  white-space: normal;
+}
+
+.sales-search .sales-search__field--invalid {
+  align-items: start;
+}
+
+.sales-search__field--age {
+  margin-left: 0;
+}
+
 .sales-search__options {
   display: flex;
   align-items: center;
@@ -537,7 +602,7 @@ const removeFilter = (remove: () => void) => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 22px;
+  height: 21px;
   border: 1px solid #dbe3ef;
   border-radius: 999px;
   background: #ffffff;
@@ -590,7 +655,7 @@ const removeFilter = (remove: () => void) => {
 
 .sales-search__button {
   min-width: 52px;
-  min-height: 24px;
+  min-height: 23px;
   border-radius: 5px;
   padding: 0 10px;
   font-size: 11px;
