@@ -105,12 +105,10 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
         <div class="profile-summary">
           <div class="profile-title">
             <h1>{{ fallback(user.childName) }}</h1>
-            <div class="profile-title__badges">
-              <span v-for="badge in visibleBadges" :key="badge.code" class="profile-badge">
-                {{ badge.name }}
-              </span>
-              <span class="profile-status-badge">{{ fallback(user.conversionStatusName) }}</span>          
-            </div>
+            <span v-for="badge in visibleBadges" :key="badge.code" class="profile-badge">
+              {{ badge.name }}
+            </span>
+            <span class="profile-status-badge">{{ fallback(user.conversionStatusName) }}</span>
           </div>
 
           <div class="profile-inline-info">
@@ -222,7 +220,7 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
 .profile-summary {
   display: grid;
   grid-template-columns: minmax(120px, auto) minmax(0, 1fr);
-  align-items: center;
+  align-items: start;
   width: 100%;
   min-width: 0;
   gap: 14px;
@@ -230,9 +228,9 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
 
 .profile-title {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .profile-title h1 {
@@ -242,12 +240,6 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
   font-weight: 950;
   letter-spacing: 0;
   line-height: 1.12;
-}
-
-.profile-title__badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
 }
 
 .profile-summary p {
@@ -260,7 +252,6 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
 .profile-inline-info {
   display: grid;
   grid-template-columns: minmax(140px, 0.7fr) minmax(220px, 1.3fr);
-  align-items: center;
   gap: 18px;
   min-width: 0;
   margin-top: 0;

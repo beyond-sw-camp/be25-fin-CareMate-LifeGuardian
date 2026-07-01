@@ -9,7 +9,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  completed: [newPassword: string]
+  completed: []
 }>()
 
 const authStore = useAuthStore()
@@ -45,13 +45,11 @@ const submitPasswordChange = async () => {
       privacyPolicyAgreed: isPolicyAgreed.value,
     })
 
-    const changedPassword = newPassword.value
-
     newPassword.value = ''
     confirmPassword.value = ''
     isPolicyAgreed.value = false
     authStore.completeFirstLogin()
-    emit('completed', changedPassword)
+    emit('completed')
   } catch (error) {
     errorMessage.value = axios.isAxiosError(error)
       ? error.response?.data?.message ?? '비밀번호 변경에 실패했습니다.'
