@@ -4,118 +4,148 @@ import com.caremate.lifeguardian.recommendation.dto.CoverageCandidateDto;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Component
 public class CoverageBudgetPacker {
 
-	// 한 카테고리 담보만 몰아서 선택하지 않고 메인 카테고리와 서브 카테고리를 번갈아 선택한다.
 	public List<CoverageCandidateDto> packBalanced(
 			List<CoverageCandidateDto> coverages,
 			String mainCategoryCode,
 			List<String> subCategoryCodes,
 			int maxBudget
 	) {
+		if (coverages == null || coverages.isEmpty() || maxBudget <= 0) {
+			return List.of();
+		}
+
 		List<CoverageCandidateDto> selected = new ArrayList<>();
+		int usedBudget = 0;
 
-		// 담보를 선택할 카테고리 순서 구성
-		// 메인 카테고리를 가장 먼저 보고, 이후 서브 카테고리를 순서대로 확인한다.
-		List<String> pickCategoryOrder = new ArrayList<>();
-		pickCategoryOrder.add(mainCategoryCode);
-		pickCategoryOrder.addAll(subCategoryCodes);
+		// 1. 메인 카테고리에서 최고 우선순위 담보 1개 선택
+		CoverageCandidateDto mainCoverage =
+				findBestCoverageByCategory(
+						coverages,
+						mainCategoryCode,
+						selected
+				);
 
-		// 카테고리별 담보 목록으로 그룹화한다.
-		// 입력 coverages는 이미 finalScore, dangerPriorityOrder 기준으로 정렬된 상태이므로
-		// 각 카테고리 내부에서도 우선순위가 높은 담보가 앞쪽에 위치한다.
-		Map<String, List<CoverageCandidateDto>> groupedCoverages =
+		if (mainCoverage != null && usedBudget + mainCoverage.getUnitPremium() <= maxBudget) {
+			selected.add(mainCoverage);
+			usedBudget += mainCoverage.getUnitPremium();
+		}
+
+		// 2. 서브 카테고리에서 최고 우선순위 담보 1개 선택
+		for (String subCategoryCode : subCategoryCodes) {
+			CoverageCandidateDto subCoverage =
+					findBestCoverageByCategory(
+							coverages,
+							subCategoryCode,
+							selected
+					);
+
+			if (subCoverage != null && usedBudget + subCoverage.getUnitPremium() <= maxBudget) {
+				selected.add(subCoverage);
+				usedBudget += subCoverage.getUnitPremium();
+
+				// 서브 카테고리는 1개만 선택
+				break;
+			}
+		}
+
+		// 3. 남은 예산은 Knapsack으로 최고 점수 조합 선택
+		int remainBudget = maxBudget - usedBudget;
+
+		List<CoverageCandidateDto> remainingCoverages =
 				coverages.stream()
-						.collect(Collectors.groupingBy(
-								CoverageCandidateDto::getCategoryCode,
-								LinkedHashMap::new,
-								Collectors.toList()
-						));
+						.filter(coverage -> !selected.contains(coverage))
+						.toList();
 
-		int totalPremium = 0;
+		List<CoverageCandidateDto> knapsackSelected =
+				packByKnapsack(
+						remainingCoverages,
+						remainBudget
+				);
+
+		selected.addAll(knapsackSelected);
+
+		// 4. 최종 선택 순서 정렬
+		selected.sort(
+				Comparator.comparingInt(CoverageCandidateDto::getFinalScore)
+						.reversed()
+						.thenComparingInt(CoverageCandidateDto::getDangerPriorityOrder)
+						.thenComparingInt(CoverageCandidateDto::getUnitPremium)
+		);
+
 		int selectedOrder = 1;
-		int round = 0;
-
-		while (true) {
-			boolean hasCandidateInThisRound = false;
-			boolean selectedInThisRound = false;
-
-			// 현재 round 기준으로 각 카테고리의 n번째 담보를 순서대로 확인한다.
-			for (String categoryCode : pickCategoryOrder) {
-				List<CoverageCandidateDto> categoryCoverages =
-						groupedCoverages.getOrDefault(categoryCode, List.of());
-
-				// 해당 카테고리에 현재 round에 해당하는 담보가 없으면 건너뛴다.
-				if (round >= categoryCoverages.size()) {
-					continue;
-				}
-
-				hasCandidateInThisRound = true;
-
-				CoverageCandidateDto coverage = categoryCoverages.get(round);
-
-				// 현재 담보를 추가해도 최대 예산을 초과하지 않으면 선택한다.
-				if (totalPremium + coverage.getUnitPremium() <= maxBudget) {
-					coverage.setSelectedOrder(selectedOrder++);
-					selected.add(coverage);
-					totalPremium += coverage.getUnitPremium();
-					selectedInThisRound = true;
-				}
-			}
-
-			// 모든 카테고리에서 더 이상 확인할 담보가 없으면 종료한다.
-			if (!hasCandidateInThisRound) {
-				break;
-			}
-
-			// 이번 round에서 아무 담보도 선택하지 못했고,
-			// 남은 담보들이 모두 잔여 예산을 초과한다면 더 이상 선택할 수 없으므로 종료한다.
-			if (!selectedInThisRound &&
-					isAllRemainingOverBudget(
-							groupedCoverages,
-							pickCategoryOrder,
-							round + 1,
-							maxBudget - totalPremium
-					)) {
-				break;
-			}
-
-			// 다음 순위 담보를 확인하기 위해 round 증가
-			round++;
+		for (CoverageCandidateDto coverage : selected) {
+			coverage.setSelectedOrder(selectedOrder++);
 		}
 
 		return selected;
 	}
 
-	/**
-	 * 남아 있는 모든 담보가 잔여 예산을 초과하는지 확인한다.
-	 *
-	 * true  → 더 이상 선택 가능한 담보가 없음
-	 * false → 아직 선택 가능한 담보가 남아 있음
-	 */
-	private boolean isAllRemainingOverBudget(
-			Map<String, List<CoverageCandidateDto>> groupedCoverages,
-			List<String> pickCategoryOrder,
-			int startRound,
-			int remainBudget
+	private CoverageCandidateDto findBestCoverageByCategory(
+			List<CoverageCandidateDto> coverages,
+			String categoryCode,
+			List<CoverageCandidateDto> selected
 	) {
-		for (String categoryCode : pickCategoryOrder) {
-			List<CoverageCandidateDto> categoryCoverages =
-					groupedCoverages.getOrDefault(categoryCode, List.of());
+		return coverages.stream()
+				.filter(coverage -> coverage.getCategoryCode().equals(categoryCode))
+				.filter(coverage -> !selected.contains(coverage))
+				.max(
+						Comparator.comparingInt(CoverageCandidateDto::getFinalScore)
+								.thenComparing(
+										Comparator.comparingInt(CoverageCandidateDto::getDangerPriorityOrder)
+												.reversed()
+								)
+				)
+				.orElse(null);
+	}
 
-			for (int i = startRound; i < categoryCoverages.size(); i++) {
-				if (categoryCoverages.get(i).getUnitPremium() <= remainBudget) {
-					return false;
+	private List<CoverageCandidateDto> packByKnapsack(
+			List<CoverageCandidateDto> coverages,
+			int maxBudget
+	) {
+		if (coverages == null || coverages.isEmpty() || maxBudget <= 0) {
+			return List.of();
+		}
+
+		int n = coverages.size();
+		int[][] dp = new int[n + 1][maxBudget + 1];
+
+		for (int i = 1; i <= n; i++) {
+			CoverageCandidateDto coverage = coverages.get(i - 1);
+
+			int premium = coverage.getUnitPremium();
+			int score = coverage.getFinalScore();
+
+			for (int budget = 0; budget <= maxBudget; budget++) {
+				dp[i][budget] = dp[i - 1][budget];
+
+				if (premium <= budget) {
+					dp[i][budget] = Math.max(
+							dp[i][budget],
+							dp[i - 1][budget - premium] + score
+					);
 				}
 			}
 		}
 
-		return true;
+		List<CoverageCandidateDto> selected = new ArrayList<>();
+
+		int budget = maxBudget;
+
+		for (int i = n; i >= 1; i--) {
+			CoverageCandidateDto coverage = coverages.get(i - 1);
+
+			if (dp[i][budget] != dp[i - 1][budget]) {
+				selected.add(coverage);
+				budget -= coverage.getUnitPremium();
+			}
+		}
+
+		return selected;
 	}
 }
