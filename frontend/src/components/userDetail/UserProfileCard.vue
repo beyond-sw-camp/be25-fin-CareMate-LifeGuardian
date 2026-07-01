@@ -199,14 +199,14 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
   grid-template-columns: minmax(0, 1fr);
   gap: 0;
   border-radius: 12px;
-  padding: 14px 18px;
+  padding: 16px 18px;
 }
 
 .profile-hero {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
-  align-items: start;
-  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 280px);
+  align-items: center;
+  gap: 20px;
   min-width: 0;
 }
 
@@ -223,7 +223,7 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
   align-items: start;
   width: 100%;
   min-width: 0;
-  gap: 18px;
+  gap: 14px;
 }
 
 .profile-title {
@@ -234,10 +234,9 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
 }
 
 .profile-title h1 {
-  min-width: max-content;
-  margin: 0;
+  margin: 5px;
   color: var(--color-text);
-  font-size: 22px;
+  font-size: 25px;
   font-weight: 950;
   letter-spacing: 0;
   line-height: 1.12;
@@ -286,7 +285,10 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
 
 .profile-compact-info,
 .profile-compact-guardian {
+  display: flex;
+  align-items: center;
   min-width: 0;
+  min-height: 130px;
   border-left: 1px solid #e5e7eb;
   padding-left: 18px;
 }
@@ -298,11 +300,15 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
   margin: 0;
 }
 
+.profile-compact-info dl {
+  gap: 15px;
+}
+
 .profile-compact-info div {
   display: grid;
-  grid-template-columns: minmax(58px, 0.65fr) minmax(0, 1fr);
+  grid-template-columns: 62px minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
+  gap: 2px;
 }
 
 .profile-compact-info dt,
@@ -504,13 +510,16 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
 .lifecycle-panel {
   display: grid;
   align-content: start;
-  gap: 8px;
+  gap: 7px;
+  width: 100%;
   min-width: 0;
   max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
   border: 1px solid #d7dfff;
   border-radius: 10px;
   background: #f4f6ff;
-  padding: 14px;
+  padding: 12px 14px;
   box-shadow: none;
 }
 
@@ -518,6 +527,7 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 12px;
 }
 
@@ -550,14 +560,17 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
 }
 
 .lifecycle-report-button {
+  min-width: 0;
   min-height: 29px;
   border: 1px solid #c7d2fe;
   border-radius: 7px;
   background: #ffffff;
   color: #4f46e5;
   padding: 0 10px;
+  overflow: hidden;
   font-size: 11px;
   font-weight: 900;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -660,14 +673,14 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
   font-weight: 900;
 }
 
-@media (max-width: 1320px) {
+@media (max-width: 1080px) {
   .profile-hero {
     grid-template-columns: 1fr;
   }
 
   .profile-summary {
-    grid-template-columns: minmax(120px, auto) minmax(0, 1fr);
-    gap: 16px;
+    grid-template-columns: clamp(140px, 18%, 170px) minmax(0, 1fr);
+    gap: 14px;
   }
 
   .profile-compact-info,
@@ -677,8 +690,8 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
   }
 
   .lifecycle-panel {
-    width: min(100%, 420px);
-    max-width: 420px;
+    width: min(100%, 360px);
+    max-width: 360px;
     justify-self: start;
   }
 }
@@ -689,7 +702,7 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
   }
 
   .profile-inline-info {
-    grid-template-columns: minmax(150px, 0.8fr) minmax(240px, 1.2fr);
+    grid-template-columns: minmax(150px, 0.85fr) minmax(240px, 1.15fr);
   }
 
   .profile-compact-info,
@@ -759,4 +772,5 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
     flex-wrap: wrap;
   }
 }
+
 </style>

@@ -76,7 +76,7 @@ def recommend_riders(req: RecommendRequest):
                 INNER JOIN insurance_coverage c ON r.rider_name = c.coverage_name
                 WHERE c.min_target_age <= %s AND c.max_target_age >= %s
                 ORDER BY r.embedding <=> %s::vector
-                LIMIT 15;
+                LIMIT 20;
             """
             # query_embedding을 float 리스트 형태로 바인딩
             cursor.execute(query, (req.age, req.age, query_embedding))

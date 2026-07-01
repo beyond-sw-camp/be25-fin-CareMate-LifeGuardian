@@ -13,8 +13,8 @@ public class RecommendationMetaResolver {
 	public int resolveBudgetAmount(String budgetCode) {
 		return switch (budgetCode) {
 			case "01" -> 30000;
-			case "02" -> 60000;
-			case "03" -> 90000;
+			case "02" -> 50000;
+			case "03" -> 100000;
 			default -> 50000;
 		};
 	}

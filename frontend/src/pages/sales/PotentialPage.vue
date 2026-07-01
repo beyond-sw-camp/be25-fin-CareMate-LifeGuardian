@@ -5,14 +5,17 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import AppHeader from '../../components/common/Header.vue'
 import AppSidebar from '../../components/common/Sidebar.vue'
 import ChildRegisterModal from '../../components/potential/ChildRegisterModal.vue'
-import ParentSearchModal from '../../components/potential/ParentSearchModal.vue'
+import ParentSelectModal from '../../components/potential/ParentSelectModal.vue'
+import PotentialDetailModal from '../../components/potential/PotentialDetailModal.vue'
 import PotentialTable from '../../components/potential/PotentialTable.vue'
 import SalesPagination from '../../components/sales/SalesPagination.vue'
 import {
   deletePotentialCustomer,
+  getPotentialCustomerDetail,
   getPotentialCustomers,
   type ParentCustomerSearchResponse,
   type PotentialCustomerCreateResponse,
+  type PotentialCustomerDetailResponse,
   type PotentialCustomerListItem,
 } from '@/api/potential'
 
@@ -22,13 +25,18 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 const noticeMessage = ref('')
 const noticeMessageType = ref<'success' | 'error'>('success')
+const noticeTimerId = ref<number | null>(null)
 const isDeleting = ref(false)
 
-const isParentSearchModalOpen = ref(false)
+const isParentSelectModalOpen = ref(false)
 const isChildRegisterModalOpen = ref(false)
 const selectedParent = ref<ParentCustomerSearchResponse | null>(null)
 
-const POTENTIAL_PAGE_SIZE = 13
+const isDetailModalOpen = ref(false)
+const selectedPotentialCustomer = ref<PotentialCustomerDetailResponse | null>(null)
+const isDetailLoading = ref(false)
+
+const POTENTIAL_PAGE_SIZE = 11
 const currentPage = ref(1)
 
 const searchKeyword = ref('')
@@ -75,6 +83,15 @@ const getErrorMessage = (
 const showNoticeMessage = (message: string, type: 'success' | 'error') => {
   noticeMessage.value = message
   noticeMessageType.value = type
+
+  if (noticeTimerId.value !== null) {
+    window.clearTimeout(noticeTimerId.value)
+  }
+
+  noticeTimerId.value = window.setTimeout(() => {
+    noticeMessage.value = ''
+    noticeTimerId.value = null
+  }, 5000)
 }
 
 const loadPotentialCustomers = async () => {
@@ -91,10 +108,6 @@ const loadPotentialCustomers = async () => {
   } finally {
     isLoading.value = false
   }
-}
-
-const clearSelection = () => {
-  selectedCustomerIds.value = []
 }
 
 const handleDeleteSelectedCustomers = async () => {
@@ -127,19 +140,58 @@ const handleDeleteSelectedCustomers = async () => {
   }
 }
 
+const handleOpenDetailModal = async (customer: PotentialCustomerListItem) => {
+  isDetailLoading.value = true
+  noticeMessage.value = ''
+
+  try {
+    selectedPotentialCustomer.value = await getPotentialCustomerDetail(
+      customer.potentialCustomerId,
+    )
+
+    isDetailModalOpen.value = true
+  } catch (error) {
+    showNoticeMessage(
+      getErrorMessage(error, '잠재고객 상세 정보를 불러오지 못했습니다.'),
+      'error',
+    )
+  } finally {
+    isDetailLoading.value = false
+  }
+}
+
+const handleCloseDetailModal = () => {
+  isDetailModalOpen.value = false
+  selectedPotentialCustomer.value = null
+}
+
+const handlePotentialCustomerUpdated = async (
+  customer: PotentialCustomerDetailResponse,
+) => {
+  isDetailModalOpen.value = false
+  selectedPotentialCustomer.value = null
+
+  showNoticeMessage(
+    `${customer.name} 잠재고객 정보가 수정되었습니다.`,
+    'success',
+  )
+
+  await loadPotentialCustomers()
+}
+
 const handleOpenRegisterModal = () => {
   selectedParent.value = null
   isChildRegisterModalOpen.value = false
-  isParentSearchModalOpen.value = true
+  isParentSelectModalOpen.value = true
 }
 
-const handleCloseParentSearchModal = () => {
-  isParentSearchModalOpen.value = false
+const handleCloseParentSelectModal = () => {
+  isParentSelectModalOpen.value = false
 }
 
-const handleParentSearchNext = (parent: ParentCustomerSearchResponse) => {
+const handleParentSelectNext = (parent: ParentCustomerSearchResponse) => {
   selectedParent.value = parent
-  isParentSearchModalOpen.value = false
+  isParentSelectModalOpen.value = false
   isChildRegisterModalOpen.value = true
 }
 
@@ -147,9 +199,9 @@ const handleCloseChildRegisterModal = () => {
   isChildRegisterModalOpen.value = false
 }
 
-const handleBackToParentSearchModal = () => {
+const handleBackToParentSelectModal = () => {
   isChildRegisterModalOpen.value = false
-  isParentSearchModalOpen.value = true
+  isParentSelectModalOpen.value = true
 }
 
 const handleChildRegistered = async (
@@ -191,6 +243,10 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateScale)
+
+  if (noticeTimerId.value !== null) {
+    window.clearTimeout(noticeTimerId.value)
+  }
 })
 </script>
 
@@ -242,14 +298,6 @@ onBeforeUnmount(() => {
               >
                 {{ isDeleting ? '삭제 중' : '삭제' }}
               </button>
-              <button
-                class="potential-button potential-button--secondary"
-                type="button"
-                :disabled="isDeleting"
-                @click="clearSelection"
-              >
-                취소
-              </button>
             </div>
           </div>
         </div>
@@ -274,6 +322,7 @@ onBeforeUnmount(() => {
           <PotentialTable
             v-model:selected-customer-ids="selectedCustomerIds"
             :customers="displayedPotentialCustomers"
+            @select-customer="handleOpenDetailModal"
           />
         </div>
         <div class="potential-list__footer">
@@ -286,18 +335,25 @@ onBeforeUnmount(() => {
       </section>
     </main>
 
-    <ParentSearchModal
-      v-if="isParentSearchModalOpen"
-      @close="handleCloseParentSearchModal"
-      @next="handleParentSearchNext"
+    <ParentSelectModal
+      v-if="isParentSelectModalOpen"
+      @close="handleCloseParentSelectModal"
+      @next="handleParentSelectNext"
     />
 
     <ChildRegisterModal
       v-if="isChildRegisterModalOpen && selectedParent"
       :parent="selectedParent"
       @close="handleCloseChildRegisterModal"
-      @back="handleBackToParentSearchModal"
+      @back="handleBackToParentSelectModal"
       @registered="handleChildRegistered"
+    />
+
+    <PotentialDetailModal
+      v-if="isDetailModalOpen && selectedPotentialCustomer"
+      :customer="selectedPotentialCustomer"
+      @close="handleCloseDetailModal"
+      @updated="handlePotentialCustomerUpdated"
     />
   </div>
 </template>
@@ -315,12 +371,14 @@ onBeforeUnmount(() => {
 .potential-search {
   display: flex;
   align-items: center;
+  min-width: 0;
 }
 
 .potential-search__field {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 }
 
 .potential-search__field span {
@@ -332,6 +390,7 @@ onBeforeUnmount(() => {
 
 .potential-search__input {
   width: 200px;
+  max-width: 100%;
   height: 28px;
   border: 1px solid #d7dde7;
   border-radius: 6px;
@@ -370,6 +429,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .potential-section-title {
@@ -391,6 +451,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 6px;
   margin-left: auto;
+  flex-shrink: 0;
 }
 
 .potential-button {
@@ -408,12 +469,6 @@ onBeforeUnmount(() => {
   border: 1px solid #d85a65;
   background: #d85a65;
   color: #ffffff;
-}
-
-.potential-button--secondary {
-  border: 1px solid #d7dde7;
-  background: #ffffff;
-  color: #4c586b;
 }
 
 .potential-button:disabled {
@@ -464,15 +519,13 @@ onBeforeUnmount(() => {
 
 .potential-list__table-area {
   flex: 1;
+  min-height: 430px;
+  overflow: auto;
 }
 
 .potential-list__footer {
-  position: relative;
   display: flex;
-  align-items: center;
   justify-content: center;
-  min-height: 32px;
-  margin-top: auto;
   padding-top: 8px;
 }
 
@@ -486,4 +539,23 @@ onBeforeUnmount(() => {
   background: color-mix(in srgb, var(--color-primary) 8%, white);
 }
 
+@media (max-width: 760px) {
+  .potential-list__toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .potential-search__field {
+    width: 100%;
+  }
+
+  .potential-search__input {
+    width: 100%;
+  }
+
+  .potential-list__selected-actions {
+    justify-content: flex-end;
+    margin-left: 0;
+  }
+}
 </style>

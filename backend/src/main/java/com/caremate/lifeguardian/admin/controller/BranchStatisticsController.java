@@ -85,11 +85,12 @@ public class BranchStatisticsController {
     @Operation(summary = "지점 전체 영업사원 판매 성과 상세 조회", description = "지점 소속 전체 영업사원의 이번 달 실적, 연간 누적 실적 및 랭킹 세부 정보를 조회합니다.")
     @GetMapping("/{branchId}/statistics/sales-performance/details")
     public ResponseEntity<ApiResponse<BranchPerformanceDetailsResponse>> getSalesPerformanceDetails(
-            @PathVariable("branchId") Long branchId) {
+            @PathVariable("branchId") Long branchId,
+            @RequestParam(value = "targetYearMonth", required = false) String targetYearMonth) {
 
-        log.info("지점 전체 영업사원 판매 성과 상세 조회 API 요청 수신 - branchId: {}", branchId);
-        BranchPerformanceDetailsResponse response = branchStatisticsService.getSalesPerformanceDetails(branchId);
-        log.info("지점 전체 영업사원 판매 성과 상세 조회 API 처리 성공 - branchId: {}", branchId);
+        log.info("지점 전체 영업사원 판매 성과 상세 조회 API 요청 수신 - branchId: {}, targetYearMonth: {}", branchId, targetYearMonth);
+        BranchPerformanceDetailsResponse response = branchStatisticsService.getSalesPerformanceDetails(branchId, targetYearMonth);
+        log.info("지점 전체 영업사원 판매 성과 상세 조회 API 처리 성공 - branchId: {}, targetYearMonth: {}", branchId, targetYearMonth);
 
         return ResponseEntity.ok(ApiResponse.success(200, "전체 영업사원 성과 상세 조회가 완료되었습니다.", response));
     }

@@ -116,30 +116,31 @@ const chartOptions = {
 
 <style scoped>
 .achievement-card {
-  display: flex;
-  height: 100%;
-  min-height: 250px;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 150px;
+  align-items: start;
+  min-height: 170px;
   border: 1px solid #e3e8f0;
   border-radius: 8px;
   background: #ffffff;
-  padding: 18px;
+  padding: 16px 18px;
 }
 
 .achievement-card__header {
-  margin-bottom: 12px;
+  margin-top: 8px;
+  margin-bottom: 0;
 }
 
 .achievement-card__header h3 {
-  margin: 0 0 10px;
+  margin: 0 0 12px;
   color: #263142;
   font-size: 18px;
   font-weight: 900;
 }
 
 .achievement-card__legend {
-  display: flex;
-  gap: 16px;
+  display: grid;
+  gap: 5px;
 }
 
 .achievement-card__legend-item {
@@ -166,9 +167,11 @@ const chartOptions = {
 
 .achievement-card__chart {
   position: relative;
-  width: 170px;
-  height: 170px;
-  margin: 9px auto 0;
+  width: 140px;
+  height: 140px;
+  margin: 0;
+  justify-self: start;
+  margin-left: -12px;
 }
 
 .achievement-card__center {
@@ -185,13 +188,13 @@ const chartOptions = {
 
 .achievement-card__center span {
   color: #7f8999;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 700;
 }
 
 .achievement-card__center strong {
   color: #172033;
-  font-size: 25px;
+  font-size: 20px;
   font-weight: 900;
 }
 

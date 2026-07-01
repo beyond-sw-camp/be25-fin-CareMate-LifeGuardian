@@ -67,7 +67,7 @@ onBeforeUnmount(() => {
   stopResize()
 })
 
-const displayName = localStorage.getItem(USER_NAME_STORAGE_KEY) ?? (isAdmin.value ? '홍길동' : '김설계')
+const displayName = localStorage.getItem(USER_NAME_STORAGE_KEY) ?? (isAdmin.value ? '유재석' : '김설계')
 const branch = localStorage.getItem(USER_BRANCH_STORAGE_KEY) ?? '강남지점'
 const region = localStorage.getItem(USER_REGION_STORAGE_KEY)
 const branchName = region ? `${region} ${branch}` : branch
@@ -94,9 +94,9 @@ const logoTo = computed(() => {
 const profileParts = computed(() =>
   isAdmin.value
     ? {
-      primary: branchName,
-      secondary: `${displayName} 지점장`,
-      meta: '관리자 계정',
+      primary: displayName,
+      secondary: branchName,
+      meta: '지점장',
     }
     : {
       primary: displayName,
@@ -192,8 +192,8 @@ const navIconClass = (label: string) => {
       <div class="sidebar__profile-summary">
         <span class="sidebar__profile-avatar" aria-hidden="true">{{ profileInitial }}</span>
         <span class="sidebar__profile-copy">
-          <span class="sidebar__profile-label">{{ profileParts.meta }}</span>
           <strong>{{ profileParts.primary }}</strong>
+          <span class="sidebar__profile-label">{{ profileParts.meta }}</span>
           <span>{{ profileParts.secondary }}</span>
         </span>
       </div>
@@ -255,13 +255,7 @@ const navIconClass = (label: string) => {
   margin: -4px -18px 28px;
   border-bottom: 1px solid rgb(211 220 234 / 74%);
   background: rgb(255 255 255 / 34%);
-  padding: 0 26px 8px;
-  transition:
-    min-height 160ms ease,
-    margin 160ms ease,
-    padding 160ms ease,
-    background 160ms ease,
-    border-color 160ms ease;
+  padding: 0 52px 8px 26px;
 }
 
 .sidebar--admin .sidebar__brand {
@@ -272,6 +266,7 @@ const navIconClass = (label: string) => {
 .sidebar__logo {
   display: flex;
   min-width: 0;
+  max-width: 100%;
   align-items: center;
   gap: 10px;
   color: #151924;
@@ -738,12 +733,13 @@ const navIconClass = (label: string) => {
 }
 
 .sidebar--collapsed .sidebar__brand {
-  justify-content: flex-start;
+  justify-content: space-between;
+  align-items: center;
   min-height: 38px;
   margin: 0 -6px 12px;
   border-bottom: 0;
   background: transparent;
-  padding: 0 4px;
+  padding: 0 8px;
 }
 
 .sidebar--collapsed .sidebar__logo-text,
@@ -770,6 +766,8 @@ const navIconClass = (label: string) => {
   background: transparent;
   box-shadow: none;
   color: #9aa3af;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .sidebar--collapsed .sidebar__collapse-button::after {
