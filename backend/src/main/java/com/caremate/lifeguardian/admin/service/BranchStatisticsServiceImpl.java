@@ -447,7 +447,7 @@ public class BranchStatisticsServiceImpl implements BranchStatisticsService {
     }
 
     @Override
-    public BranchPerformanceDetailsResponse getSalesPerformanceDetails(Long branchId) {
+    public BranchPerformanceDetailsResponse getSalesPerformanceDetails(Long branchId, String targetYearMonth) {
         // 1. 지점 존재 유무 검증
         if (!branchMapper.existsById(branchId)) {
             throw new BaseException(404, "요청하신 지점 정보를 찾을 수 없습니다.");
@@ -456,14 +456,27 @@ public class BranchStatisticsServiceImpl implements BranchStatisticsService {
         // 지점장 지점 권한 검증
         validateManagerBranch(branchId);
 
-        // 2. 현재 날짜 정보 계산
-        LocalDate today = LocalDate.now();
-        String currentYearMonth = YearMonth.from(today).toString(); // "YYYY-MM"
-        int currentYear = today.getYear();
+        // 2. targetYearMonth 파싱 및 유효성 검증
+        YearMonth currentYearMonthVal = YearMonth.now();
+        YearMonth parsedYearMonth;
+        if (targetYearMonth == null || targetYearMonth.isEmpty()) {
+            parsedYearMonth = currentYearMonthVal;
+            targetYearMonth = parsedYearMonth.toString(); // YYYY-MM
+        } else {
+            try {
+                parsedYearMonth = YearMonth.parse(targetYearMonth);
+            } catch (DateTimeParseException e) {
+                throw new BaseException(400, "올바른 연월 형식(YYYY-MM)이 아닙니다.");
+            }
+            if (parsedYearMonth.isAfter(currentYearMonthVal)) {
+                throw new BaseException(400, "올바른 연월 형식(YYYY-MM)이 아닙니다.");
+            }
+        }
+        int targetYear = parsedYearMonth.getYear();
 
         // 3. 지점 내 활성 사원들의 전체 실적 목록 조회
         List<SalesUserPerformanceDetail> domainList =
-                branchStatisticsMapper.selectSalesUsersPerformanceDetails(branchId, currentYearMonth, currentYear);
+                branchStatisticsMapper.selectSalesUsersPerformanceDetails(branchId, targetYearMonth, targetYear);
 
         // 4. groupCode 할당 및 DTO 변환
         int totalSize = domainList.size();
@@ -491,7 +504,7 @@ public class BranchStatisticsServiceImpl implements BranchStatisticsService {
         }
 
         return BranchPerformanceDetailsResponse.builder()
-                .targetYearMonth(currentYearMonth)
+                .targetYearMonth(targetYearMonth)
                 .performances(responseList)
                 .build();
     }

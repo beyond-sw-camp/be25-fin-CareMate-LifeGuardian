@@ -9,7 +9,6 @@ export interface DashboardSummary {
   designedContractCount: number
   subscriptionInProgressCount: number
   subscriptionCompletedCount: number
-  paymentCompletedCount: number
   contractCompletedCount: number
 }
 

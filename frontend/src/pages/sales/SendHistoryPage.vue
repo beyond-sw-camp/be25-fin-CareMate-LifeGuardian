@@ -296,12 +296,10 @@ onMounted(() => {
 .send-history-filters {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  min-width: 0;
+  gap: 12px;
 }
 
-.send-history-filters label {
+.send-history-filters > label {
   display: grid;
   grid-template-columns: max-content minmax(132px, 170px);
   align-items: center;
@@ -313,7 +311,7 @@ onMounted(() => {
 
 .send-history-search {
   display: grid;
-  grid-template-columns: max-content minmax(240px, 320px) 54px;
+  grid-template-columns: max-content 320px 54px;
   align-items: center;
   gap: 8px;
   color: #394252;
@@ -323,6 +321,7 @@ onMounted(() => {
 }
 
 .send-history-search label {
+  margin-right: 0;
   white-space: nowrap;
 }
 
