@@ -78,16 +78,8 @@ const moveSalesFilter = (filter: {
       </article>
 
       <article 
-        class="summary-status-card"
-        @click="moveSalesFilter({ contractStatusCode: ['06'] })"
-      >
-        <span>수납 완료</span>
-        <strong>{{ countLabel(summary?.paymentCompletedCount) }}</strong>
-      </article>
-
-      <article 
         class="summary-status-card summary-status-card--completed"
-        @click="moveSalesFilter({})"
+        @click="moveSalesFilter({ contractStatusCode: ['06'] })"
       >
         <span>계약 완료</span>
         <strong>{{ countLabel(summary?.contractCompletedCount) }}</strong>
