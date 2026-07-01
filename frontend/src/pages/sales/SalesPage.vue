@@ -37,7 +37,7 @@ const filters = ref<SalesSearchFilters>({})
 const route = useRoute()
 let reportMessageTimer: ReturnType<typeof setTimeout> | undefined
 
-const SALES_PAGE_SIZE = 10
+const SALES_PAGE_SIZE = 8
 
 // 현재는 서버 페이지네이션 결과를 그대로 노출하지만, 템플릿 의존성을 줄이기 위해 computed로 감쌉니다.
 const displayedCustomers = computed(() => customers.value)
@@ -810,5 +810,25 @@ onBeforeUnmount(() => {
   border-top: 1px solid #edf0f5;
   background: #fbfcfe;
   padding: 10px 20px 12px;
+}
+
+@media (max-width: 900px) {
+  .sales-list__footer {
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+    min-height: 0;
+    margin-top: 10px;
+  }
+
+  .sales-list__bulk-actions {
+    position: static;
+    order: 2;
+    justify-content: center;
+  }
+
+  .sales-list__footer .sales-pagination {
+    order: 1;
+  }
 }
 </style>
