@@ -215,6 +215,8 @@ export interface SalesSearchParams {
   contractStatusCode?: string[]
   hasReport?: boolean
   hasThreeStep?: boolean
+  webformSent?: boolean
+  reportSent?: boolean
   page: number
   size: number
 }

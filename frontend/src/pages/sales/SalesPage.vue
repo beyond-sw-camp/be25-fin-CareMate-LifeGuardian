@@ -38,7 +38,7 @@ const isBulkConfirmOpen = ref(false)
 const bulkConfirmTitle = ref('')
 const bulkConfirmMessage = ref('')
 const bulkConfirmDetail = ref('')
-const filters = ref<SalesSearchFilters>({})
+const filters = ref<SalesSearchFilters>({ customerStageCode: '01' })
 const route = useRoute()
 let reportMessageTimer: ReturnType<typeof setTimeout> | undefined
 let bulkConfirmResolver: ((confirmed: boolean) => void) | undefined
@@ -694,10 +694,10 @@ onBeforeUnmount(() => {
 .report-button {
   min-width: 58px;
   height: 24px;
-  border: 0;
+  border: 1px solid #d8dee8;
   border-radius: 5px;
-  background: var(--color-primary);
-  color: #ffffff;
+  background: #f8fafc;
+  color: #475569;
   padding: 0 10px;
   font-size: 10px;
   font-weight: 800;
@@ -717,7 +717,9 @@ onBeforeUnmount(() => {
 }
 
 .report-button:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-primary) 84%, black);
+  border-color: #cbd5e1;
+  background: #eef2f7;
+  color: #334155;
 }
 
 .report-button:disabled {

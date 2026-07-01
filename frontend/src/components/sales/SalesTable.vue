@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
 import {
@@ -206,7 +206,7 @@ const stepClass = (threeStepCode?: string) => {
           <th>3step</th>
           <th>고객 유형</th>
           <th>계약 현황</th>
-          <th>보험명</th>
+          <th>상품명</th>
           <th>피보험자</th>
           <th>웹폼 회수일</th>
           <th>웹폼 발송상태</th>
@@ -538,10 +538,10 @@ const stepClass = (threeStepCode?: string) => {
 .report-button {
   min-width: 54px;
   height: 24px;
-  border: 0;
+  border: 1px solid #d8dee8;
   border-radius: 5px;
-  background: var(--color-primary);
-  color: #ffffff;
+  background: #f8fafc;
+  color: #475569;
   padding: 0 10px;
   font-size: 10px;
   font-weight: 800;
@@ -559,19 +559,22 @@ const stepClass = (threeStepCode?: string) => {
 }
 
 .report-button--resend {
-  border: 1px solid var(--color-primary);
-  background: color-mix(in srgb, var(--color-primary) 8%, white);
-  color: var(--color-primary);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 10%, transparent);
+  border: 1px solid #bcc7d5;
+  background: #eef2f7;
+  color: #3f4a5a;
+  box-shadow: inset 0 0 0 1px rgb(148 163 184 / 10%);
 }
 
 .report-button--resend:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-primary) 14%, white);
-  color: var(--color-primary);
+  border-color: #aebac9;
+  background: #e5ebf2;
+  color: #334155;
 }
 
 .report-button:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-primary) 84%, black);
+  border-color: #cbd5e1;
+  background: #eef2f7;
+  color: #334155;
 }
 
 .report-status {
