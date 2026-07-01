@@ -3,13 +3,20 @@ import axios from 'axios'
 import { computed, ref } from 'vue'
 
 import { sendCustomerWebform, type SalesCustomer } from '@/api/sales'
+import WebformLinkModal from '@/components/sales/WebformLinkModal.vue'
 
 const props = defineProps<{
   customer: SalesCustomer
 }>()
 
+const emit = defineEmits<{
+  'send-result': [message: string, type: 'success' | 'error']
+}>()
+
 const SENT_WEBFORM_STATUS_CODES = new Set(['02'])
 const isSending = ref(false)
+const isModalOpen = ref(false)
+const linkUrl = ref('')
 
 const conversionStatusCode = computed(
   () => props.customer.conversionStatusCode ?? props.customer.customerStageCode,
@@ -34,20 +41,13 @@ const send = async () => {
   if (isSending.value) return
 
   if (!conversionStatusCode.value) {
-    window.alert('웹폼 발송에 필요한 고객 단계 코드가 없습니다.')
+    emit('send-result', '웹폼 발송 실패: 고객 단계 코드가 없습니다.', 'error')
     return
   }
 
   isSending.value = true
 
   try {
-    const requestPath = `/v1/webforms/sales-status/${conversionStatusCode.value}/${props.customer.customerId}/send`
-    console.info('[SalesWebformSendButton] send webform', {
-      customerId: props.customer.customerId,
-      conversionStatusCode: conversionStatusCode.value,
-      requestPath,
-    })
-
     const result = await sendCustomerWebform(
       'sales-status',
       conversionStatusCode.value,
@@ -56,12 +56,18 @@ const send = async () => {
 
     props.customer.webformStatusCode = result.webformStatusCode
     props.customer.webformStatusName = result.webformStatusName
+    
+    // 복사 가능한 웹폼 발송 링크 구성
+    linkUrl.value = `${window.location.origin}/webform?token=${result.uuidToken}`
+    isModalOpen.value = true
+    
+    emit('send-result', `웹폼 발송 성공: ${props.customer.customerName}`, 'success')
   } catch (error) {
     const message = axios.isAxiosError(error)
       ? `${error.response?.status ?? 'ERR'} ${error.response?.data?.message ?? error.message}`
       : undefined
 
-    window.alert(message ?? '웹폼을 발송하지 못했습니다.')
+    emit('send-result', `웹폼 발송 실패${message ? `: ${message}` : ''}`, 'error')
   } finally {
     isSending.value = false
   }
@@ -78,6 +84,13 @@ const send = async () => {
   >
     {{ buttonLabel }}
   </button>
+
+  <WebformLinkModal
+    :is-open="isModalOpen"
+    :customer-name="props.customer.customerName"
+    :link-url="linkUrl"
+    @close="isModalOpen = false"
+  />
 </template>
 
 <style scoped>
