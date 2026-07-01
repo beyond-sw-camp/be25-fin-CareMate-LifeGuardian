@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axios from 'axios'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   ADMIN_ROLE,
@@ -14,20 +14,98 @@ import loginBackgroundUrl from '@/assets/images/로그인_배경.png'
 
 const router = useRouter()
 const authStore = useAuthStore()
-const isDev = import.meta.env.DEV
 const loginId = ref('')
 const password = ref('')
 const isLoading = ref(false)
 const errorMessage = ref('')
 const isFirstLoginModalOpen = ref(false)
 const pendingLoginRole = ref<UserRole | null>(null)
+const demoAccountPasswords = ref<Record<string, string>>({})
+const DEMO_ACCOUNT_PASSWORD_STORAGE_KEY = 'demoAccountPasswords'
+const LEGACY_DEMO_SALES_PASSWORD_STORAGE_KEY = 'demoSalesPasswords'
+
+const defaultDemoAccountGroups = [
+  {
+    title: '데모 계정1',
+    accounts: [
+      {
+        role: '관리자',
+        type: 'admin',
+        loginId: '1000001',
+        password: 'beyond1234!',
+      },
+      {
+        role: '영업사원',
+        type: 'sales',
+        loginId: '1000003',
+        password: 'beyond1234!',
+      },
+    ],
+  },
+  {
+    title: '데모 계정2',
+    accounts: [
+      {
+        role: '관리자',
+        type: 'admin',
+        loginId: '1000002',
+        password: 'beyond1234!',
+      },
+      {
+        role: '영업사원',
+        type: 'sales',
+        loginId: '1000004',
+        password: 'byoned1234!',
+      },
+    ],
+  },
+]
+
+const getStoredDemoAccountPasswords = () => {
+  try {
+    const storedPasswords =
+      localStorage.getItem(DEMO_ACCOUNT_PASSWORD_STORAGE_KEY) ??
+      localStorage.getItem(LEGACY_DEMO_SALES_PASSWORD_STORAGE_KEY)
+
+    return storedPasswords ? JSON.parse(storedPasswords) as Record<string, string> : {}
+  } catch {
+    return {}
+  }
+}
+
+const saveDemoAccountPasswords = () => {
+  localStorage.setItem(DEMO_ACCOUNT_PASSWORD_STORAGE_KEY, JSON.stringify(demoAccountPasswords.value))
+}
+
+const demoAccountGroups = computed(() =>
+  defaultDemoAccountGroups.map((group) => ({
+    ...group,
+    accounts: group.accounts.map((account) => ({
+      ...account,
+      password: demoAccountPasswords.value[account.loginId] ?? account.password,
+    })),
+  })),
+)
+
+const isDemoAccount = (loginIdValue: string) =>
+  defaultDemoAccountGroups.some((group) =>
+    group.accounts.some((account) => account.loginId === loginIdValue),
+  )
+
+const applyDemoAccount = (account: (typeof demoAccountGroups.value)[number]['accounts'][number]) => {
+  loginId.value = account.loginId
+  password.value = account.password
+  errorMessage.value = ''
+}
 
 const moveToRoleHome = (role: UserRole) =>
   router.push(role === ADMIN_ROLE ? '/admin/dashboard' : '/sales/dashboard')
 
 onMounted(() => {
-  if (authStore.role === SALES_ROLE && authStore.isFirstLogin) {
-    pendingLoginRole.value = SALES_ROLE
+  demoAccountPasswords.value = getStoredDemoAccountPasswords()
+
+  if (authStore.role && authStore.isFirstLogin) {
+    pendingLoginRole.value = authStore.role
     isFirstLoginModalOpen.value = true
   }
 })
@@ -109,7 +187,7 @@ const submitLogin = async () => {
       role: tokenRole,
     })
 
-    if (tokenRole === SALES_ROLE && result.isFirstLogin) {
+    if (result.isFirstLogin) {
       pendingLoginRole.value = tokenRole
       isFirstLoginModalOpen.value = true
       return
@@ -125,10 +203,22 @@ const submitLogin = async () => {
   }
 }
 
-const completeFirstLogin = async () => {
+const completeFirstLogin = async (newPassword: string) => {
+  if (isDemoAccount(loginId.value)) {
+    demoAccountPasswords.value = {
+      ...demoAccountPasswords.value,
+      [loginId.value]: newPassword,
+    }
+    saveDemoAccountPasswords()
+  }
+
   isFirstLoginModalOpen.value = false
+  const completedLoginRole = pendingLoginRole.value
   pendingLoginRole.value = null
-  await router.push('/sales/dashboard')
+
+  if (completedLoginRole) {
+    await moveToRoleHome(completedLoginRole)
+  }
 }
 </script>
 
@@ -142,41 +232,68 @@ const completeFirstLogin = async () => {
         <h1>LifeGuardian</h1>
       </header>
 
-      <form class="login-page__panel" @submit.prevent="submitLogin">
-        <h2>로그인</h2>
+      <div class="login-page__body">
+        <form class="login-page__panel" @submit.prevent="submitLogin">
+          <h2>로그인</h2>
 
-        <label>
-          <span>아이디</span>
-          <div class="login-page__input-wrap">
-            <span aria-hidden="true">♟</span>
-            <input
-              v-model.trim="loginId"
-              autocomplete="username"
-              placeholder="아이디를 입력해주세요"
-              required
-            />
+          <label>
+            <span>아이디</span>
+            <div class="login-page__input-wrap">
+              <span aria-hidden="true">♟</span>
+              <input
+                v-model.trim="loginId"
+                autocomplete="username"
+                placeholder="아이디를 입력해주세요"
+                required
+              />
+            </div>
+          </label>
+          <label>
+            <span>비밀번호</span>
+            <div class="login-page__input-wrap">
+              <span aria-hidden="true">▣</span>
+              <input
+                v-model="password"
+                type="password"
+                autocomplete="current-password"
+                placeholder="비밀번호를 입력해주세요"
+                required
+              />
+            </div>
+          </label>
+
+          <p v-if="errorMessage" class="login-page__error">{{ errorMessage }}</p>
+
+          <button class="login-page__submit" type="submit" :disabled="isLoading">
+            {{ isLoading ? '로그인 중...' : '로그인' }}
+          </button>
+        </form>
+
+        <section class="login-page__demo" aria-label="데모 계정">
+          <div class="login-page__demo-card">
+            <div
+              v-for="group in demoAccountGroups"
+              :key="group.title"
+              class="login-page__demo-group"
+            >
+              <h2>{{ group.title }}</h2>
+
+              <div class="login-page__demo-list">
+                <button
+                  v-for="account in group.accounts"
+                  :key="account.loginId"
+                  class="login-page__demo-role"
+                  :class="`login-page__demo-role--${account.type}`"
+                  type="button"
+                  @click="applyDemoAccount(account)"
+                >
+                  {{ account.role }}
+                </button>
+              </div>
+            </div>
           </div>
-        </label>
-        <label>
-          <span>비밀번호</span>
-          <div class="login-page__input-wrap">
-            <span aria-hidden="true">▣</span>
-            <input
-              v-model="password"
-              type="password"
-              autocomplete="current-password"
-              placeholder="비밀번호를 입력해주세요"
-              required
-            />
-          </div>
-        </label>
-
-        <p v-if="errorMessage" class="login-page__error">{{ errorMessage }}</p>
-
-        <button class="login-page__submit" type="submit" :disabled="isLoading">
-          {{ isLoading ? '로그인 중...' : '로그인' }}
-        </button>
-      </form>
+        </section>
+      </div>
 
       <footer class="login-page__footer">© 2026 LifeGuardian. All rights reserved.</footer>
     </section>
@@ -247,22 +364,31 @@ const completeFirstLogin = async () => {
   letter-spacing: 0;
 }
 
+.login-page__body {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  width: 100%;
+  min-height: 360px;
+}
+
 .login-page__panel {
   display: grid;
-  width: min(304px, calc(100vw - 44px));
+  width: min(430px, calc(100vw - 44px));
   border: 1px solid rgba(255, 255, 255, 0.78);
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.9);
-  padding: 30px;
+  padding: 42px 44px;
   box-shadow: 0 20px 48px rgba(95, 62, 30, 0.12);
   backdrop-filter: blur(14px);
 }
 
 .login-page__panel h2 {
-  margin: 0 0 20px;
+  margin: 0 0 25px;
   color: #2f3742;
-  font-size: 18px;
+  font-size: 30px;
   font-weight: 900;
+  text-align: center;
 }
 
 .login-page__panel label {
@@ -274,14 +400,14 @@ const completeFirstLogin = async () => {
 }
 
 .login-page__panel label + label {
-  margin-top: 13px;
+  margin-top: 18px;
 }
 
 .login-page__input-wrap {
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr);
+  grid-template-columns: 34px minmax(0, 1fr);
   align-items: center;
-  min-height: 32px;
+  min-height: 44px;
   overflow: hidden;
   border: 1px solid transparent;
   border-radius: 4px;
@@ -318,15 +444,15 @@ const completeFirstLogin = async () => {
 }
 
 .login-page__submit {
-  min-height: 34px;
+  min-height: 46px;
   border-radius: 5px;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 900;
 }
 
 .login-page__submit {
-  margin-top: 20px;
+  margin-top: 24px;
   border: 0;
   background: linear-gradient(180deg, #ff7a24 0%, #ff6417 100%);
   color: #ffffff;
@@ -345,6 +471,79 @@ const completeFirstLogin = async () => {
   font-weight: 750;
 }
 
+.login-page__demo {
+  position: absolute;
+  top: 0;
+  left: calc(50% + 230px);
+  width: min(330px, calc(50vw - 250px));
+  min-width: 300px;
+}
+
+.login-page__demo-card {
+  display: grid;
+  gap: 8px;
+  border: 1px solid rgba(224, 227, 232, 0.9);
+  background: rgba(255, 255, 255, 0.56);
+  padding: 10px;
+  backdrop-filter: blur(2px);
+}
+
+.login-page__demo-group {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  border: 1px solid rgba(224, 227, 232, 0.92);
+  background: rgba(255, 255, 255, 0.76);
+  padding: 8px 10px;
+}
+
+.login-page__demo h2 {
+  margin: 0;
+  color: #8b94a3;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.login-page__demo-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  place-items: center;
+  min-height: 30px;
+}
+
+.login-page__demo-role {
+  border: 1px solid currentColor;
+  border-radius: 5px;
+  padding: 3px 7px;
+  background: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.login-page__demo-role:hover {
+  box-shadow: 0 6px 14px rgba(31, 41, 55, 0.1);
+  transform: translateY(-1px);
+}
+
+.login-page__demo-role--admin {
+  color: #f37021;
+  background: #fff6ef;
+}
+
+.login-page__demo-role--sales {
+  color: #2f78ef;
+  background: #eff6ff;
+}
+
 .login-page__footer {
   color: #89919c;
   font-size: 10px;
@@ -361,8 +560,35 @@ const completeFirstLogin = async () => {
     font-size: 15px;
   }
 
-  .login-page__panel {
-    padding: 24px;
+  .login-page__body {
+    grid-template-columns: minmax(0, 430px);
+    gap: 16px;
+    min-height: 0;
   }
+
+  .login-page__panel {
+    padding: 32px 26px;
+  }
+
+  .login-page__demo {
+    position: static;
+    width: min(330px, calc(100vw - 44px));
+    min-width: 0;
+  }
+
+  .login-page__demo-card {
+    padding: 10px;
+  }
+
+  .login-page__demo-group {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    min-height: 0;
+  }
+
+  .login-page__demo-list {
+    min-height: 38px;
+  }
+
 }
 </style>

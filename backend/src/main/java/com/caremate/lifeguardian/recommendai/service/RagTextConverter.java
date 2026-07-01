@@ -16,11 +16,11 @@ public class RagTextConverter {
 
     // 공유해주신 RAG 모델용 쿼리 텍스트 변환 매핑 테이블 데이터 바인딩
     private static final Map<String, String> RAG_DICTIONARY = Map.ofEntries(
-            Map.entry("CAT_HOSP_SURG", "입원 및 수술비 보장 관련"),
-            Map.entry("CAT_SH_INJURY", "골절, 깁스, 화상 등 상해 치료 보장 관련"),
-            Map.entry("CAT_INFECT_GROUP", "어린이 다빈도 질환, 독감, 수족구, 응급실 보장 관련"),
-            Map.entry("CAT_DENT_EYE", "치아 보존/보철 치료 및 시력 교정/치료 보장 관련"),
-            Map.entry("CAT_CRITICAL_BAL", "암, 뇌혈관, 심혈관 중증 질환 진단 보장 관련"),
+            Map.entry("CAT_HOSP_SURG", "입원 및 수술비 보장"),
+            Map.entry("CAT_SH_INJURY", "골절, 깁스, 화상 등 상해 치료 보장"),
+            Map.entry("CAT_INFECT_GROUP", "어린이 다빈도 질환, 독감, 수족구, 응급실 보장"),
+            Map.entry("CAT_DENT_EYE", "치아 보존/보철 치료 및 시력 교정/치료 보장"),
+            Map.entry("CAT_CRITICAL_BAL", "암, 뇌혈관, 심혈관 중증 질환 진단 보장"),
 
             Map.entry("HISTORY_INFECT_DISEASE", "감염성 질환(독감, 수족구, 열성경련 등)"),
             Map.entry("HISTORY_MINOR_ACCIDENT", "가벼운 상해 외상(응급실 내원, 단순 타박상 등)"),
