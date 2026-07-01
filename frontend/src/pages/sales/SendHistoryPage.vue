@@ -35,9 +35,8 @@ const totalPages = ref(0)
 const totalCount = ref(0)
 const isLoading = ref(false)
 const errorMessage = ref('')
-const HISTORY_PAGE_SIZE = 12
 
-
+const HISTORY_PAGE_SIZE = 11
 
 const typeTabs = [
   { label: '전체', value: 'all' },
@@ -149,56 +148,56 @@ onMounted(() => {
     <main class="app-main send-history-page__main">
       <AppHeader title="발송 내역" />
 
-      <section class="send-history-toolbar card">
-        <div class="send-history-tabs" aria-label="발송 유형">
-          <button
-            v-for="tab in typeTabs"
-            :key="tab.value"
-            class="send-history-tabs__button"
-            :class="{ 'is-active': activeType === tab.value }"
-            type="button"
-            @click="handleTypeChange(tab.value)"
-          >
-            {{ tab.label }}
-          </button>
-        </div>
-
-        <div class="send-history-filters">
-          <label>
-            <span>항목</span>
-            <select v-model="activeItemType" @change="handleSearch">
-              <option v-for="option in visibleItemTypeOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </option>
-            </select>
-          </label>
-
-          <label>
-            <span>상태</span>
-            <select v-model="activeStatus" @change="handleSearch">
-              <option v-for="option in visibleStatusOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </option>
-            </select>
-          </label>
-
-          <div class="send-history-search" role="search">
-            <label for="send-history-keyword">검색</label>
-            <input
-              id="send-history-keyword"
-              v-model="keyword"
-              placeholder="고객명, 상태, 발송 항목"
-              @keyup.enter="handleSearch"
-            />
-            <button type="button" @click="handleSearch">조회</button>
-          </div>
-        </div>
-      </section>
-
       <section class="card send-history-list">
         <div class="send-history-list__header">
           <h2>내역 <span>총 {{ totalCount }}건</span></h2>
         </div>
+
+        <section class="send-history-toolbar">
+          <div class="send-history-tabs" aria-label="발송 유형">
+            <button
+              v-for="tab in typeTabs"
+              :key="tab.value"
+              class="send-history-tabs__button"
+              :class="{ 'is-active': activeType === tab.value }"
+              type="button"
+              @click="handleTypeChange(tab.value)"
+            >
+              {{ tab.label }}
+            </button>
+          </div>
+
+          <div class="send-history-filters">
+            <label>
+              <span>항목</span>
+              <select v-model="activeItemType" @change="handleSearch">
+                <option v-for="option in visibleItemTypeOptions" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+            </label>
+
+            <label>
+              <span>상태</span>
+              <select v-model="activeStatus" @change="handleSearch">
+                <option v-for="option in visibleStatusOptions" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+            </label>
+
+            <div class="send-history-search" role="search">
+              <label for="send-history-keyword">검색</label>
+              <input
+                id="send-history-keyword"
+                v-model="keyword"
+                placeholder="고객명, 상태, 발송 항목"
+                @keyup.enter="handleSearch"
+              />
+              <button type="button" @click="handleSearch">조회</button>
+            </div>
+          </div>
+        </section>
 
         <p v-if="errorMessage" class="send-history-message send-history-message--error">{{ errorMessage }}</p>
         <p v-else-if="isLoading" class="send-history-message">불러오는 중...</p>
@@ -209,7 +208,7 @@ onMounted(() => {
               <tr>
                 <th>유형</th>
                 <th>고객명</th>
-                <th>고객 유형</th>
+                <th>고객 구분</th>
                 <th>발송 항목</th>
                 <th>발송 여부</th>
                 <th>발송 일시</th>
@@ -239,11 +238,13 @@ onMounted(() => {
           </table>
         </div>
 
-        <SalesPagination
-          :current-page="currentPage"
-          :total-pages="totalPages"
-          @change="loadHistory"
-        />
+        <div class="send-history-pagination">
+          <SalesPagination
+            :current-page="currentPage"
+            :total-pages="totalPages"
+            @change="loadHistory"
+          />
+        </div>
       </section>
     </main>
   </div>
@@ -251,36 +252,19 @@ onMounted(() => {
 
 <style scoped>
 .send-history-page__main {
-  display: flex;
-  height: 100vh;
-  flex-direction: column;
-  overflow: hidden;
-  padding: 8px 20px 7px 20px;
-}
-
-.send-history-page__main :deep(.app-header) {
-  min-height: 46px;
-  margin-bottom: 7px;
-}
-
-.send-history-page__main :deep(.app-header__title) {
-  padding-top: 2px;
-}
-
-.send-history-page__main :deep(.page-title) {
-  font-size: 22px;
+  padding: 18px 28px 40px 24px;
+  overflow-x: hidden;
 }
 
 .send-history-toolbar {
-  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  margin: 0 0 8px;
-  border: 1px solid #e3e8f0;
+  margin: 8px 0 12px;
+  border: 0;
   box-shadow: none;
-  padding: 9px 12px;
+  padding: 0;
 }
 
 .send-history-tabs {
@@ -377,30 +361,34 @@ onMounted(() => {
 
 .send-history-list {
   display: flex;
-  flex: 0 0 auto;
   flex-direction: column;
+  min-height: 600px;
   border: 1px solid #e3e8f0;
   box-shadow: none;
-  padding: 8px 11px 6px;
+  padding: 12px 14px 14px;
+}
+
+.send-history-pagination {
+  margin-top: auto;
+  padding-top: 8px;
 }
 
 .send-history-list__header {
-  flex: 0 0 auto;
-  margin-bottom: 5px;
+  padding-top: 3px;
+  margin-bottom: 3px;
 }
 
 .send-history-list h2 {
   margin: 0;
-  color: #263142;
-  font-size: 14px;
+  color: var(--color-text);
+  font-size: 18px;
   font-weight: 900;
-  letter-spacing: 0;
 }
 
 .send-history-list h2 span {
   margin-left: 5px;
   color: var(--color-text-muted);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -499,12 +487,6 @@ onMounted(() => {
 .send-history-table__empty {
   height: 96px;
   color: var(--color-text-muted);
-}
-
-.send-history-list :deep(.sales-pagination) {
-  flex: 0 0 auto;
-  margin-top: 2px;
-  padding-top: 0;
 }
 
 @media (max-width: 1120px) {

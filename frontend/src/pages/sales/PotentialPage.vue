@@ -36,7 +36,7 @@ const isDetailModalOpen = ref(false)
 const selectedPotentialCustomer = ref<PotentialCustomerDetailResponse | null>(null)
 const isDetailLoading = ref(false)
 
-const POTENTIAL_PAGE_SIZE = 11
+const POTENTIAL_PAGE_SIZE = 12
 const currentPage = ref(1)
 
 const searchKeyword = ref('')
@@ -408,13 +408,12 @@ onBeforeUnmount(() => {
 
 .potential-list {
   display: flex;
-  min-height: 500px;
+  min-height: 610px;
   flex-direction: column;
   border: 1px solid #e3e8f0;
   box-shadow: none;
   padding: 2px 14px 12px;
   overflow: visible;
-  margin-top: -12px;
 }
 
 .potential-list__header {
