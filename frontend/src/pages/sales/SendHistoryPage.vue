@@ -36,7 +36,7 @@ const totalCount = ref(0)
 const isLoading = ref(false)
 const errorMessage = ref('')
 
-const HISTORY_PAGE_SIZE = 12
+const HISTORY_PAGE_SIZE = 10
 
 const typeTabs = [
   { label: '전체', value: 'all' },
