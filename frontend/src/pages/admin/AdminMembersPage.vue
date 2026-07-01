@@ -17,7 +17,7 @@ import type { SalesUserSummary } from '@/api/members'
 const keyword = ref('')
 const selectedStatus = ref('') // '' 전체, '01' 활성, '02' 퇴사
 const currentPage = ref(1)
-const pageSize = ref(10)
+const pageSize = ref(8)
 const totalElements = ref(0)
 const totalPages = ref(0)
 const salesUsers = ref<SalesUserSummary[]>([])
@@ -794,7 +794,7 @@ const handlePhoneInput = (event: Event) => {
 .list-panel {
   display: flex;
   flex-direction: column;
-  max-height: 75vh;
+  height: 78vh;
 }
 
 .panel-header {
@@ -843,8 +843,19 @@ const handlePhoneInput = (event: Event) => {
 
 .table-container {
   flex: 1;
-  overflow: hidden;
+  overflow-y: auto;
   border-radius: var(--radius-sm);
+}
+
+.table-container th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.table-container .data-table td,
+.table-container .data-table th {
+  padding: 8px 12px;
 }
 
 .clickable-row {
@@ -913,7 +924,8 @@ const handlePhoneInput = (event: Event) => {
 
 /* 우측 상세 정보 패널 */
 .detail-panel {
-  min-height: 580px;
+  height: 78vh;
+  overflow-y: auto;
 }
 
 .empty-state {
