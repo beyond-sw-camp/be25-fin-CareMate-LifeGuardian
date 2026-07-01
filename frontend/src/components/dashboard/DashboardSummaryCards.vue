@@ -103,6 +103,7 @@ const moveSalesFilter = (filter: {
 .summary-small-card {
   height: 65px;
   border: 1px solid #e3e8f0;
+  border-radius: 8px;
   background: #ffffff;
   padding: 9px 18px;
 }
@@ -126,20 +127,20 @@ const moveSalesFilter = (filter: {
 
 .dashboard-summary__grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 15px 16px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
   margin-top: 15px;
 }
 
 .summary-status-card {
   display: flex;
-  height: 96px;
+  height: 87px;
   flex-direction: column;
   justify-content: space-between;
   border: 1px solid #e3e8f0;
   border-radius: 8px;
   background: #ffffff;
-  padding: 18px 18px 16px;
+  padding: 14px 16px;
 }
 
 .summary-status-card span {
@@ -152,7 +153,7 @@ const moveSalesFilter = (filter: {
 .summary-status-card strong {
   align-self: flex-end;
   color: #111827;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 900;
 }
 

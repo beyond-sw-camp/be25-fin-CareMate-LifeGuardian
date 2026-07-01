@@ -519,6 +519,7 @@ onBeforeUnmount(() => {
 
 .potential-list__table-area {
   flex: 1;
+  min-height: 430px;
   overflow: auto;
 }
 
