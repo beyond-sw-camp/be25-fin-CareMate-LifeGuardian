@@ -105,10 +105,12 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
         <div class="profile-summary">
           <div class="profile-title">
             <h1>{{ fallback(user.childName) }}</h1>
-            <span v-for="badge in visibleBadges" :key="badge.code" class="profile-badge">
-              {{ badge.name }}
-            </span>
-            <span class="profile-status-badge">{{ fallback(user.conversionStatusName) }}</span>
+            <div class="profile-title__badges">
+              <span v-for="badge in visibleBadges" :key="badge.code" class="profile-badge">
+                {{ badge.name }}
+              </span>
+              <span class="profile-status-badge">{{ fallback(user.conversionStatusName) }}</span>
+            </div>
           </div>
 
           <div class="profile-inline-info">
@@ -199,14 +201,14 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
   grid-template-columns: minmax(0, 1fr);
   gap: 0;
   border-radius: 12px;
-  padding: 14px 18px;
+  padding: 16px 18px;
 }
 
 .profile-hero {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
-  align-items: start;
-  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 280px);
+  align-items: center;
+  gap: 20px;
   min-width: 0;
 }
 
@@ -219,28 +221,35 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
 
 .profile-summary {
   display: grid;
-  grid-template-columns: minmax(120px, auto) minmax(0, 1fr);
-  align-items: start;
+  grid-template-columns: clamp(140px, 16%, 170px) minmax(0, 1fr);
+  align-items: center;
   width: 100%;
   min-width: 0;
-  gap: 18px;
+  gap: 14px;
 }
 
 .profile-title {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  text-align: center;
 }
 
 .profile-title h1 {
-  min-width: max-content;
-  margin: 0;
+  margin: 5px;
   color: var(--color-text);
-  font-size: 22px;
+  font-size: 25px;
   font-weight: 950;
   letter-spacing: 0;
   line-height: 1.12;
+}
+
+.profile-title__badges {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .profile-summary p {
@@ -252,8 +261,8 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
 
 .profile-inline-info {
   display: grid;
-  grid-template-columns: minmax(140px, 0.7fr) minmax(220px, 1.3fr);
-  gap: 18px;
+  grid-template-columns: minmax(132px, 0.85fr) minmax(200px, 1.15fr);
+  gap: 14px;
   min-width: 0;
   margin-top: 0;
 }
@@ -300,9 +309,9 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
 
 .profile-compact-info div {
   display: grid;
-  grid-template-columns: minmax(58px, 0.65fr) minmax(0, 1fr);
+  grid-template-columns: 62px minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
+  gap: 2px;
 }
 
 .profile-compact-info dt,
@@ -504,13 +513,16 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
 .lifecycle-panel {
   display: grid;
   align-content: start;
-  gap: 8px;
+  gap: 7px;
+  width: 100%;
   min-width: 0;
   max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
   border: 1px solid #d7dfff;
   border-radius: 10px;
   background: #f4f6ff;
-  padding: 14px;
+  padding: 12px 14px;
   box-shadow: none;
 }
 
@@ -518,6 +530,7 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 12px;
 }
 
@@ -550,14 +563,17 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
 }
 
 .lifecycle-report-button {
+  min-width: 0;
   min-height: 29px;
   border: 1px solid #c7d2fe;
   border-radius: 7px;
   background: #ffffff;
   color: #4f46e5;
   padding: 0 10px;
+  overflow: hidden;
   font-size: 11px;
   font-weight: 900;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -660,14 +676,14 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
   font-weight: 900;
 }
 
-@media (max-width: 1320px) {
+@media (max-width: 1080px) {
   .profile-hero {
     grid-template-columns: 1fr;
   }
 
   .profile-summary {
-    grid-template-columns: minmax(120px, auto) minmax(0, 1fr);
-    gap: 16px;
+    grid-template-columns: clamp(140px, 18%, 170px) minmax(0, 1fr);
+    gap: 14px;
   }
 
   .profile-compact-info,
@@ -677,8 +693,8 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
   }
 
   .lifecycle-panel {
-    width: min(100%, 420px);
-    max-width: 420px;
+    width: min(100%, 360px);
+    max-width: 360px;
     justify-self: start;
   }
 }
@@ -689,7 +705,7 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
   }
 
   .profile-inline-info {
-    grid-template-columns: minmax(150px, 0.8fr) minmax(240px, 1.2fr);
+    grid-template-columns: minmax(150px, 0.85fr) minmax(240px, 1.15fr);
   }
 
   .profile-compact-info,
