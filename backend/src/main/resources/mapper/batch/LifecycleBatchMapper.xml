@@ -5,11 +5,19 @@
 
     <update id="graduatePotentialCustomers">
         UPDATE potential_customer
-        SET is_active = TRUE,
+        SET is_active = CASE
+                WHEN birth_date <![CDATA[<=]]> DATE_SUB(CURDATE(), INTERVAL 21 YEAR) THEN TRUE
+                ELSE FALSE
+            END,
             updated_at = NOW()
-        WHERE is_active = FALSE
-          AND birth_date IS NOT NULL
-          AND birth_date <![CDATA[<=]]> DATE_SUB(CURDATE(), INTERVAL 21 YEAR)
+        WHERE birth_date IS NOT NULL
+          AND (
+              is_active IS NULL
+              OR is_active <![CDATA[<>]]> CASE
+                    WHEN birth_date <![CDATA[<=]]> DATE_SUB(CURDATE(), INTERVAL 21 YEAR) THEN TRUE
+                    ELSE FALSE
+                END
+          )
     </update>
 
 </mapper>

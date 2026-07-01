@@ -56,7 +56,7 @@ const handleCopy = async () => {
         <!-- 본문 -->
         <div class="modal-body">
           <p class="customer-info-text">
-            <strong>{{ customerName }}</strong> 고객님을 위한 3-Step 문진표 링크가 발행되었습니다.<br />
+            문진 웹폼 링크가 발행되었습니다.<br />
             아래 주소를 복사하여 카카오톡이나 문자메시지로 전달할 수 있습니다.
           </p>
 
