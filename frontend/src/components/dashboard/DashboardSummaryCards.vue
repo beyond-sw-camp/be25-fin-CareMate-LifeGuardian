@@ -103,6 +103,7 @@ const moveSalesFilter = (filter: {
 .summary-small-card {
   height: 65px;
   border: 1px solid #e3e8f0;
+  border-radius: 8px;
   background: #ffffff;
   padding: 9px 18px;
 }
@@ -133,18 +134,18 @@ const moveSalesFilter = (filter: {
 
 .summary-status-card {
   display: flex;
-  height: 72px;
+  height: 87px;
   flex-direction: column;
   justify-content: space-between;
   border: 1px solid #e3e8f0;
   border-radius: 8px;
   background: #ffffff;
-  padding: 12px 14px;
+  padding: 14px 16px;
 }
 
 .summary-status-card span {
   color: #172033;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 800;
   transition: color 0.2s ease;
 }

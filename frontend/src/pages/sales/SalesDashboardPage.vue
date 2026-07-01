@@ -41,7 +41,7 @@ const sendingReportIds = ref<number[]>([])
 const isBulkWebFormSending = ref(false)
 const isBulkReportSending = ref(false)
 
-const CONTACT_PAGE_SIZE = 4
+const CONTACT_PAGE_SIZE = 7
 const contactCurrentPage = ref(1)
 
 const contactTotalPages = computed(() =>
@@ -414,7 +414,7 @@ onBeforeUnmount(() => {
   border: 1px solid #e3e8f0;
   box-shadow: none;
   padding: 14px 16px 18px;
-  min-height: 280px;
+  min-height: 400px;
 }
 
 .dashboard-contact__header {
