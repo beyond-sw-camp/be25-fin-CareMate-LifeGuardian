@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 import type { DashboardSalesUser } from '@/api/admin'
 
 const props = defineProps<{
@@ -13,14 +13,15 @@ const emit = defineEmits<{
 }>()
 
 const keywordInput = ref('')
-let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
-watch(keywordInput, (newVal) => {
-  if (debounceTimer) clearTimeout(debounceTimer)
-  debounceTimer = setTimeout(() => {
-    emit('search', newVal)
-  }, 300)
-})
+const handleSearch = () => {
+  emit('search', keywordInput.value)
+}
+
+const handleReset = () => {
+  keywordInput.value = ''
+  emit('search', '')
+}
 </script>
 
 <template>
@@ -34,15 +35,19 @@ watch(keywordInput, (newVal) => {
 
     <!-- 검색 바 -->
     <div class="perf-search">
-      <div class="search-input-wrapper">
-        <input
-          v-model="keywordInput"
-          class="input search-input"
-          placeholder="사원명으로 검색..."
-          type="text"
-        />
-        <span class="search-icon">🔍</span>
-      </div>
+      <form class="search-form" @submit.prevent="handleSearch">
+        <div class="search-input-wrapper">
+          <input
+            v-model="keywordInput"
+            class="input search-input"
+            placeholder="사원명으로 검색..."
+            type="text"
+          />
+          <span class="search-icon">🔍</span>
+        </div>
+        <button class="button button-primary search-btn" type="submit">검색</button>
+        <button class="button button-secondary reset-btn" type="button" @click="handleReset">초기화</button>
+      </form>
     </div>
 
     <div class="card-body perf-body">
@@ -171,9 +176,24 @@ watch(keywordInput, (newVal) => {
   padding: 0 20px 12px;
 }
 
+.search-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+
 .search-input-wrapper {
   position: relative;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
+}
+
+.search-btn,
+.reset-btn {
+  font-size: 13px;
+  height: 36px;
+  white-space: nowrap;
 }
 
 .search-input {

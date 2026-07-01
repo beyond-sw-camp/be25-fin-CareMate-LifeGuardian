@@ -118,8 +118,8 @@ export async function getSalesRanking(branchId: number, targetYearMonth?: string
 }
 
 // 지점 전체 영업사원 판매 성과 상세 조회
-export async function getSalesPerformanceDetails(branchId: number) {
-  const response = await api.get<ApiResponse<BranchPerformanceDetails>>(`/v1/branches/${branchId}/statistics/sales-performance/details`)
+export async function getSalesPerformanceDetails(branchId: number, targetYearMonth?: string) {
+  const response = await api.get<ApiResponse<BranchPerformanceDetails>>(`/v1/branches/${branchId}/statistics/sales-performance/details`, { params: { targetYearMonth } })
   return response.data.data
 }
 
