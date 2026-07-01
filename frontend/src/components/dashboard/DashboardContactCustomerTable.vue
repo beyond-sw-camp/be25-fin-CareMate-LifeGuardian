@@ -142,8 +142,19 @@ const webFormButtonLabel = (customer: ContactCustomer) => {
 }
 
 const reportButtonLabel = (customer: ContactCustomer) => {
-  if (isReportSending(customer)) return '발송 중'
-  return customer.reportSendStatusName || '발송'
+  if (isReportSending(customer)) {
+    return '발송 중'
+  }
+
+  if (isReportSent(customer)) {
+    return customer.reportSendStatusName
+  }
+  
+  if (customer.reportSendEnabled) {
+    return '발송'
+  }
+
+  return '발송대기'
 }
 </script>
 
