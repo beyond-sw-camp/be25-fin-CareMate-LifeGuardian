@@ -21,6 +21,7 @@ const sendActionLabel = computed(() => (isResend.value ? '재발송' : '발송')
 
 const isSendable = computed(
   () =>
+    props.customer.parentId != null &&
     !props.customer.graduated &&
     typeof props.customer.reportId === 'number' &&
     props.customer.reportId > 0 &&
@@ -41,6 +42,11 @@ const send = async () => {
 
   if (props.customer.graduated) {
     emit('send-result', '리포트 발송 실패: 졸업 고객은 발송할 수 없습니다.', 'error')
+    return
+  }
+
+  if (props.customer.parentId == null) {
+    emit('send-result', '리포트 발송 실패: 해당 없음 고객은 발송할 수 없습니다.', 'error')
     return
   }
 

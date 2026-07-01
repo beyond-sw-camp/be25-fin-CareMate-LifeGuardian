@@ -205,6 +205,7 @@ const applyWebformSendResult = (result: WebformSendResult) => {
 const SENDABLE_REPORT_STATUS_CODES = new Set(['01', '02', '03'])
 
 const isReportSendable = (customer: SalesCustomer) =>
+  customer.parentId != null &&
   !customer.graduated &&
   typeof customer.reportId === 'number' &&
   customer.reportId > 0 &&

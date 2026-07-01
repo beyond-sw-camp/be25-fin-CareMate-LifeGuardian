@@ -22,11 +22,19 @@ const emit = defineEmits<{
 const SENDABLE_REPORT_STATUS_CODES = new Set(['01', '02', '03'])
 const selectAllCheckbox = ref<HTMLInputElement | null>(null)
 
+const isReportTarget = (customer: SalesCustomer) =>
+  customer.parentId != null
+
 // 리포트 ID가 있고 발송 버튼 노출 조건을 만족하는 고객만 체크박스 선택 대상입니다.
-const selectableCustomerIds = computed(() => props.customers.map((customer) => customer.customerId))
+const selectableCustomerIds = computed(() =>
+  props.customers
+    .filter(isReportTarget)
+    .map((customer) => customer.customerId),
+)
 
 // 백엔드 상태 코드와 canSendReport 플래그를 함께 보고 발송/재발송 버튼 노출 여부를 결정합니다.
 const canShowSendButton = (customer: SalesCustomer) =>
+  isReportTarget(customer) &&
   !customer.graduated &&
   customer.hasReport &&
   Boolean(customer.reportStatusCode) &&
@@ -37,6 +45,7 @@ const webformStatusName = (customer: SalesCustomer) =>
   customer.webformStatusName ?? '-'
 
 const reportStatusName = (customer: SalesCustomer) => {
+  if (!isReportTarget(customer)) return '해당 없음'
   if (customer.graduated) return '졸업'
   if (!customer.reportUrl) return '미생성'
   return customer.reportStatusName || '-'
@@ -63,6 +72,8 @@ const toggleAllCustomers = () => {
 
 // 개별 행 체크박스 선택 상태를 부모의 selectedReportIds v-model로 되돌립니다.
 const toggleReport = (customer: SalesCustomer) => {
+  if (!isReportTarget(customer)) return
+
   const selectedIds = props.selectedReportCustomerIds ?? []
   const nextIds = selectedIds.includes(customer.customerId)
     ? selectedIds.filter((selectedCustomerId) => selectedCustomerId !== customer.customerId)
@@ -214,6 +225,7 @@ const stepClass = (threeStepCode?: string) => {
             <input
               type="checkbox"
               :checked="Boolean(selectedReportCustomerIds?.includes(customer.customerId))"
+              :disabled="!isReportTarget(customer)"
               :aria-label="`${customer.customerName} 선택`"
               @change="toggleReport(customer)"
             />
