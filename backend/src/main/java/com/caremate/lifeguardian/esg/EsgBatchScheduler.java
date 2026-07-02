@@ -23,11 +23,7 @@ import java.time.ZoneId;
 @Slf4j
 @Component
 @EnableScheduling
-@ConditionalOnProperty(
-        prefix = "app.esg.batch",
-        name = "enabled",
-        havingValue = "true"
-)
+@ConditionalOnProperty(prefix = "app.esg.batch", name = "enabled", havingValue = "true")
 public class EsgBatchScheduler {
 
     private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
@@ -39,8 +35,7 @@ public class EsgBatchScheduler {
 
     public EsgBatchScheduler(
             JobLauncher jobLauncher,
-            @Qualifier(EsgBatchConfiguration.JOB_NAME) Job esgDataAccumulationJob
-    ) {
+            @Qualifier(EsgBatchConfiguration.JOB_NAME) Job esgDataAccumulationJob) {
         this.jobLauncher = jobLauncher;
         this.esgDataAccumulationJob = esgDataAccumulationJob;
     }
@@ -49,15 +44,8 @@ public class EsgBatchScheduler {
      * 매일 새벽 5시 30분 (Asia/Seoul 기준)에 ESG 배치를 실행한다.
      * cron / zone은 application.yml의 app.esg.batch 설정을 따른다.
      */
-    @Scheduled(
-            cron = "${app.esg.batch.cron:0 30 5 * * *}",
-            zone = "${app.esg.batch.zone:Asia/Seoul}"
-    )
-    @SchedulerLock(
-            name = "esgDataAccumulationJobLock",
-            lockAtLeastFor = "1m",
-            lockAtMostFor = "10m"
-    )
+    @Scheduled(cron = "${app.esg.batch.cron:0 30 5 * * *}", zone = "${app.esg.batch.zone:Asia/Seoul}")
+    @SchedulerLock(name = "esgDataAccumulationJobLock", lockAtLeastFor = "1m", lockAtMostFor = "10m")
     public void runEsgDataAccumulationJob() {
         LocalDateTime startedAt = LocalDateTime.now(SEOUL_ZONE);
         LocalDate targetDate = LocalDate.now(SEOUL_ZONE).minusDays(1);

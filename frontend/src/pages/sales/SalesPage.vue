@@ -38,7 +38,7 @@ const isBulkConfirmOpen = ref(false)
 const bulkConfirmTitle = ref('')
 const bulkConfirmMessage = ref('')
 const bulkConfirmDetail = ref('')
-const filters = ref<SalesSearchFilters>({})
+const filters = ref<SalesSearchFilters>({ customerStageCode: '01' })
 const route = useRoute()
 let reportMessageTimer: ReturnType<typeof setTimeout> | undefined
 let bulkConfirmResolver: ((confirmed: boolean) => void) | undefined
@@ -205,6 +205,7 @@ const applyWebformSendResult = (result: WebformSendResult) => {
 const SENDABLE_REPORT_STATUS_CODES = new Set(['01', '02', '03'])
 
 const isReportSendable = (customer: SalesCustomer) =>
+  customer.parentId != null &&
   !customer.graduated &&
   typeof customer.reportId === 'number' &&
   customer.reportId > 0 &&
@@ -597,7 +598,8 @@ onBeforeUnmount(() => {
 
 .sales-list {
   display: flex;
-  flex: 0 0 auto;
+  min-height: 0;
+  flex: 1 1 auto;
   flex-direction: column;
   border: 1px solid #e3e8f0;
   box-shadow: none;
@@ -679,11 +681,21 @@ onBeforeUnmount(() => {
 }
 
 .sales-list :deep(.sales-table) {
-  height: auto;
+  min-height: 0;
+  flex: 1 1 auto;
+  height: 100%;
 }
 
 .sales-list :deep(.sales-table table) {
-  height: auto;
+  height: 100%;
+}
+
+.sales-list :deep(.sales-table th) {
+  height: 28px;
+}
+
+.sales-list :deep(.sales-table td) {
+  height: 29px;
 }
 
 .sales-list :deep(.sales-pagination) {
@@ -693,10 +705,10 @@ onBeforeUnmount(() => {
 .report-button {
   min-width: 58px;
   height: 24px;
-  border: 0;
+  border: 1px solid #d8dee8;
   border-radius: 5px;
-  background: var(--color-primary);
-  color: #ffffff;
+  background: #f8fafc;
+  color: #475569;
   padding: 0 10px;
   font-size: 10px;
   font-weight: 800;
@@ -716,7 +728,9 @@ onBeforeUnmount(() => {
 }
 
 .report-button:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-primary) 84%, black);
+  border-color: #cbd5e1;
+  background: #eef2f7;
+  color: #334155;
 }
 
 .report-button:disabled {

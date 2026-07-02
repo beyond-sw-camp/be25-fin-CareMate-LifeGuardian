@@ -104,11 +104,21 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
       <div class="profile-main">
         <div class="profile-summary">
           <div class="profile-title">
-            <h1>{{ fallback(user.childName) }}</h1>
-            <span v-for="badge in visibleBadges" :key="badge.code" class="profile-badge">
-              {{ badge.name }}
-            </span>
-            <span class="profile-status-badge">{{ fallback(user.conversionStatusName) }}</span>
+            <div class="profile-name">
+              <h1>{{ fallback(user.childName) }}</h1>
+  
+              <div class="profile-name-badges">
+                <span 
+                  v-for="badge in visibleBadges"
+                  :key="badge.code" 
+                  class="profile-badge"
+                >
+                  {{ badge.name }}
+                </span>
+            
+                <span class="profile-status-badge">{{ fallback(user.conversionStatusName) }}</span>
+              </div>
+            </div>
           </div>
 
           <div class="profile-inline-info">
@@ -229,12 +239,24 @@ const compactGuardianInfo = computed<DetailInfoItem[]>(() => {
 .profile-title {
   display: flex;
   align-items: center;
+  min-height: 130px;
+}
+
+.profile-name {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+}
+
+.profile-name-badges {
+  display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 6px;
 }
 
 .profile-title h1 {
-  margin: 5px;
+  margin: 0;
   color: var(--color-text);
   font-size: 25px;
   font-weight: 950;

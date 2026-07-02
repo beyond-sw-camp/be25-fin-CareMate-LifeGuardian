@@ -2,7 +2,13 @@ import api, { type ApiResponse } from '@/api/instance'
 
 export type ReportHistorySendType = 'all' | 'report' | 'webform'
 export type ReportHistorySendItemType = 'all' | 'report_lifecycle' | 'report_disease' | 'webform'
-export type ReportHistorySendStatus = 'all' | 'pending' | 'success' | 'failed' | 'collected'
+export type ReportHistorySendStatus =
+  | 'all'
+  | 'pending'
+  | 'success'
+  | 'failed'
+  | 'collected'
+export type ReportHistoryCustomerStageCode = 'all' | '01' | '02'
 
 export interface ReportHistoryItem {
   id: number
@@ -31,6 +37,7 @@ export interface ReportHistorySearchParams {
   sendType: ReportHistorySendType
   sendItemType: ReportHistorySendItemType
   sendStatus: ReportHistorySendStatus
+  customerStageCode: ReportHistoryCustomerStageCode
   keyword?: string
   page: number
   size: number

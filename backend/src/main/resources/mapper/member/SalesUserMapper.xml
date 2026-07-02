@@ -78,19 +78,37 @@
         su.name,
         su.status_code AS statusCode,
         cc.code_name AS statusName,
+        su.birth_date AS birthDate,
+        su.branch_id AS branchId,
+        b.branch_name AS branchName,
+        su.rank_code AS rankCode,
+        cc_rank.code_name AS positionName,
+        su.phone,
+        su.email,
+        su.joined_at AS joinedAt,
+        COALESCE(smt.target_contract_count, 0) AS monthlyTarget,
         (
         (SELECT COUNT(DISTINCT pc.id) FROM potential_customer pc WHERE pc.sales_user_id = su.id) +
         (SELECT COUNT(DISTINCT ic.integrated_customer_id) FROM integrated_customer ic WHERE ic.sales_user_id = su.id)
         ) AS customerCount
         FROM sales_user su
+        LEFT JOIN branch b ON su.branch_id = b.id
         LEFT JOIN common_code cc
         ON cc.group_code = 'USER_STATUS' AND cc.code_value = su.status_code
+        LEFT JOIN common_code cc_rank
+        ON cc_rank.group_code = 'USER_RANK' AND cc_rank.code_value = su.rank_code
+        LEFT JOIN sales_monthly_target smt
+        ON su.id = smt.sales_user_id
+        AND smt.target_year_month = DATE_FORMAT(CURRENT_DATE(), '%Y%m')
         <where>
             <if test="keyword != null and keyword != ''">
                 AND (su.name LIKE CONCAT('%', #{keyword}, '%') OR su.employee_id LIKE CONCAT('%', #{keyword}, '%'))
             </if>
             <if test="statusCode != null and statusCode != ''">
                 AND su.status_code = #{statusCode}
+            </if>
+            <if test="branchId != null">
+                AND su.branch_id = #{branchId}
             </if>
         </where>
         ORDER BY CASE WHEN su.status_code = '01' THEN 0 ELSE 1 END ASC, su.id DESC
@@ -108,6 +126,9 @@
             </if>
             <if test="statusCode != null and statusCode != ''">
                 AND su.status_code = #{statusCode}
+            </if>
+            <if test="branchId != null">
+                AND su.branch_id = #{branchId}
             </if>
         </where>
     </select>
@@ -182,5 +203,34 @@
         SET sales_user_id = #{toUserId},
             updated_at = CURRENT_TIMESTAMP
         WHERE sales_user_id = #{fromUserId}
+    </update>
+
+    <!-- 특정 영업사원의 월간 계약 목표 추가 또는 수정 (UPSERT) -->
+    <insert id="upsertSalesMonthlyTarget">
+        INSERT INTO sales_monthly_target (
+            sales_user_id,
+            target_year_month,
+            target_contract_count
+        ) VALUES (
+            #{salesUserId},
+            #{targetYearMonth},
+            #{targetContractCount}
+        )
+        ON DUPLICATE KEY UPDATE
+            target_contract_count = #{targetContractCount}
+    </insert>
+
+    <!-- 영업사원 정보 수정 -->
+    <update id="updateSalesUser" parameterType="com.caremate.lifeguardian.member.domain.SalesUser">
+        UPDATE sales_user
+        SET name = #{name},
+            birth_date = #{birthDate},
+            branch_id = #{branchId},
+            rank_code = #{rankCode},
+            phone = #{phone},
+            email = #{email},
+            joined_at = #{joinedAt},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
     </update>
 </mapper>

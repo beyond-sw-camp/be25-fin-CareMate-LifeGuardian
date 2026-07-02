@@ -42,4 +42,15 @@ public class SalesUser {
     public void changeStatus(String statusCode) {
         this.statusCode = statusCode;
     }
+
+    // 영업사원 기본 정보를 수정하는 메서드
+    public void updateInfo(String name, LocalDate birthDate, Long branchId, String rankCode, String phone, String email, LocalDate joinedAt) {
+        this.name = name;
+        this.birthDate = birthDate;
+        this.branchId = branchId;
+        this.rankCode = rankCode;
+        this.phone = phone;
+        this.email = email;
+        this.joinedAt = joinedAt;
+    }
 }
