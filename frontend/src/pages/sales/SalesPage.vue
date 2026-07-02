@@ -139,24 +139,26 @@ const getQueryArray = (value: unknown): string[] | undefined => {
 }
 
 const applyRouteFilters = () => {
-  const consultStatusCode = getQueryArray(
-    route.query.consultStatusCode,
-  )
+  const consultStatusCode = getQueryArray(route.query.consultStatusCode)
+  const contractStatusCode = getQueryArray(route.query.contractStatusCode)
 
-  const contractStatusCode = getQueryArray(
-    route.query.contractStatusCode,
-  )
+  if (contractStatusCode) {
+    filters.value = {
+      contractStatusCode,
+    }
+    return
+  }
+
+  if (consultStatusCode) {
+    filters.value = {
+      customerStageCode: '01',
+      consultStatusCode,
+    }
+    return
+  }
 
   filters.value = {
-    ...filters.value,
-
-    ...(consultStatusCode
-      ? { consultStatusCode }
-      : {}),
-
-    ...(contractStatusCode
-      ? { contractStatusCode }
-      : {}),
+    customerStageCode: '01',
   }
 }
 
