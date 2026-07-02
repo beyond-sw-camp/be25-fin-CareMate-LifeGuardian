@@ -20,8 +20,6 @@ const initialForm = () => ({
   contractStatusCodes: [] as string[],
   hasReport: false,
   hasThreeStep: false,
-  webformSent: false,
-  reportSent: false,
 })
 type SalesSearchFormState = ReturnType<typeof initialForm>
 type SalesSearchFormFilters = Partial<SalesSearchFormState>
@@ -109,12 +107,6 @@ const appliedFilterChips = computed(() => {
   if (form.customerStageCode) {
     chips.push({ key: 'customerStageCode', label: form.customerStageCode === '01' ? '잠재' : '통합', remove: () => { form.customerStageCode = '' } })
   }
-  if (form.webformSent) {
-    chips.push({ key: 'webformSent', label: '웹폼 발송', remove: () => { form.webformSent = false } })
-  }
-  if (form.reportSent) {
-    chips.push({ key: 'reportSent', label: '리포트 발송', remove: () => { form.reportSent = false } })
-  }
   form.consultStatusCodes.forEach((code) => {
     chips.push({ key: `consult-${code}`, label: `상담 ${consultStatusLabels[code] ?? code}`, remove: () => { form.consultStatusCodes = form.consultStatusCodes.filter((item) => item !== code) } })
   })
@@ -160,8 +152,6 @@ const submit = async () => {
     contractStatusCode: form.contractStatusCodes.length ? [...form.contractStatusCodes] : undefined,
     hasReport: form.hasReport || undefined,
     hasThreeStep: form.hasThreeStep || undefined,
-    webformSent: form.webformSent || undefined,
-    reportSent: form.reportSent || undefined,
   })
 }
 
@@ -290,14 +280,6 @@ onBeforeUnmount(() => {
         <label class="sales-search__toggle">
           <input v-model="form.hasThreeStep" type="checkbox" @change="submit" />
           <span>3-Step</span>
-        </label>
-        <label class="sales-search__toggle">
-          <input v-model="form.webformSent" type="checkbox" @change="submit" />
-          <span>웹폼 발송</span>
-        </label>
-        <label class="sales-search__toggle">
-          <input v-model="form.reportSent" type="checkbox" @change="submit" />
-          <span>리포트 발송</span>
         </label>
       </div>
 
@@ -428,7 +410,7 @@ onBeforeUnmount(() => {
 .sales-search__stage {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   border: 0;
   margin: 0;
   padding: 0;
@@ -527,10 +509,39 @@ onBeforeUnmount(() => {
 }
 
 .sales-search input[type='radio'] {
-  width: 12px;
-  height: 12px;
+  width: 13px;
+  height: 13px;
+  flex: 0 0 13px;
+  appearance: none;
+  border: 1px solid #cfd8e5;
+  border-radius: 50%;
+  background: #ffffff;
   margin: 0;
-  accent-color: var(--color-primary);
+  box-shadow: inset 0 0 0 3px #ffffff;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.sales-search input[type='radio']:checked {
+  border-color: #f6a76b;
+  background: #f37021;
+  box-shadow: inset 0 0 0 3px #ffffff;
+}
+
+.sales-search input[type='radio']:focus-visible {
+  outline: 2px solid rgb(243 112 33 / 18%);
+  outline-offset: 2px;
+}
+
+.sales-search__gender label,
+.sales-search__stage label {
+  height: 21px;
+  border-radius: 999px;
+  padding: 0 3px;
+  color: #4f5d70;
+  line-height: 1;
 }
 
 .sales-search__toggle {
@@ -552,11 +563,11 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 21px;
-  border: 1px solid #dbe3ef;
+  height: 22px;
+  border: 1px solid #d6dee9;
   border-radius: 999px;
-  background: #ffffff;
-  color: #5d6878;
+  background: #fbfcfe;
+  color: #526173;
   padding: 0 9px;
   font-size: 10px;
   font-weight: 850;
@@ -581,10 +592,10 @@ onBeforeUnmount(() => {
 }
 
 .sales-search__toggle input:checked + span {
-  border-color: color-mix(in srgb, var(--color-primary) 34%, white);
-  background: color-mix(in srgb, var(--color-primary) 10%, white);
-  color: var(--color-primary);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 12%, transparent);
+  border-color: #f6b37d;
+  background: #fff3ea;
+  color: #d95f16;
+  box-shadow: inset 0 0 0 1px rgb(243 112 33 / 8%);
 }
 
 .sales-search__toggle input:checked + span::before {
@@ -593,7 +604,7 @@ onBeforeUnmount(() => {
 }
 
 .sales-search__toggle input:focus-visible + span {
-  outline: 2px solid color-mix(in srgb, var(--color-primary) 26%, transparent);
+  outline: 2px solid rgb(243 112 33 / 18%);
   outline-offset: 2px;
 }
 

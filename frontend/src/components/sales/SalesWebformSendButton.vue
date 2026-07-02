@@ -162,73 +162,93 @@ const cancelSend = () => {
 }
 
 .send-confirm-modal {
-  align-items: center;
-  justify-content: center;
+  z-index: 35;
+  background: rgb(15 23 42 / 42%);
+  backdrop-filter: blur(2px);
 }
 
 .send-confirm-modal__card {
+  display: flex;
   width: min(360px, calc(100vw - 32px));
-  padding: 0;
   overflow: hidden;
+  border: 0;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 18px 50px rgb(15 23 42 / 20%);
+  flex-direction: column;
 }
 
 .send-confirm-modal__body {
-  padding: 24px 24px 18px;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 26px 24px 20px;
   text-align: center;
 }
 
 .send-confirm-modal__icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  margin-bottom: 12px;
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
   border-radius: 50%;
-  background: #eef2f7;
-  color: #475569;
+  background: #ffedd5;
+  color: #f97316;
+  font-size: 24px;
   font-weight: 900;
 }
 
-.send-confirm-modal__body h3 {
+.send-confirm-modal__body h3,
+.send-confirm-modal__body p {
   margin: 0;
-  color: #111827;
-  font-size: 16px;
-  font-weight: 800;
+}
+
+.send-confirm-modal__body h3 {
+  max-width: 280px;
+  color: #172033;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.45;
 }
 
 .send-confirm-modal__body p {
-  margin: 8px 0 0;
-  color: #667085;
+  max-width: 280px;
+  color: #8a93a3;
   font-size: 12px;
+  font-weight: 700;
   line-height: 1.5;
 }
 
 .send-confirm-modal__footer {
-  display: flex;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
-  border-top: 1px solid #eef2f6;
-  padding: 12px 16px;
+  padding: 0 18px 18px;
 }
 
 .send-confirm-modal__button {
-  height: 32px;
+  height: 40px;
   border: 0;
-  border-radius: 6px;
-  padding: 0 14px;
-  font-size: 12px;
-  font-weight: 800;
-  cursor: pointer;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 900;
 }
 
 .send-confirm-modal__button--cancel {
-  background: #f2f4f7;
+  background: #eef2f7;
   color: #475467;
 }
 
 .send-confirm-modal__button--confirm {
-  background: #475569;
+  background: #f97316;
   color: #ffffff;
+}
+
+.send-confirm-modal__button--cancel:hover {
+  background: #e2e8f0;
+}
+
+.send-confirm-modal__button--confirm:hover {
+  background: #ea580c;
 }
 </style>
