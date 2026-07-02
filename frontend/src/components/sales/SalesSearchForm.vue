@@ -357,10 +357,11 @@ onBeforeUnmount(() => {
 .sales-search__row {
   display: grid;
   align-items: center;
-  min-height: 24px;
+  min-height: 26px;
   color: #394252;
   font-size: 11px;
   font-weight: 700;
+  overflow: visible;
 }
 
 .sales-search__row--top {
@@ -438,6 +439,7 @@ onBeforeUnmount(() => {
   column-gap: 12px;
   border-top: 1px solid #edf1f6;
   padding-top: 10px;
+  padding-bottom: 2px;
 }
 
 .sales-search__applied {
@@ -506,6 +508,7 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
   gap: 5px 6px;
   min-width: 0;
+  overflow: visible;
 }
 
 .sales-search input[type='radio'] {
@@ -548,6 +551,7 @@ onBeforeUnmount(() => {
   position: relative;
   display: inline-flex;
   align-items: center;
+  overflow: visible;
 }
 
 .sales-search__toggle input {
@@ -571,7 +575,7 @@ onBeforeUnmount(() => {
   padding: 0 9px;
   font-size: 10px;
   font-weight: 850;
-  line-height: 1;
+  line-height: 1.2;
   transition:
     border-color 120ms ease,
     background-color 120ms ease,

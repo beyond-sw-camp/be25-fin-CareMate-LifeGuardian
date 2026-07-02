@@ -598,7 +598,8 @@ onBeforeUnmount(() => {
 
 .sales-list {
   display: flex;
-  flex: 0 0 auto;
+  min-height: 0;
+  flex: 1 1 auto;
   flex-direction: column;
   border: 1px solid #e3e8f0;
   box-shadow: none;
@@ -680,11 +681,21 @@ onBeforeUnmount(() => {
 }
 
 .sales-list :deep(.sales-table) {
-  height: auto;
+  min-height: 0;
+  flex: 1 1 auto;
+  height: 100%;
 }
 
 .sales-list :deep(.sales-table table) {
-  height: auto;
+  height: 100%;
+}
+
+.sales-list :deep(.sales-table th) {
+  height: 28px;
+}
+
+.sales-list :deep(.sales-table td) {
+  height: 29px;
 }
 
 .sales-list :deep(.sales-pagination) {
