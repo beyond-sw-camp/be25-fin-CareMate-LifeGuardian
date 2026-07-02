@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
 import {
@@ -22,11 +22,19 @@ const emit = defineEmits<{
 const SENDABLE_REPORT_STATUS_CODES = new Set(['01', '02', '03'])
 const selectAllCheckbox = ref<HTMLInputElement | null>(null)
 
+const isReportTarget = (customer: SalesCustomer) =>
+  customer.parentId != null
+
 // 리포트 ID가 있고 발송 버튼 노출 조건을 만족하는 고객만 체크박스 선택 대상입니다.
-const selectableCustomerIds = computed(() => props.customers.map((customer) => customer.customerId))
+const selectableCustomerIds = computed(() =>
+  props.customers
+    .filter(isReportTarget)
+    .map((customer) => customer.customerId),
+)
 
 // 백엔드 상태 코드와 canSendReport 플래그를 함께 보고 발송/재발송 버튼 노출 여부를 결정합니다.
 const canShowSendButton = (customer: SalesCustomer) =>
+  isReportTarget(customer) &&
   !customer.graduated &&
   customer.hasReport &&
   Boolean(customer.reportStatusCode) &&
@@ -37,6 +45,7 @@ const webformStatusName = (customer: SalesCustomer) =>
   customer.webformStatusName ?? '-'
 
 const reportStatusName = (customer: SalesCustomer) => {
+  if (!isReportTarget(customer)) return '해당 없음'
   if (customer.graduated) return '졸업'
   if (!customer.reportUrl) return '미생성'
   return customer.reportStatusName || '-'
@@ -63,6 +72,8 @@ const toggleAllCustomers = () => {
 
 // 개별 행 체크박스 선택 상태를 부모의 selectedReportIds v-model로 되돌립니다.
 const toggleReport = (customer: SalesCustomer) => {
+  if (!isReportTarget(customer)) return
+
   const selectedIds = props.selectedReportCustomerIds ?? []
   const nextIds = selectedIds.includes(customer.customerId)
     ? selectedIds.filter((selectedCustomerId) => selectedCustomerId !== customer.customerId)
@@ -162,7 +173,15 @@ const ageShiftGuide = (customer: SalesCustomer) => {
   return dDay <= 7 ? `보험 나이 변경 임박 D-${dDay}` : `보험 나이 변경 예정 D-${dDay}`
 }
 
-const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
+const stepClass = (threeStepCode?: string) => {
+  const classMap: Record<string, string> = {
+    '06': 'danger',
+    '07': 'orange',
+    '08': 'warning',
+  }
+
+  return threeStepCode ? classMap[threeStepCode] ?? 'warning' : 'warning'
+}
 </script>
 
 <template>
@@ -185,9 +204,9 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
           <th>만 나이</th>
           <th>생년월일</th>
           <th>3step</th>
-          <th>고객 단계</th>
+          <th>고객 유형</th>
           <th>계약 현황</th>
-          <th>보험명</th>
+          <th>상품명</th>
           <th>피보험자</th>
           <th>웹폼 회수일</th>
           <th>웹폼 발송상태</th>
@@ -206,6 +225,7 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
             <input
               type="checkbox"
               :checked="Boolean(selectedReportCustomerIds?.includes(customer.customerId))"
+              :disabled="!isReportTarget(customer)"
               :aria-label="`${customer.customerName} 선택`"
               @change="toggleReport(customer)"
             />
@@ -259,7 +279,7 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
             <span
               v-if="customer.threeStepCode || customer.sortRank === 1"
               class="step-dot"
-              :class="`step-dot--${stepClass(customer.sortRank)}`"
+              :class="`step-dot--${stepClass(customer.threeStepCode)}`"
               :title="customer.threeStepName"
             ></span>
             <span v-else>-</span>
@@ -465,6 +485,10 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
   background: #e22b2f;
 }
 
+.step-dot--orange {
+  background: #f59e0b;
+}
+
 .step-dot--warning {
   background: #ffd319;
 }
@@ -514,10 +538,10 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
 .report-button {
   min-width: 54px;
   height: 24px;
-  border: 0;
+  border: 1px solid #d8dee8;
   border-radius: 5px;
-  background: var(--color-primary);
-  color: #ffffff;
+  background: #f8fafc;
+  color: #475569;
   padding: 0 10px;
   font-size: 10px;
   font-weight: 800;
@@ -535,19 +559,22 @@ const stepClass = (sortRank: number) => (sortRank === 1 ? 'danger' : 'warning')
 }
 
 .report-button--resend {
-  border: 1px solid var(--color-primary);
-  background: color-mix(in srgb, var(--color-primary) 8%, white);
-  color: var(--color-primary);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 10%, transparent);
+  border: 1px solid #bcc7d5;
+  background: #eef2f7;
+  color: #3f4a5a;
+  box-shadow: inset 0 0 0 1px rgb(148 163 184 / 10%);
 }
 
 .report-button--resend:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-primary) 14%, white);
-  color: var(--color-primary);
+  border-color: #aebac9;
+  background: #e5ebf2;
+  color: #334155;
 }
 
 .report-button:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-primary) 84%, black);
+  border-color: #cbd5e1;
+  background: #eef2f7;
+  color: #334155;
 }
 
 .report-status {

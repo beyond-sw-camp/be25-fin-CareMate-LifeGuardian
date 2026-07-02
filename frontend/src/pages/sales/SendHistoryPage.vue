@@ -1,8 +1,9 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import axios from 'axios'
 import { computed, onMounted, ref } from 'vue'
 import {
   getReportHistory,
+  type ReportHistoryCustomerStageCode,
   type ReportHistoryItem,
   type ReportHistorySendItemType,
   type ReportHistorySendStatus,
@@ -24,19 +25,26 @@ type StatusOption = {
   value: ReportHistorySendStatus
   scopes: OptionScope[]
 }
+type CustomerStageOption = {
+  label: string
+  value: ReportHistoryCustomerStageCode
+}
 
 const activeType = ref<ReportHistorySendType>('all')
 const activeItemType = ref<ReportHistorySendItemType>('all')
 const activeStatus = ref<ReportHistorySendStatus>('all')
-const keyword = ref('')
+const activeCustomerStageCode = ref<ReportHistoryCustomerStageCode>('all')
+const customerName = ref('')
+const customerNameSpacingError = ref('')
 const historyItems = ref<ReportHistoryItem[]>([])
 const currentPage = ref(1)
 const totalPages = ref(0)
 const totalCount = ref(0)
 const isLoading = ref(false)
 const errorMessage = ref('')
+const HISTORY_PAGE_SIZE = 12
 
-const HISTORY_PAGE_SIZE = 10
+
 
 const typeTabs = [
   { label: '전체', value: 'all' },
@@ -53,10 +61,18 @@ const itemTypeOptions: ItemTypeOption[] = [
 
 const statusOptions: StatusOption[] = [
   { label: '전체 상태', value: 'all', scopes: ['all', 'report', 'webform'] },
-  { label: '발송대기', value: 'pending', scopes: ['all', 'report', 'webform'] },
-  { label: '발송성공', value: 'success', scopes: ['all', 'report', 'webform'] },
-  { label: '발송실패', value: 'failed', scopes: ['all', 'report', 'webform'] },
-  { label: '회수완료', value: 'collected', scopes: ['all', 'webform'] },
+  { label: '발송대기', value: 'pending', scopes: ['all', 'report'] },
+  { label: '발송성공', value: 'success', scopes: ['all', 'report'] },
+  { label: '미발송', value: 'pending', scopes: ['webform'] },
+  { label: '발송완료', value: 'success', scopes: ['webform'] },
+  { label: '작성완료', value: 'collected', scopes: ['webform'] },
+  { label: '회수만료', value: 'failed', scopes: ['webform'] },
+]
+
+const customerStageOptions: CustomerStageOption[] = [
+  { label: '전체 고객', value: 'all' },
+  { label: '잠재고객', value: '01' },
+  { label: '통합고객', value: '02' },
 ]
 
 const visibleItemTypeOptions = computed(() =>
@@ -94,7 +110,8 @@ const loadHistory = async (page = currentPage.value) => {
       sendType: activeType.value,
       sendItemType: activeItemType.value,
       sendStatus: activeStatus.value,
-      keyword: keyword.value.trim() || undefined,
+      customerStageCode: activeCustomerStageCode.value,
+      keyword: customerName.value.trim() || undefined,
       page,
       size: HISTORY_PAGE_SIZE,
     })
@@ -122,6 +139,21 @@ const handleTypeChange = (sendType: ReportHistorySendType) => {
 
 const handleSearch = () => {
   void loadHistory(1)
+}
+
+const handleCustomerStageChange = () => {
+  void loadHistory(1)
+}
+
+const isEnglishNameInput = (value: string) => /^[A-Za-z\s]*$/.test(value)
+const normalizeCustomerNameInput = () => {
+  if (!/\s/.test(customerName.value) || isEnglishNameInput(customerName.value)) return
+  customerName.value = customerName.value.replace(/\s+/g, '')
+  customerNameSpacingError.value = '공백은 입력할 수 없습니다.'
+
+  window.setTimeout(() => {
+    customerNameSpacingError.value = ''
+  }, 2_000)
 }
 
 const formatSentAt = (value?: string) => {
@@ -181,15 +213,42 @@ onMounted(() => {
             </select>
           </label>
 
+          <label>
+            <span>고객 유형</span>
+            <select v-model="activeCustomerStageCode" @change="handleCustomerStageChange">
+              <option v-for="option in customerStageOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </label>
+
           <div class="send-history-search" role="search">
             <label for="send-history-keyword">검색</label>
             <input
               id="send-history-keyword"
-              v-model="keyword"
-              placeholder="고객명, 상태, 발송 항목"
+              v-model="customerName"
+              :class="{ 'send-history-search__input--invalid': customerNameSpacingError }"
+              :aria-invalid="Boolean(customerNameSpacingError)"
+              aria-describedby="send-history-customer-name-error"
+              placeholder="고객명을 입력하세요"
+              @input="normalizeCustomerNameInput"
               @keyup.enter="handleSearch"
             />
-            <button type="button" @click="handleSearch">조회</button>
+            <button type="button" aria-label="고객명 검색" @click="handleSearch">
+              <svg class="send-history-search__icon" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="6.5" />
+                <path d="m16 16 4 4" />
+              </svg>
+              <span>조회</span>
+            </button>
+            <p
+              v-if="customerNameSpacingError"
+              id="send-history-customer-name-error"
+              class="send-history-search__field-error"
+              role="alert"
+            >
+              {{ customerNameSpacingError }}
+            </p>
           </div>
         </div>
       </section>
@@ -208,7 +267,7 @@ onMounted(() => {
               <tr>
                 <th>유형</th>
                 <th>고객명</th>
-                <th>고객 구분</th>
+                <th>고객 유형</th>
                 <th>발송 항목</th>
                 <th>발송 여부</th>
                 <th>발송 일시</th>
@@ -250,19 +309,36 @@ onMounted(() => {
 
 <style scoped>
 .send-history-page__main {
-  padding: 18px 28px 40px 24px;
-  overflow-x: hidden;
+  display: flex;
+  height: 100vh;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 8px 20px 7px 20px;
+}
+
+.send-history-page__main :deep(.app-header) {
+  min-height: 46px;
+  margin-bottom: 7px;
+}
+
+.send-history-page__main :deep(.app-header__title) {
+  padding-top: 2px;
+}
+
+.send-history-page__main :deep(.page-title) {
+  font-size: 22px;
 }
 
 .send-history-toolbar {
+  flex: 0 0 auto;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
-  margin: 8px 0 14px;
+  margin: 0 0 8px;
   border: 1px solid #e3e8f0;
   box-shadow: none;
-  padding: 12px 14px;
+  padding: 9px 12px;
 }
 
 .send-history-tabs {
@@ -295,7 +371,7 @@ onMounted(() => {
 
 .send-history-filters {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
 }
 
@@ -328,7 +404,7 @@ onMounted(() => {
 .send-history-filters select,
 .send-history-search input {
   min-width: 0;
-  height: 30px;
+  height: 26px;
   border: 1px solid #d9e0ea;
   border-radius: 5px;
   background: #ffffff;
@@ -339,39 +415,79 @@ onMounted(() => {
 }
 
 .send-history-search button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   width: 54px;
-  height: 30px;
-  border: 0;
+  height: 26px;
+  border: 1px solid #d8dee8;
   border-radius: 5px;
-  background: var(--color-primary);
-  color: #ffffff;
+  background: #f8fafc;
+  color: #475569;
   padding: 0;
   font-size: 11px;
   font-weight: 850;
   white-space: nowrap;
 }
 
+.send-history-search button:hover {
+  border-color: #cbd5e1;
+  background: #eef2f7;
+  color: #334155;
+}
+
+.send-history-search__icon {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
 .send-history-filters select:focus,
 .send-history-search input:focus {
-  border-color: #8db5ff;
-  box-shadow: 0 0 0 3px rgb(26 109 255 / 10%);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 14%, transparent);
+}
+
+.send-history-search .send-history-search__input--invalid,
+.send-history-search .send-history-search__input--invalid:focus {
+  border-color: #d85a65;
+  box-shadow: 0 0 0 3px rgb(216 90 101 / 14%);
+}
+
+.send-history-search__field-error {
+  grid-column: 2 / 4;
+  margin: 0;
+  color: #d85a65;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
 }
 
 .send-history-list {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
   border: 1px solid #e3e8f0;
   box-shadow: none;
-  padding: 12px 14px 14px;
+  padding: 8px 11px 6px;
 }
 
 .send-history-list__header {
-  margin-bottom: 10px;
+  flex: 0 0 auto;
+  margin-bottom: 5px;
 }
 
 .send-history-list h2 {
   margin: 0;
-  color: var(--color-text);
+  color: #263142;
   font-size: 14px;
   font-weight: 900;
+  letter-spacing: 0;
 }
 
 .send-history-list h2 span {
@@ -476,6 +592,12 @@ onMounted(() => {
 .send-history-table__empty {
   height: 96px;
   color: var(--color-text-muted);
+}
+
+.send-history-list :deep(.sales-pagination) {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  padding-top: 0;
 }
 
 @media (max-width: 1120px) {

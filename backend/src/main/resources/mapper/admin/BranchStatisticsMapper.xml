@@ -41,6 +41,7 @@
         FROM sales_user
         WHERE branch_id = #{branchId}
           AND status_code = '01'
+          AND id != #{managerUserId}
     </select>
 
     <!-- 특정 지점의 월간 영업사원 실적 및 랭킹 조회 -->
@@ -59,6 +60,7 @@
             AND c.contract_result_status_code = '02'
         WHERE su.branch_id = #{branchId}
           AND su.status_code = '01'
+          AND su.id != #{managerUserId}
         GROUP BY su.id, su.employee_id, su.name
         ORDER BY `rank` ASC
     </select>
@@ -79,6 +81,7 @@
                 AND c.contract_result_status_code = '02'
             WHERE su.branch_id = #{branchId}
               AND su.status_code = '01'
+              AND su.id != #{managerUserId}
             GROUP BY su.id, su.name
         ),
         AnnualPerformance AS (
@@ -92,6 +95,7 @@
                 AND c.contract_result_status_code = '02'
             WHERE su.branch_id = #{branchId}
               AND su.status_code = '01'
+              AND su.id != #{managerUserId}
             GROUP BY su.id
         )
         SELECT
@@ -112,6 +116,7 @@
             AND cc.code_value = su.rank_code
         WHERE su.branch_id = #{branchId}
           AND su.status_code = '01'
+          AND su.id != #{managerUserId}
         ORDER BY mp.rank ASC
     </select>
     <!--직급 코드에 해당하는 직급명 조회-->
@@ -199,6 +204,7 @@
         AND c.contract_result_status_code = '02'
         WHERE su.branch_id = #{branchId}
         AND su.status_code = '01'
+        AND su.id != #{managerUserId}
         GROUP BY su.id, su.name
         )
         SELECT
@@ -216,8 +222,9 @@
         AND dpu.manager_user_id = #{managerUserId}
         WHERE su.branch_id = #{branchId}
         AND su.status_code = '01'
+        AND su.id != #{managerUserId}
         <if test="keyword != null and keyword != ''">
-            AND su.name LIKE CONCAT('%', #{keyword}, '%')
+            AND (dpu.pin_id IS NOT NULL OR su.name LIKE CONCAT('%', #{keyword}, '%'))
         </if>
         ORDER BY isPinned DESC, dpu.created_at ASC, thisMonthCount DESC, employeeName ASC
     </select>

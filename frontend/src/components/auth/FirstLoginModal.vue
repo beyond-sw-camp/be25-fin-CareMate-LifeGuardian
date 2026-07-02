@@ -71,10 +71,15 @@ const submitPasswordChange = async () => {
       >
         <header class="first-login-modal__header">
           <h3 id="first-login-modal-title">최초 로그인 비밀번호 재설정</h3>
-          <p>계정 보호를 위해 임시 비밀번호를 새 비밀번호로 변경해 주세요.</p>
         </header>
 
         <form class="first-login-modal__form" @submit.prevent="submitPasswordChange">
+          <section class="first-login-modal__guide" aria-label="비밀번호 설정 안내">
+            <strong>비밀번호 설정 방법</strong>
+            <p>영문, 숫자, 특수문자를 조합해 다른 사람이 추측하기 어려운 비밀번호로 설정해 주세요.</p>
+            <p>예시: 이름, 생년월일, 전화번호처럼 쉽게 알 수 있는 정보는 사용하지 않는 것이 좋습니다.</p>
+          </section>
+
           <label>
             <span>새 비밀번호</span>
             <input
@@ -172,6 +177,28 @@ const submitPasswordChange = async () => {
   color: var(--color-text);
   font-size: 12px;
   font-weight: 800;
+}
+
+.first-login-modal__guide {
+  display: grid;
+  gap: 5px;
+  border: 1px solid #fed7aa;
+  border-radius: 10px;
+  background: #fff7ed;
+  color: #475569;
+  padding: 12px 14px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.first-login-modal__guide strong {
+  color: #ea580c;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.first-login-modal__guide p {
+  margin: 0;
 }
 
 .first-login-modal__error {

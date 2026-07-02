@@ -130,7 +130,8 @@ public class BranchStatisticsServiceImpl implements BranchStatisticsService {
         int previousMonthCount = branchStatisticsMapper.countContractsByBranchAndMonth(branchId, previousYearMonth);
 
         // 4. 지점의 활성 영업사원 수 조회
-        int activeSalesUserCount = branchStatisticsMapper.countActiveSalesUsersByBranch(branchId);
+        Long managerUserId = SecurityUtil.getCurrentUserId();
+        int activeSalesUserCount = branchStatisticsMapper.countActiveSalesUsersByBranch(branchId, managerUserId);
 
         // 5. 연산 및 Zero-Division 방어 로직 적용
         int momDifferenceCount = currentMonthCount - previousMonthCount;
@@ -181,8 +182,9 @@ public class BranchStatisticsServiceImpl implements BranchStatisticsService {
         }
 
         // 3. 지점 내 영업사원들의 계약 실적 랭킹 목록 조회
+        Long managerUserId = SecurityUtil.getCurrentUserId();
         List<SalesUserPerformance> allPerformers = branchStatisticsMapper.selectSalesUsersPerformanceRanking(branchId,
-                targetYearMonth);
+                targetYearMonth, managerUserId);
 
         // 4. 최소 인원(2명 이하) 제한 및 무실적(Empty State) 검증
         boolean isEmptyState = allPerformers.size() <= 2
@@ -291,7 +293,8 @@ public class BranchStatisticsServiceImpl implements BranchStatisticsService {
         boolean isTargetAchieved = thisMonthCount >= monthlyTargetCount;
 
         // 10. 지점 내 활성 사원수 및 랭킹 조회
-        int totalBranchUsers = branchStatisticsMapper.countActiveSalesUsersByBranch(branchId);
+        Long managerUserId = SecurityUtil.getCurrentUserId();
+        int totalBranchUsers = branchStatisticsMapper.countActiveSalesUsersByBranch(branchId, managerUserId);
         Integer userRankVal = branchStatisticsMapper.selectSalesUserBranchRank(branchId, targetUserId, currentYearMonth);
         int branchRank = (userRankVal != null) ? userRankVal : 0;
 
@@ -475,8 +478,9 @@ public class BranchStatisticsServiceImpl implements BranchStatisticsService {
         int targetYear = parsedYearMonth.getYear();
 
         // 3. 지점 내 활성 사원들의 전체 실적 목록 조회
+        Long managerUserId = SecurityUtil.getCurrentUserId();
         List<SalesUserPerformanceDetail> domainList =
-                branchStatisticsMapper.selectSalesUsersPerformanceDetails(branchId, targetYearMonth, targetYear);
+                branchStatisticsMapper.selectSalesUsersPerformanceDetails(branchId, targetYearMonth, targetYear, managerUserId);
 
         // 4. groupCode 할당 및 DTO 변환
         int totalSize = domainList.size();

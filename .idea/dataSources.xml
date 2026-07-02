@@ -16,5 +16,17 @@
         <property name="sslMode" value="true" />
       </driver-properties>
     </data-source>
+    <data-source source="LOCAL" name="lifeguardian@localdb" uuid="669c92b4-bdb4-4b2b-920c-e9ee73828ac0">
+      <driver-ref>mariadb</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>org.mariadb.jdbc.Driver</jdbc-driver>
+      <jdbc-url>jdbc:mariadb://localdb:3306/lifeguardian</jdbc-url>
+      <jdbc-additional-properties>
+        <property name="com.intellij.clouds.kubernetes.db.host.port" />
+        <property name="com.intellij.clouds.kubernetes.db.enabled" value="false" />
+        <property name="com.intellij.clouds.kubernetes.db.container.port" />
+      </jdbc-additional-properties>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
   </component>
 </project>

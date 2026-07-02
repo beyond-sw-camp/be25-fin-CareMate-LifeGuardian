@@ -14,6 +14,7 @@ import {
 } from 'chart.js'
 import { getIndividualPerformance } from '@/api/admin'
 import type { IndividualPerformance } from '@/api/admin'
+import { updateMonthlyTarget } from '@/api/members'
 
 ChartJS.register(Title, Tooltip, Legend, PointElement, LineElement, CategoryScale, LinearScale, Filler)
 
@@ -25,10 +26,50 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'close'): void
+  (e: 'target-updated'): void
 }>()
 
 const info = ref<IndividualPerformance | null>(null)
 const isLoading = ref(false)
+
+const isEditingTarget = ref(false)
+const tempTarget = ref(0)
+const isUpdatingTarget = ref(false)
+
+const startEditTarget = () => {
+  if (!info.value) return
+  tempTarget.value = info.value.monthlyTargetCount
+  isEditingTarget.value = true
+}
+
+const cancelEditTarget = () => {
+  isEditingTarget.value = false
+}
+
+const saveTarget = async () => {
+  if (!props.userId || !info.value) return
+  
+  const d = new Date()
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const currentYM = `${year}-${month}`
+  
+  isUpdatingTarget.value = true
+  try {
+    await updateMonthlyTarget(props.userId, {
+      targetYearMonth: currentYM,
+      targetContractCount: tempTarget.value
+    })
+    await loadData()
+    isEditingTarget.value = false
+    emit('target-updated')
+  } catch (error) {
+    console.error('Failed to update monthly target:', error)
+    alert('목표 수정 처리에 실패했습니다.')
+  } finally {
+    isUpdatingTarget.value = false
+  }
+}
 
 const loadData = async () => {
   if (!props.isOpen || props.userId === null) return
@@ -186,9 +227,44 @@ const chartOptions = {
                   <span class="value font-bold">{{ info.thisMonthCount }}건</span>
                 </div>
                 <div class="detail-separator">/</div>
-                <div class="detail-item">
+                <div class="detail-item" style="display: flex; align-items: center; gap: 6px;">
                   <span class="label">월 목표</span>
-                  <span class="value">{{ info.monthlyTargetCount }}건</span>
+                  <template v-if="!isEditingTarget">
+                    <span class="value">{{ info.monthlyTargetCount }}건</span>
+                    <button 
+                      type="button" 
+                      @click="startEditTarget" 
+                      class="edit-target-btn"
+                      title="목표 수정"
+                    >
+                      ✏️
+                    </button>
+                  </template>
+                  <template v-else>
+                    <input 
+                      type="number" 
+                      v-model.number="tempTarget" 
+                      min="0" 
+                      class="edit-target-input" 
+                      style="width: 55px; padding: 2px 4px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; height: 24px;"
+                    />
+                    <button 
+                      type="button" 
+                      @click="saveTarget" 
+                      :disabled="isUpdatingTarget" 
+                      class="save-target-btn"
+                    >
+                      저장
+                    </button>
+                    <button 
+                      type="button" 
+                      @click="cancelEditTarget" 
+                      :disabled="isUpdatingTarget" 
+                      class="cancel-target-btn"
+                    >
+                      취소
+                    </button>
+                  </template>
                 </div>
                 <div class="detail-separator">|</div>
                 <div class="detail-item">
@@ -526,5 +602,43 @@ const chartOptions = {
   position: relative;
   width: 100%;
   height: 200px;
+}
+
+.edit-target-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-size: 11px;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+.edit-target-btn:hover {
+  opacity: 1;
+}
+.save-target-btn {
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  cursor: pointer;
+  height: 22px;
+}
+.save-target-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.cancel-target-btn {
+  background-color: #e2e8f0;
+  color: #475569;
+  border: none;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  cursor: pointer;
+  height: 22px;
+  margin-left: 2px;
 }
 </style>

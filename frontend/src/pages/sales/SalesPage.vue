@@ -11,6 +11,7 @@ import SalesTable from '../../components/sales/SalesTable.vue'
 import {
   getSalesList,
   getSalesSummary,
+  sendCustomerWebform,
   sendCustomerReportsInBulk,
   sendCustomerWebformsInBulk,
   type SalesCustomer,
@@ -33,9 +34,14 @@ const reportMessage = ref('')
 const reportMessageType = ref<'success' | 'error'>('success')
 const isReportBulkSending = ref(false)
 const isWebformBulkSending = ref(false)
-const filters = ref<SalesSearchFilters>({})
+const isBulkConfirmOpen = ref(false)
+const bulkConfirmTitle = ref('')
+const bulkConfirmMessage = ref('')
+const bulkConfirmDetail = ref('')
+const filters = ref<SalesSearchFilters>({ customerStageCode: '01' })
 const route = useRoute()
 let reportMessageTimer: ReturnType<typeof setTimeout> | undefined
+let bulkConfirmResolver: ((confirmed: boolean) => void) | undefined
 
 const SALES_PAGE_SIZE = 10
 
@@ -165,6 +171,25 @@ const showReportMessage = (message: string, type: 'success' | 'error') => {
   }, 5_000)
 }
 
+const openBulkConfirm = (title: string, message: string, detail = '') => {
+  bulkConfirmTitle.value = title
+  bulkConfirmMessage.value = message
+  bulkConfirmDetail.value = detail
+  isBulkConfirmOpen.value = true
+
+  return new Promise<boolean>((resolve) => {
+    bulkConfirmResolver = resolve
+  })
+}
+
+const closeBulkConfirm = (confirmed = false) => {
+  isBulkConfirmOpen.value = false
+
+  const resolve = bulkConfirmResolver
+  bulkConfirmResolver = undefined
+  resolve?.(confirmed)
+}
+
 // 웹폼 발송 API 응답을 현재 목록의 고객 상태에 반영합니다.
 const applyWebformSendResult = (result: WebformSendResult) => {
   const targetCustomer = customers.value.find(
@@ -180,6 +205,7 @@ const applyWebformSendResult = (result: WebformSendResult) => {
 const SENDABLE_REPORT_STATUS_CODES = new Set(['01', '02', '03'])
 
 const isReportSendable = (customer: SalesCustomer) =>
+  customer.parentId != null &&
   !customer.graduated &&
   typeof customer.reportId === 'number' &&
   customer.reportId > 0 &&
@@ -217,13 +243,19 @@ const handleBulkSend = async () => {
   }
 
   const selectedCount = selectedReportCustomerIds.value.length
-  if (
-    !window.confirm(
-      selectedCount > 0
-        ? `선택한 ${selectedCount}건 중 발송 가능한 ${reportIds.length}건의 리포트를 발송하시겠습니까?`
-        : '현재 조건의 발송 가능한 리포트를 전체 발송하시겠습니까?',
-    )
-  ) {
+  const confirmDetail = [
+    graduatedCount > 0 ? `졸업 제외 ${graduatedCount}건` : '',
+    unavailableCount > 0 ? `발송 불가 제외 ${unavailableCount}건` : '',
+  ].filter(Boolean).join(', ')
+  const confirmed = await openBulkConfirm(
+    '리포트 일괄발송',
+    selectedCount > 0
+      ? `선택한 ${selectedCount}건 중 발송 가능한 ${reportIds.length}건의 리포트를 발송하시겠습니까?`
+      : '현재 조건의 발송 가능한 리포트를 전체 발송하시겠습니까?',
+    confirmDetail,
+  )
+
+  if (!confirmed) {
     return
   }
 
@@ -241,7 +273,7 @@ const handleBulkSend = async () => {
     ].filter(Boolean).join(', ')
 
     showReportMessage(
-      `리포트 일괄 발송 완료: 성공 ${result.successCount}건, 실패 ${result.failedCount}건${excludedMessage ? `, ${excludedMessage}` : ''}`,
+      `리포트 발송 성공: ${result.successCount}건 실패: ${result.failedCount}건${excludedMessage ? `, ${excludedMessage}` : ''}`,
       result.failedCount > 0 ? 'error' : 'success',
     )
 
@@ -268,24 +300,70 @@ const isWebformSendFailed = (result: WebformSendResult) => {
 }
 
 // 서버 기준으로 웹폼 발송 대상 전체를 일괄 발송합니다.
+const sendSelectedCustomerWebforms = async (targetCustomers: SalesCustomer[]) => {
+  const settledResults = await Promise.allSettled(
+    targetCustomers.map((customer) =>
+      sendCustomerWebform(
+        'sales-status',
+        customer.conversionStatusCode ?? customer.customerStageCode,
+        customer.customerId,
+      ),
+    ),
+  )
+
+  return settledResults.reduce(
+    (summary, result) => {
+      if (result.status === 'fulfilled') {
+        summary.results.push(result.value)
+        return summary
+      }
+
+      summary.failedCount += 1
+      return summary
+    },
+    { results: [] as WebformSendResult[], failedCount: 0 },
+  )
+}
+
 const handleWebformBulkSend = async () => {
   if (isWebformBulkSending.value) return
-  if (!window.confirm('웹폼을 일괄 발송하시겠습니까?')) return
+
+  const targetCustomers = selectedReportCustomerIds.value.length
+    ? customers.value.filter((customer) => selectedReportCustomerIds.value.includes(customer.customerId))
+    : []
+  const selectedCount = targetCustomers.length
+
+  const confirmed = await openBulkConfirm(
+    '웹폼 일괄발송',
+    selectedCount > 0
+      ? `선택한 ${selectedCount}건 중 발송 가능한 ${targetCustomers.length}건의 웹폼을 발송하시겠습니까?`
+      : '현재 조건의 웹폼을 전체 발송하시겠습니까?',
+  )
+
+  if (!confirmed) {
+    return
+  }
 
   isWebformBulkSending.value = true
   reportMessage.value = ''
 
   try {
-    const results = await sendCustomerWebformsInBulk()
+    const { results, failedCount: requestFailedCount } = selectedCount > 0
+      ? await sendSelectedCustomerWebforms(targetCustomers)
+      : { results: await sendCustomerWebformsInBulk(), failedCount: 0 }
 
     results.forEach(applyWebformSendResult)
-    const failedCount = results.filter(isWebformSendFailed).length
-    const successCount = results.length - failedCount
+    const failedCount = requestFailedCount + results.filter(isWebformSendFailed).length
+    const successCount = selectedCount > 0
+      ? selectedCount - failedCount
+      : results.length - failedCount
 
     showReportMessage(
-      `웹폼 일괄 발송 완료: 성공 ${successCount}건, 실패 ${failedCount}건`,
+      `웹폼 발송 성공: ${successCount}건 실패: ${failedCount}건`,
       failedCount > 0 ? 'error' : 'success',
     )
+
+    if (selectedCount > 0) selectedReportCustomerIds.value = []
   } catch (error) {
     showReportMessage(getErrorMessage(error, '웹폼 일괄 발송에 실패했습니다.'), 'error')
   } finally {
@@ -302,6 +380,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   if (reportMessageTimer) clearTimeout(reportMessageTimer)
+  closeBulkConfirm(false)
 })
 </script>
 
@@ -382,8 +461,35 @@ onBeforeUnmount(() => {
     </main>
 
     <div
+      v-if="isBulkConfirmOpen"
+      class="modal-backdrop sales-criteria-modal sales-bulk-confirm-modal"
+      role="presentation"
+      @click.self="closeBulkConfirm(false)"
+    >
+      <section
+        class="modal-card sales-criteria-modal__card sales-bulk-confirm-modal__card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="bulk-confirm-title"
+      >
+        <div class="sales-bulk-confirm-modal__body">
+          <div class="sales-bulk-confirm-modal__icon" aria-hidden="true">!</div>
+          <h3 id="bulk-confirm-title" class="sales-bulk-confirm-modal__title">{{ bulkConfirmMessage }}</h3>
+          <p class="sales-bulk-confirm-modal__detail">
+            {{ bulkConfirmDetail || `${bulkConfirmTitle}을 진행합니다.` }}
+          </p>
+        </div>
+
+        <footer class="sales-bulk-confirm-modal__footer">
+          <button class="sales-bulk-confirm-modal__button sales-bulk-confirm-modal__button--cancel" type="button" @click="closeBulkConfirm(false)">취소</button>
+          <button class="sales-bulk-confirm-modal__button sales-bulk-confirm-modal__button--confirm" type="button" @click="closeBulkConfirm(true)">발송</button>
+        </footer>
+      </section>
+    </div>
+
+    <div
       v-if="isCriteriaModalOpen"
-      class="modal-backdrop sales-criteria-modal"
+      class="modal-backdrop sales-criteria-modal sales-criteria-guide-modal"
       role="presentation"
       @click.self="isCriteriaModalOpen = false"
     >
@@ -470,22 +576,43 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .sales-page__main {
-  padding: 10px 22px 6px 20px;
-  overflow-x: hidden;
+  display: flex;
+  height: 100vh;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 8px 20px 7px 20px;
+}
+
+.sales-page__main :deep(.app-header) {
+  min-height: 46px;
+  margin-bottom: 7px;
+}
+
+.sales-page__main :deep(.app-header__title) {
+  padding-top: 2px;
+}
+
+.sales-page__main :deep(.page-title) {
+  font-size: 22px;
 }
 
 .sales-list {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
   border: 1px solid #e3e8f0;
   box-shadow: none;
-  padding: 8px 12px 6px;
+  padding: 7px 11px 6px;
 }
 
 .sales-list__header {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .sales-section-title {
@@ -518,10 +645,11 @@ onBeforeUnmount(() => {
 }
 
 .sales-list__report-message {
-  margin: 0 0 7px;
+  flex: 0 0 auto;
+  margin: 0 0 5px;
   border-radius: 6px;
-  padding: 7px 9px;
-  font-size: 11px;
+  padding: 5px 8px;
+  font-size: 10px;
   font-weight: 700;
 }
 
@@ -543,21 +671,44 @@ onBeforeUnmount(() => {
 }
 
 .sales-list__footer {
+  flex: 0 0 auto;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 28px;
-  margin-top: 6px;
+  min-height: 26px;
+  margin-top: 2px;
+}
+
+.sales-list :deep(.sales-table) {
+  min-height: 0;
+  flex: 1 1 auto;
+  height: 100%;
+}
+
+.sales-list :deep(.sales-table table) {
+  height: 100%;
+}
+
+.sales-list :deep(.sales-table th) {
+  height: 28px;
+}
+
+.sales-list :deep(.sales-table td) {
+  height: 29px;
+}
+
+.sales-list :deep(.sales-pagination) {
+  margin-top: 0;
 }
 
 .report-button {
   min-width: 58px;
   height: 24px;
-  border: 0;
+  border: 1px solid #d8dee8;
   border-radius: 5px;
-  background: var(--color-primary);
-  color: #ffffff;
+  background: #f8fafc;
+  color: #475569;
   padding: 0 10px;
   font-size: 10px;
   font-weight: 800;
@@ -577,7 +728,9 @@ onBeforeUnmount(() => {
 }
 
 .report-button:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-primary) 84%, black);
+  border-color: #cbd5e1;
+  background: #eef2f7;
+  color: #334155;
 }
 
 .report-button:disabled {
@@ -586,33 +739,65 @@ onBeforeUnmount(() => {
 
 .sales-criteria-modal {
   z-index: 30;
+  background: rgb(15 23 42 / 42%);
+  backdrop-filter: blur(2px);
+}
+
+.sales-criteria-guide-modal {
+  background: rgb(17 24 39 / 38%);
+  backdrop-filter: none;
 }
 
 .sales-criteria-modal__card {
   display: flex;
-  width: min(620px, 100%);
-  max-height: calc(100vh - 28px);
+  width: min(500px, calc(100vw - 32px));
+  max-height: calc(100vh - 24px);
   overflow: hidden;
-  border: 1px solid #e4e9f2;
-  border-radius: 14px;
+  border: 1px solid #dfe6f1;
+  border-radius: 12px;
   background: #ffffff;
+  box-shadow: 0 18px 50px rgb(15 23 42 / 20%);
   flex-direction: column;
+}
+
+.sales-criteria-guide-modal .sales-criteria-modal__card {
+  width: min(500px, 100%);
+  max-height: calc(100vh - 48px);
+  border: 1px solid #e4e9f2;
+  border-radius: 18px;
+  box-shadow: var(--shadow-modal);
 }
 
 .sales-criteria-modal__header {
   position: relative;
   flex: 0 0 auto;
+  border-bottom: 1px solid #edf1f6;
+  background: #ffffff;
+  padding: 16px 56px 14px 22px;
+}
+
+.sales-criteria-guide-modal .sales-criteria-modal__header {
   border-bottom: 1px solid #e8edf5;
   background:
     radial-gradient(circle at 90% 10%, color-mix(in srgb, var(--color-primary) 14%, transparent), transparent 40%),
     linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 7%, white) 0%, #ffffff 70%);
-  padding: 14px 56px 13px 20px;
+  padding: 22px 60px 20px 26px;
+}
+
+.sales-criteria-modal__header::before {
+  display: none;
+
 }
 
 .sales-criteria-modal__eyebrow {
   margin: 0 0 4px;
-  color: var(--color-primary);
+  color: #64748b;
   font-size: 12px;
+  font-weight: 800;
+}
+
+.sales-criteria-guide-modal .sales-criteria-modal__eyebrow {
+  color: var(--color-primary);
   font-weight: 900;
 }
 
@@ -624,39 +809,155 @@ onBeforeUnmount(() => {
   letter-spacing: 0;
 }
 
+.sales-criteria-guide-modal .sales-criteria-modal__header h3 {
+  font-size: 18px;
+}
+
 .sales-criteria-modal__close {
   position: absolute;
-  top: 13px;
-  right: 18px;
+  top: 14px;
+  right: 16px;
   display: grid;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   place-items: center;
-  border: 1px solid #e0e6ef;
-  border-radius: 10px;
-  background: #ffffff;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: #f4f7fb;
   color: #667085;
   font-size: 22px;
   font-weight: 400;
   line-height: 1;
 }
 
+.sales-criteria-guide-modal .sales-criteria-modal__close {
+  top: 20px;
+  right: 22px;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #7f8999;
+}
+
+.sales-criteria-guide-modal .sales-criteria-modal__close:hover {
+  background: #f3f5f8;
+  color: #263142;
+}
+
+.sales-criteria-modal__close:hover {
+  border-color: #dce4ef;
+  background: #eef3f8;
+}
+
 .sales-criteria-modal__body {
   display: grid;
   min-height: 0;
   flex: 1 1 auto;
-  gap: 14px;
+  gap: 12px;
   overflow-y: visible;
-  padding: 14px 20px;
+  padding: 12px 18px;
   color: #172033;
   font-size: 12px;
+}
+
+.sales-criteria-guide-modal .sales-criteria-modal__body {
+  gap: 14px;
+  overflow-y: auto;
+  padding: 22px 26px;
+}
+
+.sales-bulk-confirm-modal {
+  z-index: 35;
+}
+
+.sales-bulk-confirm-modal__card {
+  width: min(360px, calc(100vw - 32px));
+  border: 0;
+  border-radius: 12px;
+  box-shadow: 0 20px 46px rgb(15 23 42 / 22%);
+}
+
+.sales-bulk-confirm-modal__body {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 26px 24px 20px;
+  text-align: center;
+}
+
+.sales-bulk-confirm-modal__title,
+.sales-bulk-confirm-modal__detail {
+  margin: 0;
+}
+
+.sales-bulk-confirm-modal__icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 50%;
+  background: #ffedd5;
+  color: #f97316;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.sales-bulk-confirm-modal__title {
+  max-width: 280px;
+  color: #172033;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.45;
+}
+
+.sales-bulk-confirm-modal__detail {
+  max-width: 280px;
+  color: #8a93a3;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.sales-bulk-confirm-modal__footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 0 18px 18px;
+}
+
+.sales-bulk-confirm-modal__button {
+  height: 40px;
+  border: 0;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.sales-bulk-confirm-modal__button--cancel {
+  background: #eef2f7;
+  color: #475467;
+}
+
+.sales-bulk-confirm-modal__button--confirm {
+  background: #f97316;
+  color: #ffffff;
+}
+
+.sales-bulk-confirm-modal__button--cancel:hover {
+  background: #e2e8f0;
+}
+
+.sales-bulk-confirm-modal__button--confirm:hover {
+  background: #ea580c;
 }
 
 .criteria-section__title {
   display: flex;
   align-items: flex-start;
-  gap: 9px;
-  margin-bottom: 9px;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .criteria-section__title > span {
@@ -691,17 +992,19 @@ onBeforeUnmount(() => {
 
 .criteria-age-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: 1fr;
+  gap: 7px;
 }
 
 .criteria-age-card {
   display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
   gap: 6px;
   border: 1px solid #edf0f5;
   border-radius: 12px;
   background: #fbfcfe;
-  padding: 9px 11px;
+  padding: 8px 10px;
 }
 
 .criteria-age-card__preview {
@@ -738,24 +1041,24 @@ onBeforeUnmount(() => {
 
 .criteria-section--steps {
   border-top: 1px solid #edf0f5;
-  padding-top: 12px;
+  padding-top: 10px;
 }
 
 .criteria-step {
   display: grid;
-  grid-template-columns: 34px 1fr;
+  grid-template-columns: 30px 1fr;
   align-items: center;
-  gap: 9px;
-  margin-top: 6px;
+  gap: 8px;
+  margin-top: 5px;
   border: 1px solid #edf0f5;
   border-radius: 12px;
   background: #fbfcfe;
-  padding: 8px 10px;
+  padding: 7px 9px;
 }
 
 .criteria-step__badge {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   box-shadow:
     inset 0 2px 2px rgb(255 255 255 / 70%),
@@ -807,9 +1110,44 @@ onBeforeUnmount(() => {
   display: flex;
   flex: 0 0 auto;
   justify-content: flex-end;
+  gap: 10px;
   border-top: 1px solid #edf0f5;
+  background: #ffffff;
+  padding: 12px 18px 14px;
+}
+
+.sales-criteria-guide-modal .sales-criteria-modal__footer {
   background: #fbfcfe;
-  padding: 10px 20px 12px;
+  padding: 14px 20px 17px;
+}
+
+.sales-criteria-guide-modal .sales-criteria-modal__footer .button {
+  min-width: 60px;
+  min-height: 30px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.sales-criteria-modal__footer .button {
+  min-width: 76px;
+  min-height: 34px;
+  border-radius: 7px;
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.sales-criteria-modal__footer .button-secondary {
+  border: 1px solid #d7dee8;
+  background: #ffffff;
+  color: #475467;
+}
+
+.sales-criteria-guide-modal .sales-criteria-modal__footer .button {
+  min-width: 60px;
+  min-height: 30px;
+  border-radius: 8px;
+  font-size: 14px;
 }
 
 @media (max-width: 900px) {

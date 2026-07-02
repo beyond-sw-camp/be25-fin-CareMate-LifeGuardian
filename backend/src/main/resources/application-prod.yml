@@ -96,7 +96,7 @@ app:
 
     batch:
       enabled: ${REPORT_BATCH_ENABLED:true}
-      cron: ${REPORT_BATCH_CRON:0 3 * * * *}
+      cron: ${REPORT_BATCH_CRON:0 */5 * * * *}
       zone: ${REPORT_BATCH_ZONE:Asia/Seoul}
 
   lifecycle:

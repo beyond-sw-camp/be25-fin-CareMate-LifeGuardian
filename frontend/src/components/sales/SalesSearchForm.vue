@@ -1,5 +1,5 @@
-<script setup lang="ts">
-import { computed, nextTick, reactive, watch } from 'vue'
+﻿<script setup lang="ts">
+import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
 
 import type { SalesSearchFilters } from '@/api/sales'
 
@@ -15,7 +15,7 @@ const initialForm = () => ({
   customerName: '',
   age: '',
   gender: '' as '' | 'Male' | 'Female',
-  customerStageCode: '' as '' | '01' | '02',
+  customerStageCode: '01' as '' | '01' | '02',
   consultStatusCodes: [] as string[],
   contractStatusCodes: [] as string[],
   hasReport: false,
@@ -26,6 +26,8 @@ type SalesSearchFormFilters = Partial<SalesSearchFormState>
 
 // 화면 입력값은 문자열/배열 중심으로 관리하고, submit 시 API 검색 조건으로 변환
 const form = reactive(initialForm())
+const customerNameSpacingError = ref('')
+let customerNameSpacingErrorTimer: ReturnType<typeof setTimeout> | undefined
 
 watch(
   () => props.filters,
@@ -58,129 +60,88 @@ const contractStatusLabels: Record<string, string> = {
   '04': '청약완료',
   '06': '수납완료',
 }
-// 자주 쓰는 영업 조건을 한 번에 적용하는 프리셋 목록
 const quickFilters: { label: string; description: string; filters: SalesSearchFormFilters }[] = [
   {
     label: '첫 연락 대상',
-    description: '리포트는 준비됐지만 아직 상담을 시작하지 않은 잠재 고객입니다.',
+    description: '리포트는 준비됐지만 아직 상담을 시작하지 않은 잠재고객입니다.',
     filters: { customerStageCode: '01', consultStatusCodes: ['01'], hasReport: true },
   },
   {
-    label: '상담 후속관리',
-    description: '상담이 진행 중이며 리포트를 바탕으로 추가 안내가 필요한 잠재 고객입니다.',
+    label: '상담 지속관리',
+    description: '상담이 진행 중이며 리포트를 바탕으로 추가 안내가 필요한 잠재고객입니다.',
     filters: { customerStageCode: '01', consultStatusCodes: ['02'], hasReport: true },
   },
   {
     label: '우선 상담 대상',
-    description: '아직 상담 전이지만 3-Step 점검 대상으로 우선 확인이 필요한 잠재 고객입니다.',
+    description: '아직 상담 전이지만 3-Step 평가 대상으로 우선 확인이 필요한 잠재고객입니다.',
     filters: { customerStageCode: '01', consultStatusCodes: ['01'], hasThreeStep: true },
   },
   {
     label: '설계 진행건',
-    description: '설계중 또는 설계완료 상태로 다음 계약 단계 확인이 필요한 통합 고객입니다.',
+    description: '설계중 또는 설계완료 상태로 다음 계약 단계 확인이 필요한 통합고객입니다.',
     filters: { customerStageCode: '02', contractStatusCodes: ['01', '02'] },
   },
   {
     label: '청약 진행건',
-    description: '청약중 또는 청약완료 상태로 마무리 진행 상황을 확인할 통합 고객입니다.',
+    description: '청약중 또는 청약완료 상태로 마무리 진행 상황을 확인할 통합고객입니다.',
     filters: { customerStageCode: '02', contractStatusCodes: ['03', '04'] },
   },
   {
     label: '수납 완료건',
-    description: '수납이 완료됐고 리포트가 있어 후속 안내나 재안내가 가능한 통합 고객입니다.',
+    description: '수납이 완료됐고 리포트가 있어 후속 안내와 제안이 가능한 통합고객입니다.',
     filters: { customerStageCode: '02', contractStatusCodes: ['06'], hasReport: true },
   },
 ]
-// 현재 적용된 필터를 칩 목록으로 만들고, 각 칩은 자기 필터를 제거하는 함수 가짐
 const appliedFilterChips = computed(() => {
   const chips: { key: string; label: string; remove: () => void }[] = []
 
   if (form.customerName) {
-    chips.push({
-      key: 'customerName',
-      label: `고객 ${form.customerName}`,
-      remove: () => {
-        form.customerName = ''
-      },
-    })
+    chips.push({ key: 'customerName', label: `고객 ${form.customerName}`, remove: () => { form.customerName = '' } })
   }
-
   if (form.age !== '') {
-    chips.push({
-      key: 'age',
-      label: `나이 ${form.age}`,
-      remove: () => {
-        form.age = ''
-      },
-    })
+    chips.push({ key: 'age', label: `나이 ${form.age}`, remove: () => { form.age = '' } })
   }
-
   if (form.gender) {
-    chips.push({
-      key: 'gender',
-      label: form.gender === 'Male' ? '남' : '여',
-      remove: () => {
-        form.gender = ''
-      },
-    })
+    chips.push({ key: 'gender', label: form.gender === 'Male' ? '남' : '여', remove: () => { form.gender = '' } })
   }
-
   if (form.customerStageCode) {
-    chips.push({
-      key: 'customerStageCode',
-      label: form.customerStageCode === '01' ? '잠재' : '통합',
-      remove: () => {
-        form.customerStageCode = ''
-      },
-    })
+    chips.push({ key: 'customerStageCode', label: form.customerStageCode === '01' ? '잠재' : '통합', remove: () => { form.customerStageCode = '' } })
   }
-
   form.consultStatusCodes.forEach((code) => {
-    chips.push({
-      key: `consult-${code}`,
-      label: `상담 ${consultStatusLabels[code] ?? code}`,
-      remove: () => {
-        form.consultStatusCodes = form.consultStatusCodes.filter((item) => item !== code)
-      },
-    })
+    chips.push({ key: `consult-${code}`, label: `상담 ${consultStatusLabels[code] ?? code}`, remove: () => { form.consultStatusCodes = form.consultStatusCodes.filter((item) => item !== code) } })
   })
-
   form.contractStatusCodes.forEach((code) => {
-    chips.push({
-      key: `contract-${code}`,
-      label: `계약 ${contractStatusLabels[code] ?? code}`,
-      remove: () => {
-        form.contractStatusCodes = form.contractStatusCodes.filter((item) => item !== code)
-      },
-    })
+    chips.push({ key: `contract-${code}`, label: `계약 ${contractStatusLabels[code] ?? code}`, remove: () => { form.contractStatusCodes = form.contractStatusCodes.filter((item) => item !== code) } })
   })
-
   if (form.hasReport) {
-    chips.push({
-      key: 'hasReport',
-      label: '리포트',
-      remove: () => {
-        form.hasReport = false
-      },
-    })
+    chips.push({ key: 'hasReport', label: '리포트', remove: () => { form.hasReport = false } })
   }
-
   if (form.hasThreeStep) {
-    chips.push({
-      key: 'hasThreeStep',
-      label: '3-Step',
-      remove: () => {
-        form.hasThreeStep = false
-      },
-    })
+    chips.push({ key: 'hasThreeStep', label: '3-Step', remove: () => { form.hasThreeStep = false } })
   }
 
   return chips
 })
 
-// 빈 입력값은 쿼리 파라미터에서 제외해 백엔드 기본 조건을 사용
+const hasAnyWhitespace = (value: string) => /\s/.test(value)
+const isEnglishNameInput = (value: string) => /^[A-Za-z\s]*$/.test(value)
+const customerNameError = computed(() => customerNameSpacingError.value)
+const normalizeCustomerNameInput = () => {
+  if (!hasAnyWhitespace(form.customerName) || isEnglishNameInput(form.customerName)) return
+
+  form.customerName = form.customerName.replace(/\s+/g, '')
+  customerNameSpacingError.value = '공백은 입력할 수 없습니다.'
+
+  if (customerNameSpacingErrorTimer) clearTimeout(customerNameSpacingErrorTimer)
+  customerNameSpacingErrorTimer = setTimeout(() => {
+    customerNameSpacingError.value = ''
+    customerNameSpacingErrorTimer = undefined
+  }, 2_000)
+}
 const submit = async () => {
   await nextTick()
+
+  if (customerNameError.value) return
 
   emit('search', {
     customerName: form.customerName || undefined,
@@ -211,6 +172,10 @@ const removeFilter = (remove: () => void) => {
   submit()
 }
 
+onBeforeUnmount(() => {
+  if (customerNameSpacingErrorTimer) clearTimeout(customerNameSpacingErrorTimer)
+})
+
 </script>
 
 <template>
@@ -233,13 +198,25 @@ const removeFilter = (remove: () => void) => {
     </div>
 
     <div class="sales-search__row sales-search__row--top">
-      <label class="sales-search__field">
+      <label class="sales-search__field" :class="{ 'sales-search__field--invalid': customerNameError }">
         <span>고객 이름</span>
         <input
           v-model="form.customerName"
           class="sales-search__input"
+          :class="{ 'sales-search__input--invalid': customerNameError }"
+          :aria-invalid="Boolean(customerNameError)"
+          aria-describedby="sales-customer-name-error"
           placeholder="이름을 입력하세요."
+          @input="normalizeCustomerNameInput"
         />
+        <p
+          v-if="customerNameError"
+          id="sales-customer-name-error"
+          class="sales-search__field-error"
+          role="alert"
+        >
+          {{ customerNameError }}
+        </p>
       </label>
 
       <label class="sales-search__field sales-search__field--age">
@@ -330,10 +307,10 @@ const removeFilter = (remove: () => void) => {
 
 <style scoped>
 .sales-search {
-  margin-bottom: 8px;
+  margin-bottom: 7px;
   border: 1px solid #e3e8f0;
   box-shadow: none;
-  padding: 7px 12px 8px;
+  padding: 10px 14px 10px;
 }
 
 .sales-search__header {
@@ -341,7 +318,7 @@ const removeFilter = (remove: () => void) => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 
 .sales-section-title {
@@ -361,7 +338,7 @@ const removeFilter = (remove: () => void) => {
 }
 
 .sales-search__quick-button {
-  height: 22px;
+  height: 21px;
   border: 1px solid #dfe5ee;
   border-radius: 5px;
   background: #f7f9fc;
@@ -380,32 +357,22 @@ const removeFilter = (remove: () => void) => {
 .sales-search__row {
   display: grid;
   align-items: center;
-  min-height: 24px;
+  min-height: 26px;
   color: #394252;
   font-size: 11px;
   font-weight: 700;
+  overflow: visible;
 }
 
 .sales-search__row--top {
   grid-template-columns: minmax(210px, 260px) minmax(150px, 180px) minmax(130px, 160px) minmax(190px, 240px);
   column-gap: 16px;
-  margin-bottom: 6px;
-}
-
-.sales-search__field {
-  display: grid;
-  grid-template-columns: 50px minmax(0, 1fr);
-  align-items: center;
-  gap: 6px;
-}
-
-.sales-search__field--age {
-  margin-left: 0;
+  margin-bottom: 10px;
 }
 
 .sales-search__input {
   width: 100%;
-  height: 24px;
+  height: 23px;
   border: 1px solid #d9e0ea;
   border-radius: 5px;
   background: #ffffff;
@@ -421,15 +388,30 @@ const removeFilter = (remove: () => void) => {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 14%, transparent);
 }
 
+.sales-search__input--invalid,
+.sales-search__input--invalid:focus {
+  border-color: #d85a65;
+  box-shadow: 0 0 0 3px rgb(216 90 101 / 14%);
+}
+
 .sales-search__input::placeholder {
   color: #a6afbd;
+}
+
+.sales-search__field-error {
+  grid-column: 2;
+  margin: -3px 0 0;
+  color: #d85a65;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.2;
 }
 
 .sales-search__gender,
 .sales-search__stage {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   border: 0;
   margin: 0;
   padding: 0;
@@ -456,7 +438,8 @@ const removeFilter = (remove: () => void) => {
   grid-template-columns: max-content auto max-content minmax(0, 1fr) auto;
   column-gap: 12px;
   border-top: 1px solid #edf1f6;
-  padding-top: 6px;
+  padding-top: 10px;
+  padding-bottom: 2px;
 }
 
 .sales-search__applied {
@@ -464,9 +447,9 @@ const removeFilter = (remove: () => void) => {
   align-items: center;
   flex-wrap: wrap;
   gap: 5px;
-  margin-top: 6px;
+  margin-top: 5px;
   border-top: 1px solid #edf1f6;
-  padding-top: 6px;
+  padding-top: 5px;
 }
 
 .sales-search__applied-label {
@@ -503,25 +486,72 @@ const removeFilter = (remove: () => void) => {
   white-space: nowrap;
 }
 
+.sales-search .sales-search__field {
+  display: grid;
+  grid-template-columns: 50px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  white-space: normal;
+}
+
+.sales-search .sales-search__field--invalid {
+  align-items: start;
+}
+
+.sales-search__field--age {
+  margin-left: 0;
+}
+
 .sales-search__options {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 5px 6px;
   min-width: 0;
+  overflow: visible;
 }
 
 .sales-search input[type='radio'] {
-  width: 12px;
-  height: 12px;
+  width: 13px;
+  height: 13px;
+  flex: 0 0 13px;
+  appearance: none;
+  border: 1px solid #cfd8e5;
+  border-radius: 50%;
+  background: #ffffff;
   margin: 0;
-  accent-color: var(--color-primary);
+  box-shadow: inset 0 0 0 3px #ffffff;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.sales-search input[type='radio']:checked {
+  border-color: #f6a76b;
+  background: #f37021;
+  box-shadow: inset 0 0 0 3px #ffffff;
+}
+
+.sales-search input[type='radio']:focus-visible {
+  outline: 2px solid rgb(243 112 33 / 18%);
+  outline-offset: 2px;
+}
+
+.sales-search__gender label,
+.sales-search__stage label {
+  height: 21px;
+  border-radius: 999px;
+  padding: 0 3px;
+  color: #4f5d70;
+  line-height: 1;
 }
 
 .sales-search__toggle {
   position: relative;
   display: inline-flex;
   align-items: center;
+  overflow: visible;
 }
 
 .sales-search__toggle input {
@@ -538,14 +568,14 @@ const removeFilter = (remove: () => void) => {
   align-items: center;
   justify-content: center;
   height: 22px;
-  border: 1px solid #dbe3ef;
+  border: 1px solid #d6dee9;
   border-radius: 999px;
-  background: #ffffff;
-  color: #5d6878;
+  background: #fbfcfe;
+  color: #526173;
   padding: 0 9px;
   font-size: 10px;
   font-weight: 850;
-  line-height: 1;
+  line-height: 1.2;
   transition:
     border-color 120ms ease,
     background-color 120ms ease,
@@ -566,10 +596,10 @@ const removeFilter = (remove: () => void) => {
 }
 
 .sales-search__toggle input:checked + span {
-  border-color: color-mix(in srgb, var(--color-primary) 34%, white);
-  background: color-mix(in srgb, var(--color-primary) 10%, white);
-  color: var(--color-primary);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 12%, transparent);
+  border-color: #f6b37d;
+  background: #fff3ea;
+  color: #d95f16;
+  box-shadow: inset 0 0 0 1px rgb(243 112 33 / 8%);
 }
 
 .sales-search__toggle input:checked + span::before {
@@ -578,7 +608,7 @@ const removeFilter = (remove: () => void) => {
 }
 
 .sales-search__toggle input:focus-visible + span {
-  outline: 2px solid color-mix(in srgb, var(--color-primary) 26%, transparent);
+  outline: 2px solid rgb(243 112 33 / 18%);
   outline-offset: 2px;
 }
 
@@ -590,7 +620,7 @@ const removeFilter = (remove: () => void) => {
 
 .sales-search__button {
   min-width: 52px;
-  min-height: 24px;
+  min-height: 23px;
   border-radius: 5px;
   padding: 0 10px;
   font-size: 11px;
@@ -617,3 +647,5 @@ const removeFilter = (remove: () => void) => {
   }
 }
 </style>
+
+

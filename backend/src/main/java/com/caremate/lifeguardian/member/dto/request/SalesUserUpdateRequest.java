@@ -1,22 +1,18 @@
 package com.caremate.lifeguardian.member.dto.request;
 
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDate;
 
 @Getter
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class SalesUserRegisterRequest {
+@Setter
+public class SalesUserUpdateRequest {
 
     @NotBlank(message = "영업사원 성명은 필수 입력 항목입니다.")
     private String name;
@@ -41,7 +37,7 @@ public class SalesUserRegisterRequest {
     @NotNull(message = "입사일은 필수 입력 항목입니다.")
     private LocalDate joinedAt;
 
-    private String roleCode; // 미입력 시 서비스 단에서 '02'(일반 영업사원)로 할당
-
-    private Integer monthlyTarget; // 영업사원 최초 등록 시 입력하는 목표 계약 건수 (선택)
+    @NotNull(message = "목표 계약 건수는 필수 입력 항목입니다.")
+    @Min(value = 0, message = "목표 계약 건수는 0 이상이어야 합니다.")
+    private Integer monthlyTarget;
 }

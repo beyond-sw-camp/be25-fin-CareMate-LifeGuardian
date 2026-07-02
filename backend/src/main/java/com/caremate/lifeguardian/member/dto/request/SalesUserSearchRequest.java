@@ -5,8 +5,10 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
+@Setter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -16,6 +18,7 @@ public class SalesUserSearchRequest {
     private String statusCode;
     private Integer page;
     private Integer size;
+    private Long branchId;
 
     //오프셋 값을 반환
     //page 또는 size가 지정되지 않았을 때의 null-safe 기본값 연산
