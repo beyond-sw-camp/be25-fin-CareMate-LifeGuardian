@@ -15,7 +15,7 @@ const initialForm = () => ({
   customerName: '',
   age: '',
   gender: '' as '' | 'Male' | 'Female',
-  customerStageCode: '01' as '' | '01' | '02',
+  customerStageCode: '' as '' | '01' | '02',
   consultStatusCodes: [] as string[],
   contractStatusCodes: [] as string[],
   hasReport: false,
@@ -34,6 +34,16 @@ watch(
   (filters) => {
     if (!filters) return
 
+    form.customerName = filters.customerName ?? ''
+    form.age = 
+      filters.age !== undefined
+        ? String(filters.age)
+        : ''
+
+    form.gender = filters.gender ?? ''
+
+    form.customerStageCode = filters.customerStageCode ?? ''
+
     form.consultStatusCodes = filters.consultStatusCode
       ? [...filters.consultStatusCode]
       : []
@@ -41,6 +51,9 @@ watch(
     form.contractStatusCodes = filters.contractStatusCode
       ? [...filters.contractStatusCode]
       : []
+
+    form.hasReport = filters.hasReport ?? false
+    form.hasThreeStep = filters.hasThreeStep ?? false
   },
   {
     immediate: true,
