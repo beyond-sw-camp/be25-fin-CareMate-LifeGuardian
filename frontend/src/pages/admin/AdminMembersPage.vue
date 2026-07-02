@@ -7,7 +7,8 @@ import {
   getSalesUserList,
   registerSalesUser,
   changeSalesUserStatus,
-  retireSalesUser
+  retireSalesUser,
+  updateSalesUser
 } from '@/api/members'
 import type { SalesUserSummary } from '@/api/members'
 
@@ -37,7 +38,8 @@ const registerForm = ref({
   phone: '',
   email: '',
   joinedAt: new Date().toISOString().slice(0, 10),
-  roleCode: '02'
+  roleCode: '02',
+  monthlyTarget: undefined as number | undefined
 })
 const isRegistering = ref(false)
 const registerErrorMessage = ref('')
@@ -137,6 +139,7 @@ watch(selectedStatus, () => {
 // 사원 선택
 const selectUser = (user: SalesUserSummary) => {
   isAddingUser.value = false
+  isEditingUser.value = false
   selectedUser.value = user
   activeDetailTab.value = 'info'
 }
@@ -145,6 +148,7 @@ const selectUser = (user: SalesUserSummary) => {
 const openAddForm = () => {
   selectedUser.value = null
   isAddingUser.value = true
+  isEditingUser.value = false
   registerErrorMessage.value = ''
   registerForm.value = {
     name: '',
@@ -154,7 +158,85 @@ const openAddForm = () => {
     phone: '',
     email: '',
     joinedAt: new Date().toISOString().slice(0, 10),
-    roleCode: '02'
+    roleCode: '02',
+    monthlyTarget: undefined
+  }
+}
+
+// 사원 정보 수정 기능 상태 및 핸들러
+const isEditingUser = ref(false)
+const isSavingUser = ref(false)
+const editErrorMessage = ref('')
+const editForm = ref({
+  name: '',
+  birthDate: '',
+  branchId: 1,
+  rankCode: '01',
+  phone: '',
+  email: '',
+  joinedAt: '',
+  monthlyTarget: 0
+})
+
+const startEditUser = () => {
+  if (!selectedUser.value) return
+  editErrorMessage.value = ''
+  editForm.value = {
+    name: selectedUser.value.name,
+    birthDate: selectedUser.value.birthDate,
+    branchId: selectedUser.value.branchId,
+    rankCode: selectedUser.value.rankCode,
+    phone: selectedUser.value.phone,
+    email: selectedUser.value.email,
+    joinedAt: selectedUser.value.joinedAt,
+    monthlyTarget: selectedUser.value.monthlyTarget
+  }
+  isEditingUser.value = true
+}
+
+const cancelEditUser = () => {
+  isEditingUser.value = false
+}
+
+const handleEditPhoneInput = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  let value = target.value
+  const cleanValue = value.replace(/[^0-9]/g, '')
+  let formatted = ''
+  if (cleanValue.length <= 3) {
+    formatted = cleanValue
+  } else if (cleanValue.length <= 6) {
+    formatted = `${cleanValue.slice(0, 3)}-${cleanValue.slice(3)}`
+  } else if (cleanValue.length <= 10) {
+    formatted = `${cleanValue.slice(0, 3)}-${cleanValue.slice(3, 6)}-${cleanValue.slice(6)}`
+  } else {
+    const truncated = cleanValue.slice(0, 11)
+    formatted = `${truncated.slice(0, 3)}-${truncated.slice(3, 7)}-${truncated.slice(7)}`
+  }
+  editForm.value.phone = formatted
+}
+
+const submitEdit = async () => {
+  if (!selectedUser.value) return
+  editErrorMessage.value = ''
+  isSavingUser.value = true
+  try {
+    await updateSalesUser(selectedUser.value.id, editForm.value)
+    isEditingUser.value = false
+    
+    const targetUserId = selectedUser.value.id
+    await loadSalesUsers()
+    
+    const refreshed = salesUsers.value.find(u => u.id === targetUserId)
+    if (refreshed) {
+      selectedUser.value = refreshed
+    }
+    alert('영업사원 정보가 성공적으로 수정되었습니다.')
+  } catch (error: any) {
+    console.error('Failed to update sales user:', error)
+    editErrorMessage.value = error.response?.data?.message ?? '영업사원 정보 수정 처리에 실패했습니다.'
+  } finally {
+    isSavingUser.value = false
   }
 }
 
@@ -336,12 +418,13 @@ const handlePhoneInput = (event: Event) => {
                   <th>사번</th>
                   <th>이름</th>
                   <th>상태</th>
+                  <th>월간목표</th>
                   <th class="text-right">담당고객</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr v-if="salesUsers.length === 0">
-                  <td colspan="4" class="text-center empty-text">조회된 영업사원이 없습니다.</td>
+                  <td colspan="5" class="text-center empty-text">조회된 영업사원이 없습니다.</td>
                 </tr>
                 <tr
                     v-for="user in salesUsers"
@@ -357,6 +440,7 @@ const handlePhoneInput = (event: Event) => {
                         {{ user.statusName || (user.statusCode === '02' ? '퇴사' : '재직') }}
                       </span>
                   </td>
+                  <td class="font-bold text-slate-600">{{ user.monthlyTarget }}건</td>
                   <td class="text-right font-bold">{{ user.customerCount }}명</td>
                 </tr>
                 </tbody>
@@ -451,6 +535,11 @@ const handlePhoneInput = (event: Event) => {
                   <span>입사일 <span class="required">*</span></span>
                   <input v-model="registerForm.joinedAt" class="input" type="date" required />
                 </label>
+
+                <label class="form-group">
+                  <span>월간 목표 계약 건수</span>
+                  <input v-model.number="registerForm.monthlyTarget" class="input" type="number" min="0" placeholder="목표 건수 입력 (선택)" />
+                </label>
               </div>
 
               <p v-if="registerErrorMessage" class="error-text">{{ registerErrorMessage }}</p>
@@ -500,46 +589,114 @@ const handlePhoneInput = (event: Event) => {
             <div class="detail-body">
               <!-- 기본 정보 탭 -->
               <div v-if="activeDetailTab === 'info'" class="tab-content info-tab">
-                <div class="info-grid">
-                  <div class="info-item">
-                    <span class="info-label">사번 (식별 ID)</span>
-                    <span class="info-value font-bold text-slate-800">{{ selectedUser.employeeId }}</span>
+                <form v-if="isEditingUser" @submit.prevent="submitEdit" class="edit-user-form">
+                  <div class="info-grid">
+                    <div class="info-item">
+                      <span class="info-label">사번 (식별 ID)</span>
+                      <span class="info-value font-bold text-slate-400">{{ selectedUser.employeeId }} (수정 불가)</span>
+                    </div>
+                    <label class="info-item info-group-edit">
+                      <span class="info-label">이름</span>
+                      <input v-model.trim="editForm.name" class="input" required />
+                    </label>
+                    <label class="info-item info-group-edit">
+                      <span class="info-label">생년월일</span>
+                      <input v-model="editForm.birthDate" type="date" class="input" required />
+                    </label>
+                    <label class="info-item info-group-edit">
+                      <span class="info-label">소속 지점</span>
+                      <select v-model="editForm.branchId" class="input" required>
+                        <option v-for="(name, id) in branchMap" :key="id" :value="Number(id)">{{ name }}</option>
+                      </select>
+                    </label>
+                    <label class="info-item info-group-edit">
+                      <span class="info-label">직급</span>
+                      <select v-model="editForm.rankCode" class="input" required>
+                        <option v-for="(name, code) in rankMap" :key="code" :value="code">{{ name }}</option>
+                      </select>
+                    </label>
+                    <label class="info-item info-group-edit">
+                      <span class="info-label">연락처</span>
+                      <input v-model.trim="editForm.phone" class="input" required @input="handleEditPhoneInput" />
+                    </label>
+                    <label class="info-item info-group-edit">
+                      <span class="info-label">이메일</span>
+                      <input v-model.trim="editForm.email" type="email" class="input" required />
+                    </label>
+                    <label class="info-item info-group-edit">
+                      <span class="info-label">입사일</span>
+                      <input v-model="editForm.joinedAt" type="date" class="input" required />
+                    </label>
+                    <label class="info-item info-group-edit">
+                      <span class="info-label">월간 목표 계약 건수</span>
+                      <input v-model.number="editForm.monthlyTarget" type="number" min="0" class="input" required />
+                    </label>
                   </div>
-                  <div class="info-item">
-                    <span class="info-label">이름</span>
-                    <span class="info-value">{{ selectedUser.name }}</span>
+                  <p v-if="editErrorMessage" class="error-text" style="margin-top: 10px;">{{ editErrorMessage }}</p>
+                  <div class="form-actions-inline" style="display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end;">
+                    <button class="button button-secondary" type="button" @click="cancelEditUser">취소</button>
+                    <button class="button button-primary" type="submit" :disabled="isSavingUser">
+                      {{ isSavingUser ? '저장 중...' : '저장' }}
+                    </button>
                   </div>
-                  <div class="info-item">
-                    <span class="info-label">생년월일</span>
-                    <span class="info-value">{{ getUserMockDetails(selectedUser).birthDate }}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">소속 지점</span>
-                    <span class="info-value">{{ getUserMockDetails(selectedUser).branchName }}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">직급</span>
-                    <span class="info-value">{{ getUserMockDetails(selectedUser).positionName }}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">연락처</span>
-                    <span class="info-value">{{ getUserMockDetails(selectedUser).phone }}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">이메일</span>
-                    <span class="info-value">{{ getUserMockDetails(selectedUser).email }}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">입사일</span>
-                    <span class="info-value">{{ getUserMockDetails(selectedUser).joinedAt }}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">재직 상태</span>
-                    <span class="info-value">
-                      <span class="badge" :class="selectedUser.statusCode === '01' ? 'badge-active' : 'badge-retired'">
-                        {{ selectedUser.statusName || (selectedUser.statusCode === '02' ? '퇴사' : '재직') }}
+                </form>
+
+                <div v-else>
+                  <div class="info-grid">
+                    <div class="info-item">
+                      <span class="info-label">사번 (식별 ID)</span>
+                      <span class="info-value font-bold text-slate-800">{{ selectedUser.employeeId }}</span>
+                    </div>
+                    <div class="info-item">
+                      <span class="info-label">이름</span>
+                      <span class="info-value">{{ selectedUser.name }}</span>
+                    </div>
+                    <div class="info-item">
+                      <span class="info-label">생년월일</span>
+                      <span class="info-value">{{ selectedUser.birthDate }}</span>
+                    </div>
+                    <div class="info-item">
+                      <span class="info-label">소속 지점</span>
+                      <span class="info-value">{{ selectedUser.branchName }}</span>
+                    </div>
+                    <div class="info-item">
+                      <span class="info-label">직급</span>
+                      <span class="info-value">{{ selectedUser.positionName }}</span>
+                    </div>
+                    <div class="info-item">
+                      <span class="info-label">연락처</span>
+                      <span class="info-value">{{ selectedUser.phone }}</span>
+                    </div>
+                    <div class="info-item">
+                      <span class="info-label">이메일</span>
+                      <span class="info-value">{{ selectedUser.email }}</span>
+                    </div>
+                    <div class="info-item">
+                      <span class="info-label">입사일</span>
+                      <span class="info-value">{{ selectedUser.joinedAt }}</span>
+                    </div>
+                    <div class="info-item">
+                      <span class="info-label">월간 목표 계약 건수</span>
+                      <span class="info-value font-bold text-primary">{{ selectedUser.monthlyTarget }}건</span>
+                    </div>
+                    <div class="info-item">
+                      <span class="info-label">재직 상태</span>
+                      <span class="info-value">
+                        <span class="badge" :class="selectedUser.statusCode === '01' ? 'badge-active' : 'badge-retired'">
+                          {{ selectedUser.statusName || (selectedUser.statusCode === '02' ? '퇴사' : '재직') }}
+                        </span>
                       </span>
-                    </span>
+                    </div>
+                  </div>
+                  <div class="detail-actions" style="margin-top: 20px; border-top: 1px solid var(--color-border); padding-top: 16px; display: flex; justify-content: flex-end;">
+                    <button 
+                      class="button button-secondary" 
+                      type="button" 
+                      @click="startEditUser"
+                      :disabled="selectedUser.statusCode === '02'"
+                    >
+                      ✏️ 정보 수정
+                    </button>
                   </div>
                 </div>
               </div>

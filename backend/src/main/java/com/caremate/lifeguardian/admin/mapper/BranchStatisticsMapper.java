@@ -15,7 +15,8 @@ public interface BranchStatisticsMapper {
     List<SalesUserPerformanceDetail> selectSalesUsersPerformanceDetails(
             @Param("branchId") Long branchId,
             @Param("yearMonth") String yearMonth,
-            @Param("year") int year
+            @Param("year") int year,
+            @Param("managerUserId") Long managerUserId
     );
 
     // 특정 지점의 연간 계약 수 카운트
@@ -28,12 +29,16 @@ public interface BranchStatisticsMapper {
     int countContractsByBranchAndMonth(@Param("branchId") Long branchId, @Param("yearMonth") String yearMonth);
 
     // 특정 지점의 활성 영업사원 수 조회
-    int countActiveSalesUsersByBranch(@Param("branchId") Long branchId);
+    int countActiveSalesUsersByBranch(
+            @Param("branchId") Long branchId,
+            @Param("managerUserId") Long managerUserId
+    );
 
     // 특정 지점의 월간 영업사원 실적 및 랭킹 조회
     List<SalesUserPerformance> selectSalesUsersPerformanceRanking(
             @Param("branchId") Long branchId,
-            @Param("yearMonth") String yearMonth
+            @Param("yearMonth") String yearMonth,
+            @Param("managerUserId") Long managerUserId
     );
 
     // 직급 코드에 해당하는 직급명 조회
