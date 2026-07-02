@@ -677,17 +677,17 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   min-height: 26px;
-  margin-top: 2px;
+  margin-top: auto;
 }
 
 .sales-list :deep(.sales-table) {
   min-height: 0;
-  flex: 1 1 auto;
-  height: 100%;
+  flex: 0 0 auto;
+  height: auto;
 }
 
 .sales-list :deep(.sales-table table) {
-  height: 100%;
+  height: auto;
 }
 
 .sales-list :deep(.sales-table th) {
