@@ -30,6 +30,7 @@ public class ReportHistoryController {
             @RequestParam(defaultValue = "all") String sendType,
             @RequestParam(defaultValue = "all") String sendItemType,
             @RequestParam(defaultValue = "all") String sendStatus,
+            @RequestParam(defaultValue = "all") String customerStageCode,
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
@@ -39,6 +40,7 @@ public class ReportHistoryController {
                 .sendType(sendType)
                 .sendItemType(sendItemType)
                 .sendStatus(sendStatus)
+                .customerStageCode(customerStageCode)
                 .keyword(keyword)
                 .page(page)
                 .size(size)

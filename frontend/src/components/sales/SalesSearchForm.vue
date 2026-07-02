@@ -34,6 +34,16 @@ watch(
   (filters) => {
     if (!filters) return
 
+    form.customerName = filters.customerName ?? ''
+    form.age = 
+      filters.age !== undefined
+        ? String(filters.age)
+        : ''
+
+    form.gender = filters.gender ?? ''
+
+    form.customerStageCode = filters.customerStageCode ?? ''
+
     form.consultStatusCodes = filters.consultStatusCode
       ? [...filters.consultStatusCode]
       : []
@@ -41,6 +51,9 @@ watch(
     form.contractStatusCodes = filters.contractStatusCode
       ? [...filters.contractStatusCode]
       : []
+
+    form.hasReport = filters.hasReport ?? false
+    form.hasThreeStep = filters.hasThreeStep ?? false
   },
   {
     immediate: true,
@@ -138,7 +151,6 @@ const normalizeCustomerNameInput = () => {
     customerNameSpacingErrorTimer = undefined
   }, 2_000)
 }
-
 const normalizeAgeInput = () => {
   form.age = form.age.replace(/\D/g, '').slice(0, 4)
 }

@@ -10,7 +10,6 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -22,6 +21,7 @@ public class ReportHistoryServiceImpl implements ReportHistoryService {
     private static final Set<String> SEND_TYPES = Set.of("all", "report", "webform");
     private static final Set<String> SEND_ITEM_TYPES = Set.of("all", "report_lifecycle", "report_disease", "webform");
     private static final Set<String> SEND_STATUSES = Set.of("all", "pending", "success", "failed", "collected");
+    private static final Set<String> CUSTOMER_STAGE_CODES = Set.of("all", "01", "02");
 
     private final ReportHistoryMapper reportHistoryMapper;
 
@@ -77,34 +77,15 @@ public class ReportHistoryServiceImpl implements ReportHistoryService {
             throw new BaseException(400, "발송 상태는 all, pending, success, failed, collected 중 하나여야 합니다.");
         }
 
+        String customerStageCode = normalizeOrDefault(request.getCustomerStageCode(), "all");
+
+        if (!CUSTOMER_STAGE_CODES.contains(customerStageCode)) {
+            throw new BaseException(400, "고객 유형은 all, 01, 02 중 하나여야 합니다.");
+        }
+
         String keyword = request.getKeyword() == null ? null : request.getKeyword().trim();
-        String customerStageCode = null;
-        List<String> keywordTerms = new ArrayList<>();
-
-        if (keyword != null && !keyword.isBlank()) {
-            for (String token : keyword.split("\\s+")) {
-                String compactToken = token.replaceAll("\\s+", "");
-
-                if (compactToken.isBlank()) {
-                    continue;
-                }
-
-                if ("잠재".equals(compactToken) || "잠재고객".equals(compactToken)) {
-                    customerStageCode = "01";
-                    continue;
-                }
-
-                if ("통합".equals(compactToken) || "통합고객".equals(compactToken)) {
-                    customerStageCode = "02";
-                    continue;
-                }
-
-                keywordTerms.add(compactToken);
-            }
-
-            if (customerStageCode != null) {
-                keywordTerms.removeIf("고객"::equals);
-            }
+        if (keyword != null && keyword.matches(".*\\s+.*")) {
+            throw new BaseException(400, "고객명 검색어 중간에는 공백을 입력할 수 없습니다.");
         }
 
         if (request.getPage() < 1) {
@@ -123,9 +104,8 @@ public class ReportHistoryServiceImpl implements ReportHistoryService {
                 .sendType(sendType)
                 .sendItemType(sendItemType)
                 .sendStatus(sendStatus)
-                .keyword(keyword)
-                .keywordTerms(keywordTerms)
                 .customerStageCode(customerStageCode)
+                .keyword(keyword)
                 .page(request.getPage())
                 .size(request.getSize())
                 .build();

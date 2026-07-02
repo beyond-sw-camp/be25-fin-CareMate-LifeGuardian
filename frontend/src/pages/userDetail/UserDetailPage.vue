@@ -267,7 +267,7 @@ watch(
         <nav class="detail-breadcrumb" aria-label="현재 위치">
           <span aria-hidden="true">⌂</span>
           <button type="button" @click="goBackToOrigin">
-            {{ isFromDashboard ? '대시보드' : '고객 관리' }}
+            {{ isFromDashboard ? '대시보드' : '영업현황' }}
           </button>
           <span aria-hidden="true">›</span>
           <span>고객 상세</span>
