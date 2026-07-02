@@ -378,7 +378,7 @@ onBeforeUnmount(() => {
   margin-bottom: 7px;
   border: 1px solid #e3e8f0;
   box-shadow: none;
-  padding: 6px 11px 7px;
+  padding: 10px 14px 10px;
 }
 
 .sales-search__header {
@@ -386,7 +386,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 4px;
+  margin-bottom: 5px;
 }
 
 .sales-section-title {
@@ -434,7 +434,7 @@ onBeforeUnmount(() => {
 .sales-search__row--top {
   grid-template-columns: minmax(210px, 260px) minmax(150px, 180px) minmax(130px, 160px) minmax(190px, 240px);
   column-gap: 16px;
-  margin-bottom: 4px;
+  margin-bottom: 10px;
 }
 
 .sales-search__input {
@@ -505,7 +505,7 @@ onBeforeUnmount(() => {
   grid-template-columns: max-content auto max-content minmax(0, 1fr) auto;
   column-gap: 12px;
   border-top: 1px solid #edf1f6;
-  padding-top: 5px;
+  padding-top: 10px;
 }
 
 .sales-search__applied {
