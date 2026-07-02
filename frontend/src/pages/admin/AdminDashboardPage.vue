@@ -39,6 +39,10 @@ const branchIdMap: Record<string, number> = {
 
 // 지점 ID & 이름 바인딩 (Compatibility for dev/prod)
 const branchId = computed(() => {
+  if (authStore.branchId) {
+    const num = Number(authStore.branchId)
+    if (!isNaN(num)) return num
+  }
   const b = authStore.branch
   if (!b) return 1
   return branchIdMap[b] ?? (Number(b) || 1)
@@ -276,6 +280,7 @@ const sortedSalesUsers = computed(() => {
       :branch-id="branchId" 
       :user-id="selectedUserId" 
       @close="isIndividualPerformanceOpen = false"
+      @target-updated="initDashboard"
     />
   </div>
 </template>

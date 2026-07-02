@@ -342,21 +342,31 @@ public class ReportDataServiceImpl {
         BigDecimal p5 = height ? standard.getHeightP5() : standard.getWeightP5();
         BigDecimal p50 = height ? standard.getHeightP50() : standard.getWeightP50();
         BigDecimal p95 = height ? standard.getHeightP95() : standard.getWeightP95();
+        String unit = height ? "cm" : "kg";
+        String lowerExpression = height ? "작습니다" : "적게 나갑니다";
+        String higherExpression = height ? "큽니다" : "많이 나갑니다";
 
         if (childValue.compareTo(p5) < 0) {
-            return "%s가 같은 성별·나이 또래 중 하위 5%%보다 %s 편입니다."
-                    .formatted(label, height ? "작은" : "적게 나가는");
+            return "%s는 같은 성별·나이 기준보다 낮은 구간입니다. 5백분위 값(%s%s)보다 %s%s %s."
+                    .formatted(label, formatDecimal(p5), unit, formatDecimal(p5.subtract(childValue)), unit, lowerExpression);
         }
         if (childValue.compareTo(p50) < 0) {
-            return "%s가 같은 성별·나이 또래의 평균보다 %s 편입니다."
-                    .formatted(label, height ? "작은" : "적게 나가는");
+            return "%s는 같은 성별·나이 기준 5~50백분위 구간입니다. 중앙값(%s%s)보다 %s%s %s."
+                    .formatted(label, formatDecimal(p50), unit, formatDecimal(p50.subtract(childValue)), unit, lowerExpression);
         }
         if (childValue.compareTo(p95) <= 0) {
-            return "%s가 같은 성별·나이 또래의 평균보다 %s 편입니다."
-                    .formatted(label, height ? "큰" : "많이 나가는");
+            return "%s는 같은 성별·나이 기준 50~95백분위 구간입니다. 중앙값(%s%s)보다 %s%s %s."
+                    .formatted(label, formatDecimal(p50), unit, formatDecimal(childValue.subtract(p50)), unit, higherExpression);
         }
-        return "%s가 같은 성별·나이 또래 중 상위 5%%보다 %s 편입니다."
-                .formatted(label, height ? "큰" : "많이 나가는");
+        return "%s는 같은 성별·나이 기준보다 높은 구간입니다. 95백분위 값(%s%s)보다 %s%s %s."
+                .formatted(label, formatDecimal(p95), unit, formatDecimal(childValue.subtract(p95)), unit, higherExpression);
+    }
+
+    private String formatDecimal(BigDecimal value) {
+        if (value == null) {
+            return "-";
+        }
+        return value.setScale(1, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString();
     }
 
     /**
@@ -451,8 +461,8 @@ public class ReportDataServiceImpl {
     private enum LifeStage {
         INFANT(0, 6, "영유아기"),
         SCHOOL(7, 13, "학령기"),
-        ADOLESCENT(14, 20, "청소년기"),
-        ADULT(21, 200, "성인");
+        ADOLESCENT(14, 19, "청소년기"),
+        ADULT(20, 200, "성인");
 
         private final int minAge;
         private final int maxAge;

@@ -62,4 +62,13 @@ public interface SalesUserMapper {
             @Param("fromUserId") Long fromUserId,
             @Param("toUserId") Long toUserId);
 
+    // 특정 영업사원의 월간 계약 목표 추가 또는 수정 (UPSERT)
+    int upsertSalesMonthlyTarget(
+            @Param("salesUserId") Long salesUserId,
+            @Param("targetYearMonth") String targetYearMonth,
+            @Param("targetContractCount") int targetContractCount);
+
+    // 영업사원 정보 수정
+    int updateSalesUser(SalesUser user);
+
 }

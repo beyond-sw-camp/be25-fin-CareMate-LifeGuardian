@@ -468,18 +468,14 @@
             <th>상품명</th>
             <th>계약자</th>
             <th>피보험자</th>
-            <th>계약 상태</th>
+            <th>계약 현황</th>
             <th>계약일</th>
         </tr>
         <tr th:each="contract : ${contractSummaries}">
             <td th:text="${contract.productName}">상품명</td>
             <td th:text="${contract.contractorName ?: '-'}">계약자</td>
             <td th:text="${contract.insuredName ?: '-'}">피보험자</td>
-            <td>
-                <span th:text="${contract.contractStatusName}">수납완료</span>
-                /
-                <span th:text="${contract.contractResultStatusName}">계약성공</span>
-            </td>
+            <td th:text="${contract.contractStatusName}">수납완료</td>
             <td th:text="${#temporals.format(contract.contractDate, 'yyyy-MM-dd')}">2026-06-30</td>
         </tr>
     </table>
@@ -503,7 +499,7 @@
             <td>
                 <div class="summary-label">다음 생애주기 변화</div>
                 <div class="summary-value" th:text="${nextLifeStageName}">성인</div>
-                <div class="summary-help" th:text="${nextLifeStageTransition}">21세부터 성인으로 전환됩니다.</div>
+                <div class="summary-help" th:text="${nextLifeStageTransition}">20세부터 성인으로 전환됩니다.</div>
             </td>
         </tr>
         <tr>
@@ -691,7 +687,7 @@
         </tr>
     </table>
     <div class="advisor-action">
-        더 정확한 리포트를 위해 상담을 요청하거나 웹폼을 작성하면 키·몸무게, 병력, 생활습관 정보를 반영한 개인 맞춤 분석을 확인할 수 있습니다.
+        상담 또는 웹폼 응답을 통해 키·몸무게, 병력, 생활습관 정보를 추가로 반영하면 현재 리포트보다 더 구체적인 상담 참고자료를 확인할 수 있습니다.
     </div>
 </section>
 
