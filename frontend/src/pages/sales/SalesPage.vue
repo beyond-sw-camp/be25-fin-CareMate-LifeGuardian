@@ -13,7 +13,6 @@ import {
   getSalesSummary,
   sendCustomerWebform,
   sendCustomerReportsInBulk,
-  sendCustomerWebformsInBulk,
   type SalesCustomer,
   type SalesSearchFilters,
   type SalesSummary as SalesSummaryData,
@@ -139,24 +138,26 @@ const getQueryArray = (value: unknown): string[] | undefined => {
 }
 
 const applyRouteFilters = () => {
-  const consultStatusCode = getQueryArray(
-    route.query.consultStatusCode,
-  )
+  const consultStatusCode = getQueryArray(route.query.consultStatusCode)
+  const contractStatusCode = getQueryArray(route.query.contractStatusCode)
 
-  const contractStatusCode = getQueryArray(
-    route.query.contractStatusCode,
-  )
+  if (contractStatusCode) {
+    filters.value = {
+      contractStatusCode,
+    }
+    return
+  }
+
+  if (consultStatusCode) {
+    filters.value = {
+      customerStageCode: '01',
+      consultStatusCode,
+    }
+    return
+  }
 
   filters.value = {
-    ...filters.value,
-
-    ...(consultStatusCode
-      ? { consultStatusCode }
-      : {}),
-
-    ...(contractStatusCode
-      ? { contractStatusCode }
-      : {}),
+    customerStageCode: '01',
   }
 }
 
@@ -214,13 +215,27 @@ const isReportSendable = (customer: SalesCustomer) =>
   SENDABLE_REPORT_STATUS_CODES.has(customer.reportStatusCode!) &&
   (customer.canSendReport || customer.reportStatusCode === '02')
 
+const loadBulkTargetCustomers = async () => {
+  if (selectedReportCustomerIds.value.length) {
+    return customers.value.filter((customer) =>
+      selectedReportCustomerIds.value.includes(customer.customerId),
+    )
+  }
+
+  const result = await getSalesList({
+    ...filters.value,
+    page: 1,
+    size: Math.max(totalCount.value, SALES_PAGE_SIZE),
+  })
+
+  return result.items
+}
+
 // 선택된 리포트가 있으면 선택 건만, 없으면 현재 검색 조건의 발송 가능 건을 일괄 발송합니다.
 const handleBulkSend = async () => {
   if (isReportBulkSending.value) return
 
-  const targetCustomers = selectedReportCustomerIds.value.length
-    ? customers.value.filter((customer) => selectedReportCustomerIds.value.includes(customer.customerId))
-    : customers.value.filter(isReportSendable)
+  const targetCustomers = await loadBulkTargetCustomers()
   const graduatedCount = targetCustomers.filter((customer) => customer.graduated).length
   const sendableCustomers = targetCustomers.filter(isReportSendable)
   const unavailableCount = targetCustomers.length - graduatedCount - sendableCustomers.length
@@ -263,9 +278,7 @@ const handleBulkSend = async () => {
   reportMessage.value = ''
 
   try {
-    const result = await sendCustomerReportsInBulk(
-      selectedReportCustomerIds.value.length ? reportIds : undefined,
-    )
+    const result = await sendCustomerReportsInBulk(reportIds)
 
     const excludedMessage = [
       graduatedCount > 0 ? `졸업 제외 ${graduatedCount}건` : '',
@@ -328,10 +341,9 @@ const sendSelectedCustomerWebforms = async (targetCustomers: SalesCustomer[]) =>
 const handleWebformBulkSend = async () => {
   if (isWebformBulkSending.value) return
 
-  const targetCustomers = selectedReportCustomerIds.value.length
-    ? customers.value.filter((customer) => selectedReportCustomerIds.value.includes(customer.customerId))
-    : []
-  const selectedCount = targetCustomers.length
+  const targetCustomers = await loadBulkTargetCustomers()
+  const selectedCount = selectedReportCustomerIds.value.length
+  const targetCount = targetCustomers.length
 
   const confirmed = await openBulkConfirm(
     '웹폼 일괄발송',
@@ -348,22 +360,18 @@ const handleWebformBulkSend = async () => {
   reportMessage.value = ''
 
   try {
-    const { results, failedCount: requestFailedCount } = selectedCount > 0
-      ? await sendSelectedCustomerWebforms(targetCustomers)
-      : { results: await sendCustomerWebformsInBulk(), failedCount: 0 }
+    const { results, failedCount: requestFailedCount } = await sendSelectedCustomerWebforms(targetCustomers)
 
     results.forEach(applyWebformSendResult)
     const failedCount = requestFailedCount + results.filter(isWebformSendFailed).length
-    const successCount = selectedCount > 0
-      ? selectedCount - failedCount
-      : results.length - failedCount
+    const successCount = targetCount - failedCount
 
     showReportMessage(
       `웹폼 발송 성공: ${successCount}건 실패: ${failedCount}건`,
       failedCount > 0 ? 'error' : 'success',
     )
 
-    if (selectedCount > 0) selectedReportCustomerIds.value = []
+    selectedReportCustomerIds.value = []
   } catch (error) {
     showReportMessage(getErrorMessage(error, '웹폼 일괄 발송에 실패했습니다.'), 'error')
   } finally {
@@ -597,9 +605,10 @@ onBeforeUnmount(() => {
 }
 
 .sales-list {
+  position: relative;
   display: flex;
   min-height: 0;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   flex-direction: column;
   border: 1px solid #e3e8f0;
   box-shadow: none;
@@ -645,12 +654,17 @@ onBeforeUnmount(() => {
 }
 
 .sales-list__report-message {
-  flex: 0 0 auto;
-  margin: 0 0 5px;
+  position: absolute;
+  top: 31px;
+  right: 11px;
+  left: 11px;
+  z-index: 2;
+  margin: 0;
   border-radius: 6px;
   padding: 5px 8px;
   font-size: 10px;
   font-weight: 700;
+  pointer-events: none;
 }
 
 .sales-list__report-message--success {
@@ -682,12 +696,12 @@ onBeforeUnmount(() => {
 
 .sales-list :deep(.sales-table) {
   min-height: 0;
-  flex: 1 1 auto;
-  height: 100%;
+  flex: 0 0 auto;
+  height: auto;
 }
 
 .sales-list :deep(.sales-table table) {
-  height: 100%;
+  height: auto;
 }
 
 .sales-list :deep(.sales-table th) {

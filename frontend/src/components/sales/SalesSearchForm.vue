@@ -34,6 +34,16 @@ watch(
   (filters) => {
     if (!filters) return
 
+    form.customerName = filters.customerName ?? ''
+    form.age = 
+      filters.age !== undefined
+        ? String(filters.age)
+        : ''
+
+    form.gender = filters.gender ?? ''
+
+    form.customerStageCode = filters.customerStageCode ?? ''
+
     form.consultStatusCodes = filters.consultStatusCode
       ? [...filters.consultStatusCode]
       : []
@@ -41,6 +51,9 @@ watch(
     form.contractStatusCodes = filters.contractStatusCode
       ? [...filters.contractStatusCode]
       : []
+
+    form.hasReport = filters.hasReport ?? false
+    form.hasThreeStep = filters.hasThreeStep ?? false
   },
   {
     immediate: true,
@@ -99,7 +112,7 @@ const appliedFilterChips = computed(() => {
     chips.push({ key: 'customerName', label: `고객 ${form.customerName}`, remove: () => { form.customerName = '' } })
   }
   if (form.age !== '') {
-    chips.push({ key: 'age', label: `나이 ${form.age}`, remove: () => { form.age = '' } })
+    chips.push({ key: 'age', label: form.age, remove: () => { form.age = '' } })
   }
   if (form.gender) {
     chips.push({ key: 'gender', label: form.gender === 'Male' ? '남' : '여', remove: () => { form.gender = '' } })
@@ -138,6 +151,10 @@ const normalizeCustomerNameInput = () => {
     customerNameSpacingErrorTimer = undefined
   }, 2_000)
 }
+const normalizeAgeInput = () => {
+  form.age = form.age.replace(/\D/g, '').slice(0, 4)
+}
+
 const submit = async () => {
   await nextTick()
 
@@ -221,7 +238,15 @@ onBeforeUnmount(() => {
 
       <label class="sales-search__field sales-search__field--age">
         <span>나이</span>
-        <input v-model="form.age" class="sales-search__input" min="0" type="number" placeholder="나이를 입력하세요." />
+        <input
+          v-model="form.age"
+          class="sales-search__input"
+          inputmode="numeric"
+          maxlength="4"
+          pattern="[0-9]*"
+          placeholder="나이를 입력하세요."
+          @input="normalizeAgeInput"
+        />
       </label>
 
       <fieldset class="sales-search__gender">
