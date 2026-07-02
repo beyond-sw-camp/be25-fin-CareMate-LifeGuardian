@@ -33,12 +33,14 @@
                     ROW_NUMBER() OVER (
                         PARTITION BY c.integrated_customer_id
                         ORDER BY
-                            CASE c.contract_result_status_code
+                            CASE c.contract_status_code
                                 WHEN '01' THEN 1
                                 WHEN '02' THEN 2
                                 WHEN '03' THEN 3
+                                WHEN '04' THEN 4
+                                WHEN '06' THEN 5
                                 ELSE 9
-                            END,
+                            END DESC,
                             c.updated_at DESC,
                             c.id DESC
                     ) AS rn
@@ -110,49 +112,68 @@
     <select id="findDashboardAchievement"
             resultType="com.caremate.lifeguardian.dashboard.dto.response.DashboardAchievementResponse">
 
-        SELECT
-            COALESCE(
-                    (
-                        SELECT smt.target_contract_count
-                        FROM sales_monthly_target smt
-                        WHERE smt.sales_user_id = #{salesUserId}
-                          AND smt.target_year_month = DATE_FORMAT(CURDATE(), '%Y%m')
+        WITH customer_base AS (
+            SELECT
+                ic.integrated_customer_id AS customer_id
+            FROM integrated_customer ic
+            WHERE ic.sales_user_id = #{salesUserId}
+        ),
+
+        representative_contract AS (
+            SELECT *
+            FROM (
+                SELECT
+                    c.*,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY c.integrated_customer_id
+                        ORDER BY
+                            CASE c.contract_status_code
+                                WHEN '01' THEN 1
+                                WHEN '02' THEN 2
+                                WHEN '03' THEN 3
+                                WHEN '04' THEN 4
+                                WHEN '06' THEN 5
+                                ELSE 9
+                            END DESC,
+                            c.updated_at DESC,
+                            c.id DESC
+                    ) AS rn
+                FROM contract c
+                INNER JOIN customer_base cb
+                    ON cb.customer_id = c.integrated_customer_id
+            ) x
+            WHERE x.rn = 1
+        ),
+
+        target AS (
+            SELECT COALESCE(
+                (
+                    SELECT smt.target_contract_count
+                    FROM sales_monthly_target smt
+                    WHERE smt.sales_user_id = #{salesUserId}
+                        AND smt.target_year_month = DATE_FORMAT(CURDATE(), '%Y%m')
                     LIMIT 1
                 ),
-            150
-        ) AS targetContractCount,
-
-            (
-                SELECT COUNT(*)
-                FROM contract c
-                WHERE c.sales_user_id = #{salesUserId}
-                  AND c.contract_result_status_code = '02'
-                  AND DATE_FORMAT(c.updated_at, '%Y%m') = DATE_FORMAT(CURDATE(), '%Y%m')
-            ) AS completedContractCount,
-
-            ROUND(
-                    (
-                        (
-                            SELECT COUNT(*)
-                            FROM contract c
-                            WHERE c.sales_user_id = #{salesUserId}
-                              AND c.contract_result_status_code = '02'
-                              AND DATE_FORMAT(c.updated_at, '%Y%m') = DATE_FORMAT(CURDATE(), '%Y%m')
-                        ) * 100.0
-                        )
-                        /
-                    COALESCE(
-                            (
-                                SELECT smt.target_contract_count
-                                FROM sales_monthly_target smt
-                                WHERE smt.sales_user_id = #{salesUserId}
-                                  AND smt.target_year_month = DATE_FORMAT(CURDATE(), '%Y%m')
-                            LIMIT 1
-                        ),
                 150
-            )
-        ) AS achievementRate
+            ) AS target_count
+        ),
 
+        completed AS (
+            SELECT COUNT(*) AS completed_count
+            FROM representative_contract rc
+            WHERE rc.contract_status_code = '06'
+                AND DATE_FORMAT(rc.created_at, '%Y%m') = DATE_FORMAT(CURDATE(), '%Y%m')
+        )
+
+        SELECT
+            target.target_count AS targetContractCount,
+            completed.completed_count AS completedContractCount,
+
+            CASE
+                WHEN target.target_count = 0 THEN 0
+                ELSE ROUND(completed.completed_count * 100.0 / target.target_count)
+            END AS achievementRate
+        FROM target, completed
     </select>
 
     <!-- 오늘 연락 고객 목록 조회 -->
