@@ -88,11 +88,11 @@ watch([customerId, conversionStatusCode], () => {
 
 // 관심 카테고리 옵션 정의
 const categoryOptions = [
-  { code: 'CAT_INJURY', name: '상해 보장', desc: '잦은 타박상, 찰과상, 사고 및 골절 집중 케어' },
-  { code: 'CAT_DISEASE', name: '질병 입원 보장', desc: '감기, 급성 기관지염 등 입원 및 치료비 부담 경감' },
-  { code: 'CAT_GROWTH', name: '성장 관리 보장', desc: '발달 상태 검사 및 맞춤형 성장 케어 솔루션' },
-  { code: 'CAT_DENTAL', name: '치아 보장', desc: '충치 치료, 영구치 보존 및 치과 진료비 지원' },
-  { code: 'CAT_CANCER', name: '암 진단 보장', desc: '소아암 및 중대 질병 진단 시 고액 특별 안심 케어' }
+  { code: 'CAT_SH_INJURY', name: '상해 보장', desc: '잦은 타박상, 찰과상, 사고 및 골절 집중 케어' },
+  { code: 'CAT_HOSP_SURG', name: '질병 입원 보장', desc: '감기, 급성 기관지염 등 입원 및 치료비 부담 경감' },
+  { code: 'CAT_INFECT_GROUP', name: '성장 관리 보장', desc: '발달 상태 검사 및 맞춤형 성장 케어 솔루션' },
+  { code: 'CAT_DENT_EYE', name: '치아 보장', desc: '충치 치료, 영구치 보존 및 치과 진료비 지원' },
+  { code: 'CAT_CRITICAL_BAL', name: '암 진단 보장', desc: '소아암 및 중대 질병 진단 시 고액 특별 안심 케어' }
 ]
 
 // 병력 이력 옵션 정의
@@ -114,8 +114,8 @@ const activityOptions = [
 
 // 예산 옵션 정의
 const budgetOptions = [
-  { code: '01', name: '1만원대', desc: '핵심 담보만 골라 든든히 채운 알뜰 플랜' },
-  { code: '02', name: '3만원대', desc: '대다수 부모님이 선택하는 종합 케어 스탠다드' },
+  { code: '01', name: '1~3만원대', desc: '핵심 담보만 골라 든든히 채운 알뜰 플랜' },
+  { code: '02', name: '3~5만원대', desc: '대다수 부모님이 선택하는 종합 케어 스탠다드' },
   { code: '03', name: '5만원대 이상', desc: '사고부터 큰 질병까지 빈틈없는 프리미엄 패키지' }
 ]
 
