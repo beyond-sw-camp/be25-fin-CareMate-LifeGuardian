@@ -22,4 +22,10 @@ public interface SalesUserService {
     // 분리 보관 중인 퇴사자 PII 보존 현황 페이징 조회
     SalesUserPiiSecureListResponse getPiiSecureList(SalesUserPiiSecureSearchRequest request);
 
+    // 특정 영업사원의 월간 계약 목표 등록 및 수정
+    void updateMonthlyTarget(Long userId, SalesUserMonthlyTargetUpdateRequest request);
+
+    // 영업사원 정보 및 당월 계약 목표 수정
+    void updateSalesUser(Long userId, SalesUserUpdateRequest request);
+
 }
