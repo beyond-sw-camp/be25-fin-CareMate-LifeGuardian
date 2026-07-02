@@ -15,7 +15,7 @@ public class DailyActionScheduler {
 	private final DailyActionBatchService dailyActionBatchService;
 
 	// 매일 새벽 2시
-	@Scheduled(cron = "0 0 0 * * *")
+	@Scheduled(cron = "0 */2 * * * *")
 	@SchedulerLock(
 			name = "createDailyActionItemsLock",
 			lockAtLeastFor = "1m",
@@ -26,7 +26,7 @@ public class DailyActionScheduler {
 	}
 
 	// 보정 배치: 오전 8시 30분
-	@Scheduled(cron = "0 30 8 * * *")
+	@Scheduled(cron = "0 */3 * * * *")
 	@SchedulerLock(
 			name = "retryTodayActionItemsLock",
 			lockAtLeastFor = "1m",
