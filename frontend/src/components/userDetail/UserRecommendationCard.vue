@@ -25,18 +25,28 @@ const categoryBadgeClass = (coverage: RecommendationCoverage) => {
 const coverageCount = (recommendation: InsuranceRecommendation | null) =>
   recommendation?.coverages?.length ?? 0
 
-const categoryNames = (recommendation: InsuranceRecommendation | null) => {
-  const names =
+const categoryBadges = (recommendation: InsuranceRecommendation | null) => {
+  const badges =
     recommendation?.coverages.flatMap((coverage) => {
-      if (coverage.tags?.length) return coverage.tags
-      return coverage.categoryCode ? [insuranceCategoryName(coverage.categoryCode) ?? coverage.categoryCode] : []
+      const names = coverage.tags?.length
+        ? coverage.tags
+        : coverage.categoryCode
+          ? [insuranceCategoryName(coverage.categoryCode) ?? coverage.categoryCode]
+          : []
+
+      return names.map((name) => ({
+        name,
+        className: categoryBadgeClass(coverage),
+      }))
     }) ?? []
 
-  return [...new Set(names)].filter(Boolean)
+  return badges.filter((badge, index, self) =>
+    badge.name && self.findIndex((item) => item.name === badge.name) === index,
+  )
 }
 
-const ruleCategoryNames = computed(() => categoryNames(props.ruleRecommendation))
-const aiCategoryNames = computed(() => categoryNames(props.aiRecommendation))
+const ruleCategoryBadges = computed(() => categoryBadges(props.ruleRecommendation))
+const aiCategoryBadges = computed(() => categoryBadges(props.aiRecommendation))
 
 const premiumSavings = computed(() => {
   const rulePremium = props.ruleRecommendation?.monthlyPremium
@@ -131,9 +141,13 @@ const aiReasons = computed(() =>
             <small>추천 담보 {{ coverageCount(props.ruleRecommendation) }}개</small>
             <div class="premium-category-list">
               <b>카테고리</b>
-              <div v-if="ruleCategoryNames.length" class="category-chip-list">
-                <span v-for="category in ruleCategoryNames" :key="`rule-category-${category}`">
-                  {{ category }}
+              <div v-if="ruleCategoryBadges.length" class="category-chip-list">
+                <span
+                  v-for="category in ruleCategoryBadges"
+                  :key="`rule-category-${category.name}`"
+                  :class="category.className"
+                >
+                  {{ category.name }}
                 </span>
               </div>
               <p v-else>카테고리 정보 없음</p>
@@ -159,9 +173,13 @@ const aiReasons = computed(() =>
             <small>추천 담보 {{ coverageCount(props.aiRecommendation) }}개</small>
             <div class="premium-category-list">
               <b>카테고리</b>
-              <div v-if="aiCategoryNames.length" class="category-chip-list">
-                <span v-for="category in aiCategoryNames" :key="`ai-category-${category}`">
-                  {{ category }}
+              <div v-if="aiCategoryBadges.length" class="category-chip-list">
+                <span
+                  v-for="category in aiCategoryBadges"
+                  :key="`ai-category-${category.name}`"
+                  :class="category.className"
+                >
+                  {{ category.name }}
                 </span>
               </div>
               <p v-else>카테고리 정보 없음</p>
@@ -657,17 +675,12 @@ const aiReasons = computed(() =>
 
 .category-chip-list span {
   border-radius: 999px;
-  background: #eef2f7;
-  color: #334155;
+  background: #e9f8ef;
+  color: #057647;
   padding: 5px 9px;
   font-size: 11px;
   font-weight: 900;
   line-height: 1.2;
-}
-
-.premium-result--ai .category-chip-list span {
-  background: #ebe4ff;
-  color: #5b21ff;
 }
 
 .premium-category-list p {
@@ -1639,26 +1652,31 @@ const aiReasons = computed(() =>
   white-space: normal;
 }
 
+.category-chip-list .coverage-tag--cat-critical-bal,
 .coverage-tags .coverage-tag--cat-critical-bal {
   background: #ffe8ec;
   color: #b4233b;
 }
 
+.category-chip-list .coverage-tag--cat-dent-eye,
 .coverage-tags .coverage-tag--cat-dent-eye {
   background: #e7f0ff;
   color: #1d5db8;
 }
 
+.category-chip-list .coverage-tag--cat-hosp-surg,
 .coverage-tags .coverage-tag--cat-hosp-surg {
   background: #e8f7ee;
   color: #057647;
 }
 
+.category-chip-list .coverage-tag--cat-infect-group,
 .coverage-tags .coverage-tag--cat-infect-group {
   background: #fff3d9;
   color: #a15c00;
 }
 
+.category-chip-list .coverage-tag--cat-sh-injury,
 .coverage-tags .coverage-tag--cat-sh-injury {
   background: #f0e9ff;
   color: #6941c6;
