@@ -248,6 +248,10 @@
             ON result_status.group_code = 'CONTRACT_RESULT_STATUS'
            AND result_status.code_value = c.contract_result_status_code
         WHERE c.integrated_customer_id = #{customerId}
+           OR (
+               c.conversion_status_code = '02'
+               AND c.insured_id = #{customerId}
+           )
         ORDER BY c.created_at DESC, c.id DESC
         LIMIT #{limit}
     </select>
