@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/lifeguardian-mono-be.iml" filepath="$PROJECT_DIR$/.idea/lifeguardian-mono-be.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/LifeGuardian-CICD.iml" filepath="$PROJECT_DIR$/.idea/LifeGuardian-CICD.iml" />
     </modules>
   </component>
 </project>

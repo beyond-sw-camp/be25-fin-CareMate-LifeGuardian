@@ -26,3 +26,5 @@ replay_pid*
 *.md
 *.sql
 /.idea/sqldialects.xml
+
+/.idea/*

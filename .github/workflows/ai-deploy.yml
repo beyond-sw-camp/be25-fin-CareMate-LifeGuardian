@@ -16,7 +16,13 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      # 2. AWS 자격 증명 세팅 (GitHub Secrets 기반)
+      # 2. 빌드 버전 생성
+      - name: Generate Build Version
+        id: versioning
+        run: |
+          echo "build_version=ai-1.0.${{ github.run_number }}" >> $GITHUB_OUTPUT
+
+      # 3. AWS 자격 증명 세팅 (GitHub Secrets 기반)
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -24,20 +30,118 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # 3. AWS SSM을 통해 Auto Scaling Group 내 인스턴스들에 순차 배포 명령 전송 (Git Pull 및 재기동)
-      - name: Deploy AI on EC2 ASG via AWS SSM
+      # 4. AWS ECR 서비스 로그인
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # 5. 도커 이미지 빌드 및 ECR 푸시 (고유 빌드 버전 태그와 ai-latest 태그 동시 적용)
+      - name: Build, tag, and push AI image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: lifeguardian
+          IMAGE_TAG: ${{ steps.versioning.outputs.build_version }}
         run: |
-          COMMAND_ID=$(aws ssm send-command \
-            --targets "Key=tag:aws:autoscaling:groupName,Values=${{ secrets.AWS_ASG_NAME }}" \
-            --max-concurrency "1" \
-            --max-errors "0" \
-            --document-name "AWS-RunShellScript" \
-            --parameters '{"commands":["cd /home/ubuntu/recommend_lambda", "git pull origin main", "chmod +x deploy.sh", "./deploy.sh"]}' \
-            --query "Command.CommandId" \
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:ai-latest -f ai/Dockerfile ai/
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:ai-latest
+
+      # 6. AWS ASG Instance Refresh를 통한 무중단 롤링 배포
+      - name: Deploy AI on EC2 ASG via Instance Refresh
+        run: |
+          echo "Starting Instance Refresh for ASG: ${{ secrets.AWS_ASG_NAME }}..."
+          REFRESH_ID=$(aws autoscaling start-instance-refresh \
+            --auto-scaling-group-name "${{ secrets.AWS_ASG_NAME }}" \
+            --preferences '{"MinHealthyPercentage": 50}' \
+            --query "InstanceRefreshId" \
             --output text)
           
-          echo "SSM Command Sent to ASG. Command ID: $COMMAND_ID"
+          echo "Instance Refresh Started. ID: $REFRESH_ID"
           
-          # 모든 대상 인스턴스에서 명령 실행 완료 시까지 대기
-          aws ssm wait command-executed \
-            --command-id "$COMMAND_ID"
+          # 인스턴스 새로고침 완료 대기 (폴링 루프)
+          echo "Waiting for Instance Refresh to complete..."
+          while true; do
+            STATUS=$(aws autoscaling describe-instance-refreshes \
+              --auto-scaling-group-name "${{ secrets.AWS_ASG_NAME }}" \
+              --query "InstanceRefreshes[?InstanceRefreshId=='$REFRESH_ID'].Status" \
+              --output text)
+            
+            echo "Current Status: $STATUS"
+            
+            if [ "$STATUS" = "Successful" ]; then
+              echo "Instance Refresh completed successfully."
+              break
+            elif [ "$STATUS" = "Failed" ] || [ "$STATUS" = "Cancelled" ] || [ "$STATUS" = "RollbackInProgress" ] || [ "$STATUS" = "RollbackSuccessful" ]; then
+              echo "Error: Instance Refresh ended with status: $STATUS"
+              exit 1
+            fi
+            
+            sleep 30
+          done
+
+      # 7. Discord 배포 성공 알림
+      - name: Notify Discord - Success
+        if: success()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          BUILD_VERSION: ${{ steps.versioning.outputs.build_version }}
+          ACTOR: ${{ github.actor }}
+          REF_NAME: ${{ github.ref_name }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          python3 -c '
+          import os, json
+          run_number = os.environ.get("RUN_NUMBER", "")
+          payload = {
+            "username": "LifeGuardian CI/CD",
+            "embeds": [{
+              "title": "✅ AI 서버 배포 성공",
+              "color": 3066993,
+              "fields": [
+                {"name": "🏷️ 버전",       "value": os.environ.get("BUILD_VERSION", ""), "inline": True},
+                {"name": "👤 배포자",       "value": os.environ.get("ACTOR", ""),         "inline": True},
+                {"name": "🌿 브랜치",       "value": os.environ.get("REF_NAME", ""),      "inline": True},
+                {"name": "📝 커밋 메시지", "value": os.environ.get("COMMIT_MSG", ""),    "inline": False},
+              ],
+              "footer": {"text": f"Build #{run_number}"}
+            }]
+          }
+          with open("payload.json", "w", encoding="utf-8") as f:
+              json.dump(payload, f)
+          '
+          curl -H "Content-Type: application/json" -X POST -d @payload.json "$DISCORD_WEBHOOK"
+
+      # 8. Discord 배포 실패 알림
+      - name: Notify Discord - Failure
+        if: failure()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          ACTOR: ${{ github.actor }}
+          REF_NAME: ${{ github.ref_name }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          RUN_NUMBER: ${{ github.run_number }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python3 -c '
+          import os, json
+          run_url = os.environ.get("RUN_URL", "")
+          run_number = os.environ.get("RUN_NUMBER", "")
+          payload = {
+            "username": "LifeGuardian CI/CD",
+            "embeds": [{
+              "title": "❌ AI 서버 배포 실패",
+              "color": 15158332,
+              "fields": [
+                {"name": "👤 배포자",           "value": os.environ.get("ACTOR", ""),    "inline": True},
+                {"name": "🌿 브랜치",           "value": os.environ.get("REF_NAME", ""), "inline": True},
+                {"name": "📝 커밋 메시지",     "value": os.environ.get("COMMIT_MSG", ""), "inline": False},
+                {"name": "🔗 워크플로우 확인", "value": f"[Actions 보기]({run_url})", "inline": False},
+              ],
+              "footer": {"text": f"Build #{run_number}"}
+            }]
+          }
+          with open("payload.json", "w", encoding="utf-8") as f:
+              json.dump(payload, f)
+          '
+          curl -H "Content-Type: application/json" -X POST -d @payload.json "$DISCORD_WEBHOOK"
