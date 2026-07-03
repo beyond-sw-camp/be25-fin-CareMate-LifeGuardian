@@ -90,7 +90,8 @@
             AND (
                 SELECT c.contract_status_code
                 FROM contract c
-                WHERE c.integrated_customer_id = cb.customer_id
+                WHERE c.conversion_status_code = '02'
+                  AND c.insured_id = cb.customer_id
                 ORDER BY
                     CASE c.contract_result_status_code
                         WHEN '01' THEN 1
@@ -118,7 +119,8 @@
                     WHEN cb.customer_type_code = '02' THEN (
                         SELECT c.contract_status_code
                         FROM contract c
-                        WHERE c.integrated_customer_id = cb.customer_id
+                        WHERE c.conversion_status_code = '02'
+                          AND c.insured_id = cb.customer_id
                         ORDER BY
                             CASE c.contract_result_status_code
                                 WHEN '01' THEN 1
@@ -224,7 +226,7 @@
                 SELECT
                     c.*,
                         ROW_NUMBER() OVER (
-                            PARTITION BY c.integrated_customer_id
+                            PARTITION BY c.conversion_status_code, c.insured_id
                             ORDER BY
                                 CASE c.contract_result_status_code
                                     WHEN '01' THEN 1
@@ -238,7 +240,8 @@
         FROM contract c
         INNER JOIN customer_base cb
         ON cb.customer_type_code = '02'
-        AND cb.customer_id = c.integrated_customer_id
+        AND c.conversion_status_code = '02'
+        AND cb.customer_id = c.insured_id
         ) x
         WHERE x.rn = 1
         ),
@@ -383,7 +386,8 @@
         FROM customer_base cb
             LEFT JOIN representative_contract rc
                 ON cb.customer_type_code = '02'
-                AND rc.integrated_customer_id = cb.customer_id
+                AND rc.conversion_status_code = cb.customer_type_code
+                AND rc.insured_id = cb.customer_id
             LEFT JOIN latest_webform lw
                 ON lw.conversion_status_code = cb.customer_type_code AND lw.customer_id = cb.customer_id
             LEFT JOIN latest_webform_issuance lwi

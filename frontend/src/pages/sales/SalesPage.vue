@@ -587,7 +587,8 @@ onBeforeUnmount(() => {
   display: flex;
   height: 100vh;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: auto;
   padding: 8px 20px 7px 20px;
 }
 
@@ -739,6 +740,9 @@ onBeforeUnmount(() => {
 .report-button--webform-bulk,
 .report-button--bulk {
   min-width: 82px;
+  border-color: #ea580c;
+  background: #f97316;
+  color: #ffffff;
 }
 
 .report-button:hover:not(:disabled) {
@@ -747,8 +751,22 @@ onBeforeUnmount(() => {
   color: #334155;
 }
 
+.report-button--webform-bulk:hover:not(:disabled),
+.report-button--bulk:hover:not(:disabled) {
+  border-color: #c2410c;
+  background: #ea580c;
+  color: #ffffff;
+}
+
 .report-button:disabled {
   background: #c5cad3;
+}
+
+.report-button--webform-bulk:disabled,
+.report-button--bulk:disabled {
+  border-color: #fed7aa;
+  background: #fdba74;
+  color: #fff7ed;
 }
 
 .sales-criteria-modal {
