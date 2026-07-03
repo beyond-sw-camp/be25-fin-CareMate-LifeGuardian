@@ -31,7 +31,7 @@
                 SELECT
                     c.*,
                     ROW_NUMBER() OVER (
-                        PARTITION BY c.integrated_customer_id
+                        PARTITION BY c.conversion_status_code, c.insured_id
                         ORDER BY
                             CASE c.contract_status_code
                                 WHEN '01' THEN 1
