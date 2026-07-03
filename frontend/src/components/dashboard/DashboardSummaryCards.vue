@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { DashboardSummary } from '@/api/dashboard'
 
 const props = defineProps<{
@@ -16,6 +17,16 @@ const emit = defineEmits<{
 
 const countLabel = (count?: number) => `${count ?? 0}명`
 
+const summaryCounts = computed(() => ({
+  uncontactedCustomerCount: props.summary?.uncontactedCustomerCount ?? 0,
+  consultingCustomerCount: props.summary?.consultingCustomerCount ?? 0,
+  designingContractCount: props.summary?.designingContractCount ?? 0,
+  designedContractCount: props.summary?.designedContractCount ?? 0,
+  subscriptionInProgressCount: props.summary?.subscriptionInProgressCount ?? 0,
+  subscriptionCompletedCount: props.summary?.subscriptionCompletedCount ?? 0,
+  contractCompletedCount: props.summary?.contractCompletedCount ?? 0,
+}))
+
 const moveSalesFilter = (filter: {
   consultStatusCode?: string[]
   contractStatusCode?: string[]
@@ -32,7 +43,7 @@ const moveSalesFilter = (filter: {
         @click="moveSalesFilter({ consultStatusCode: ['01'] })"
       >
         <span>잠재고객 미상담 고객</span>
-        <strong>{{ countLabel(summary?.uncontactedCustomerCount) }}</strong>
+        <strong>{{ countLabel(summaryCounts.uncontactedCustomerCount) }}</strong>
       </article>
 
       <article 
@@ -40,7 +51,7 @@ const moveSalesFilter = (filter: {
         @click="moveSalesFilter({ consultStatusCode: ['02'] })"
       >
         <span>잠재고객 상담 중 고객</span>
-        <strong>{{ countLabel(summary?.consultingCustomerCount) }}</strong>
+        <strong>{{ countLabel(summaryCounts.consultingCustomerCount) }}</strong>
       </article>
     </div>
 
@@ -50,7 +61,7 @@ const moveSalesFilter = (filter: {
         @click="moveSalesFilter({ contractStatusCode: ['01'] })"
       >
         <span>설계 중</span>
-        <strong>{{ countLabel(summary?.designingContractCount) }}</strong>
+        <strong>{{ countLabel(summaryCounts.designingContractCount) }}</strong>
       </article>
 
       <article 
@@ -58,7 +69,7 @@ const moveSalesFilter = (filter: {
         @click="moveSalesFilter({ contractStatusCode: ['02'] })"
       >
         <span>설계 완료</span>
-        <strong>{{ countLabel(summary?.designedContractCount) }}</strong>
+        <strong>{{ countLabel(summaryCounts.designedContractCount) }}</strong>
       </article>
 
       <article 
@@ -66,7 +77,7 @@ const moveSalesFilter = (filter: {
         @click="moveSalesFilter({ contractStatusCode: ['03'] })"
       >
         <span>청약 중</span>
-        <strong>{{ countLabel(summary?.subscriptionInProgressCount) }}</strong>
+        <strong>{{ countLabel(summaryCounts.subscriptionInProgressCount) }}</strong>
       </article>
 
       <article 
@@ -74,7 +85,7 @@ const moveSalesFilter = (filter: {
         @click="moveSalesFilter({ contractStatusCode: ['04'] })"
       >
         <span>청약 완료</span>
-        <strong>{{ countLabel(summary?.subscriptionCompletedCount) }}</strong>
+        <strong>{{ countLabel(summaryCounts.subscriptionCompletedCount) }}</strong>
       </article>
 
       <article 
@@ -82,7 +93,7 @@ const moveSalesFilter = (filter: {
         @click="moveSalesFilter({ contractStatusCode: ['06'] })"
       >
         <span>계약 완료</span>
-        <strong>{{ countLabel(summary?.contractCompletedCount) }}</strong>
+        <strong>{{ countLabel(summaryCounts.contractCompletedCount) }}</strong>
       </article>
     </div>
   </section>
