@@ -266,14 +266,18 @@ const completeFirstLogin = async () => {
   position: relative;
   display: flex;
   justify-content: center;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
   min-height: 100vh;
-  overflow: hidden;
+  overflow: scroll;
+  scrollbar-gutter: stable;
   background: #fff7ed;
   color: #1f2933;
 }
 
 .login-page__background {
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: 0;
   width: 100%;
@@ -289,7 +293,10 @@ const completeFirstLogin = async () => {
   z-index: 2;
   display: grid;
   width: min(100%, 920px);
-  min-height: 100vh;
+  min-width: 474px;
+  min-height: max(640px, 100vh);
+  min-height: max(640px, 100svh);
+  flex: 0 0 auto;
   grid-template-rows: auto auto auto;
   justify-items: center;
   align-content: center;
@@ -330,7 +337,7 @@ const completeFirstLogin = async () => {
 
 .login-page__panel {
   display: grid;
-  width: min(430px, calc(100vw - 44px));
+  width: 430px;
   border: 1px solid rgba(255, 255, 255, 0.78);
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.9);
@@ -506,7 +513,44 @@ const completeFirstLogin = async () => {
   font-weight: 650;
 }
 
-@media (max-width: 680px) {
+@media (max-width: 1120px) {
+  .login-page__content {
+    width: min(100%, 860px);
+    align-content: center;
+    gap: 14px;
+    padding: 28px 18px 22px;
+  }
+
+  .login-page__body {
+    grid-template-columns: 430px minmax(260px, 300px);
+    align-items: start;
+    justify-content: center;
+    gap: 16px;
+    min-height: 0;
+  }
+
+  .login-page__panel {
+    padding: 42px 44px;
+  }
+
+  .login-page__demo {
+    position: static;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .login-page__demo-group {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    min-height: 0;
+  }
+
+  .login-page__demo-list {
+    min-height: 36px;
+  }
+}
+
+@media (max-width: 760px) {
   .login-page__content {
     justify-content: center;
     padding: 28px 18px 22px;
@@ -523,28 +567,37 @@ const completeFirstLogin = async () => {
   }
 
   .login-page__panel {
-    padding: 32px 26px;
+    padding: 42px 44px;
   }
 
   .login-page__demo {
-    position: static;
-    width: min(330px, calc(100vw - 44px));
-    min-width: 0;
+    width: 430px;
   }
 
   .login-page__demo-card {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     padding: 10px;
   }
 
   .login-page__demo-group {
-    grid-template-columns: 1fr;
-    gap: 8px;
-    min-height: 0;
+    padding: 8px;
   }
 
   .login-page__demo-list {
+    grid-template-columns: 1fr;
+    gap: 6px;
     min-height: 38px;
   }
 
+  .login-page__demo-role {
+    width: 100%;
+  }
 }
+
+@media (max-width: 474px) {
+  .login-page {
+    justify-content: flex-start;
+  }
+}
+
 </style>
