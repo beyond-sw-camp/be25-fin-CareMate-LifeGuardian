@@ -22,7 +22,7 @@
       </td>
       <td>
         <img src="image/김다솜.png" style="width:140px; height:140px; object-fit:contain;"><br>
-        🔗 <a href="https://github.com/myangD">myangD</a>
+        🔗 <a href="https://github.com/myang09">myang09</a>
       </td>
       <td>
         <img src="image/박하얀.png" style="width:140px; height:140px; object-fit:contain;"><br>
